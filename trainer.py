@@ -205,8 +205,8 @@ class Trainer():
         if self.args.save_results:
             self.ckp.begin_background()
 
-        # print(color.higgreenfg_whitebg(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #       len(self.loader_test) = {len(self.loader_test)}\n"))  #   len(self.loader_test) = 5
+        ind1_scale = self.args.scale.index(1)  #  args.scale中1的索引
+
         for idx_data, d in enumerate(self.loader_test):
             i = 0
             if d.dataset.name == 'CBSD68' or d.dataset.name == 'Rain100L':
@@ -214,23 +214,22 @@ class Trainer():
             else:
                 tmpscale = self.scale
 
-            for idx_scale, scale in enumerate(tmpscale):
+            for idx_scale, scale in enumerate(self.scale):
 
                 #print(color.higgreenfg_whitebg(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n idx_scale = {idx_scale}, scale = {scale}"))
                 # idx_scale = 0, scale = 2
                 # print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n d = {d}\n"))
 
                 d.dataset.set_scale(idx_scale)
-
-                if self.args.derain and d.dataset.name == 'Rain100L': # 不进入此处
-                    print(f"I am in test rain100L \n")
+                # 对于测试数据集为Rain100L，去雨任务，忽略其他的scale，只针对sclae=1测试。
+                if self.args.derain and d.dataset.name == 'Rain100L' and scale ==1:
+                    print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
                     for norain, rain, filename in tqdm(d, ncols=80):
                         print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, norain.shape = {norain.shape}, rain.shape = {rain.shape} \n "))
 # filename=('rain-051',), norain.shape = torch.Size([1, 3, 321, 481]), rain.shape = torch.Size([1, 3, 321, 481])
                         norain,rain = self.prepare(norain, rain)
                         sr = self.model(rain, idx_scale)
-                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-# filename={filename}, sr.shape = {sr.shape} \n "))
+                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, sr.shape = {sr.shape} \n "))
 # filename=('rain-051',), sr.shape = torch.Size([1, 3, 321, 481])
                         sr = utility.quantize(sr, self.args.rgb_range)
 
@@ -252,8 +251,9 @@ class Trainer():
                         )
                     )
                     isderain = 0
-                elif self.args.denoise and d.dataset.name == 'CBSD68': # 不进入此处
-                    print(f"I am in test CBSD68")
+                # 对于测试数据集为 CBSD68，去噪任务，忽略其他的scale，只针对sclae=1测试。
+                elif self.args.denoise and d.dataset.name == 'CBSD68' and scale == 1 :
+                    print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
                     for hr, lr,filename in tqdm(d, ncols=80):
                         print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, hr.shape = {hr.shape}, lr.shape = {lr.shape} \n "))
                         # filename=('0000',), hr.shape = torch.Size([1, 3, 321, 481]), rain.shape = torch.Size([1, 3, 321, 481])
@@ -283,8 +283,8 @@ class Trainer():
                             best[1][idx_data, idx_scale] + 1
                         )
                     )
-                else:
-                    print(f"I am in test magnify mission\n")
+                elif d.dataset.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K']:
+                    print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n \n")
                     for lr, hr, filename in tqdm(d, ncols=80):
                         print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape} \n "))
                         # filename=('baby',),  lr.shape = torch.Size([1, 3, 256, 256]), hr.shape = torch.Size([1, 3, 512, 512])
@@ -327,6 +327,8 @@ class Trainer():
                             best[0][idx_data, idx_scale],
                             best[1][idx_data, idx_scale] + 1
                         ))
+                else:
+                    print(f"d.dataset.name =  {d.dataset.name }, scale = {scale} \n")
 
         self.ckp.write_log('Forward: {:.2f}s\n'.format(timer_test.toc()))
         self.ckp.write_log('Saving...')

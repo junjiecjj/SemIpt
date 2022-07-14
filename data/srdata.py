@@ -67,15 +67,33 @@ class SRData(data.Dataset):
 
         if self.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100']:
             self._set_filesystem_benchmark(args.dir_data)
-            #print(color.higyellowfg_whitebg( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n self.apath = {self.apath}\n self.dir_hr = {self.dir_hr}\n self.dir_lr = {self.dir_lr}"))
+            print(color.higyellowfg_whitebg( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n self.apath = {self.apath}\n self.dir_hr = {self.dir_hr}\n self.dir_lr = {self.dir_lr}\n\n"))
             # self.apath = /home/jack/IPT-Pretrain/Data/benchmark/Set5
             # self.dir_hr = /home/jack/IPT-Pretrain/Data/benchmark/Set5/HR
             # self.dir_lr = /home/jack/IPT-Pretrain/Data/benchmark/Set5/LR_bicubic
-            self.images_hr, self.images_lr = self._scan_benchmark()
-            #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n len(self.images_hr) = {len(self.images_hr)}, len(self.images_lr) = {len(self.images_lr)},len(self.images_lr[0]) = {len(self.images_lr[0])} \n self.images_hr=\n{self.images_hr}\nself.name_hr = \n{self.images_lr}\n"))
+            self.images_hr_png, self.images_lr_png = self._scan_benchmark()
+            print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n len(self.images_hr) = {len(self.images_hr)}, len(self.images_lr) = {len(self.images_lr)},len(self.images_lr[0]) = {len(self.images_lr[0])} \n self.images_hr_png=\n{self.images_hr_png}\nself.images_lr_png = \n{self.images_lr_png}\n"))
+
             path_bin =  os.path.join(self.apath,'bin')
             os.makedirs(path_bin, exist_ok=True)
-            
+
+            os.makedirs(self.dir_hr.replace(self.apath, path_bin), exist_ok=True)
+
+            for s in self.scale:
+                if s == 1:
+                    os.makedirs(self.dir_hr, exist_ok=True)
+                else:
+                    os.makedirs(os.path.join(self.dir_lr.replace(self.apath, path_bin), 'X{}'.format(s)), exist_ok=True)
+
+            self.images_hr, self.images_lr = [], [[] for _ in self.scale]
+            for img in self.images_hr_png:
+                b = img.replace(self.apath, path_bin)
+                b = b.replace(self.ext[1], '.pt')
+                self.images_hr.append(b)
+                self._check_and_load()
+
+
+
 
 
 
@@ -83,11 +101,9 @@ class SRData(data.Dataset):
         if self.name in ['DIV2K',]:
             #print(f"srdata.py  69   {self.name}\n")
             self._set_filesystem_div2k(args.dir_data)
-
             self.list_hr, self.list_lr = self._scan_div2k()
 
             path_bin = os.path.join(self.apath, 'bin')
-
             os.makedirs(path_bin, exist_ok=True)
             print("2  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
 
@@ -96,7 +112,6 @@ class SRData(data.Dataset):
                 if s == 1:
                     os.makedirs( os.path.join(self.dir_hr), exist_ok=True)
                 else:
-
                     os.makedirs(os.path.join(self.dir_lr.replace(self.apath, path_bin),'X{}'.format(s)), exist_ok=True)
 
             self.images_hr, self.images_lr = [], [[] for _ in self.scale]
@@ -195,7 +210,7 @@ class SRData(data.Dataset):
 
     def _set_filesystem_benchmark(self, dir_data):
         #  dir_data = '/home/jack/IPT-Pretrain/Data/'
-        self.apath = os.path.join(dir_data, 'benchmark', self.name)  # /home/jack/IPT-Pretrain/Data/benchmark
+        self.apath = os.path.join(dir_data, 'benchmark', self.name)  # /home/jack/IPT-Pretrain/Data/benchmark/Set5
         self.dir_hr = os.path.join(self.apath, 'HR')                 # /home/jack/IPT-Pretrain/Data/benchmark/Set5/HR
         if self.input_large:
             self.dir_lr = os.path.join(self.apath, 'LR_bicubicL')
