@@ -58,7 +58,7 @@ class DataGenerator(object):
             )
 
         self.loader_test = []
-        if    args.wanttest:
+        if  args.wanttest:
             for testname in args.data_test:
                 #print(color.higyellowfg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n testname = {testname}" ) )
                 if testname in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100', 'CBSD68', 'Rain100L']:

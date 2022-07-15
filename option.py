@@ -41,10 +41,12 @@ parser.add_argument('--data_train', type=str, default='DIV2K', help='train datas
 parser.add_argument('--data_test',type=str,  default='Set5', help='test dataset name')
 # parser.add_argument('--data_test', type=str, default='Set5+Set14+B100+Urban100+DIV2K', help='test dataset name')  # cjj
 
+parser.add_argument('--useBIN',  action='store_false', help='是否使用bin图像')
+
 parser.add_argument('--data_range', type=str, default='1-800/801-810', help='train/test data range')
 parser.add_argument('--ext', type=str, default='sep', help='dataset file extension')
 # parser.add_argument('--scale', type=str, default='2+3+4+5+6+1', help='super resolution scale')
-parser.add_argument('--scale', type=str, default='2+3+4+1', help='super resolution scale') # cjj
+parser.add_argument('--scale', type=str, default='1', help='super resolution scale') # cjj
 
 parser.add_argument('--patch_size', type=int, default=48, help='output patch size')
 parser.add_argument('--rgb_range', type=int, default=255, help='maximum value of RGB')
