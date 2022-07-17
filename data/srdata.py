@@ -63,7 +63,7 @@ class SRData(data.Dataset):
         # self.split = 'train' if train else 'test'
         # self.do_eval = True
         self.benchmark = benchmark
-        self.input_large = (args.model == 'VDSR')
+        self.input_large = (args.modelUse == 'VDSR')
         self.scale = args.scale  #  [1]
         self.idx_scale = 0
         print(f" {name}  {train}  {benchmark}\n")
@@ -75,7 +75,6 @@ class SRData(data.Dataset):
                 self.images_hr_bin, self.images_lr_bin = self._make_bin_img_magnify()
 
 
-
         if self.name in ['DIV2K',]:
             #print(f"srdata.py  69   {self.name}\n")
             self._set_filesystem_div2k(args.dir_data)
@@ -83,22 +82,22 @@ class SRData(data.Dataset):
             if self.args.useBIN == True:
                 self.images_hr_bin, self.images_lr_bin = self._make_bin_img_magnify()
 
-
         # 去雨任务，且数据集是去雨任务的数据集'Rain100L'
         if self.name in ['Rain100L',] and self.args.derain:
             self.apath = os.path.join(args.dir_data, "Rain100L")
-            self.dir_hr = os.path.join(self.apath, 'rainy')
-            self.images_lr_png = search(self.apath, "rain")
-            self.images_hr_png = [path.replace("rainy/","no") for path in self.images_lr]
+            self.dir_lr = os.path.join(self.apath, 'rainy')
+            self.ext = ('.png', '.png')
+            self.images_lr_png = sorted(search(self.dir_lr, "rain"))
+            self.images_hr_png = [path.replace("rainy/","no") for path in self.images_lr_png]
             if self.args.useBIN == True:
                 self.images_hr_bin, self.images_lr_bin = self._make_bin_img_rain100l()
 
-
-
-
         if self.name in ['CBSD68', ] and self.args.denoise:
             self._set_filesystem_CBSD68(args.dir_data)
-            self.images_hr, self.images_lr = self._scan_CBSD68()
+            self.images_hr_png, self.images_lr_png = self._scan_CBSD68()
+            if self.args.useBIN == True:
+                self.images_hr_bin, self.images_lr_bin = self._make_bin_img_cbsd68()
+
 
         if train:
             print(f"train ={train} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
@@ -113,9 +112,7 @@ class SRData(data.Dataset):
             # n_patches = 16000, n_images = 800 repead = 20
 
 
-    # Below functions as used to prepare images
     def _scan_benchmark(self):
-        #  列表，列表的每个元素为“每张图片的路径+文件名”  /cache/data/DIV2K/HR/baboon.png
         names_hr = sorted( glob.glob(os.path.join(self.dir_hr, '*' + self.ext[0])) )
 
         names_lr = [[] for _ in self.scale]
@@ -130,7 +127,7 @@ class SRData(data.Dataset):
 
         return names_hr, names_lr
 
-    # Below functions as used to prepare images
+
     def _scan_div2k(self):
         #  列表，列表的每个元素为“每张图片的路径+文件名”  '/home/jack/IPT-Pretrain/Data/DIV2K/DIV2K_train_HR/0801.png'
         names_hr = sorted( glob.glob(os.path.join(self.dir_hr, '*' + self.ext[0])) )
@@ -149,9 +146,10 @@ class SRData(data.Dataset):
         names_lr = [n[self.begin - 1:self.end] for n in names_lr]
         return names_hr, names_lr
 
-    # Below functions as used to prepare images
+
+
+
     def _scan_CBSD68(self):
-        #  列表，列表的每个元素为“每张图片的路径+文件名”  /cache/data/DIV2K/HR/baboon.png
         names_hr = sorted( glob.glob(os.path.join(self.dir_hr, '*' + self.ext[0])) )
         names_lr = sorted( glob.glob(os.path.join(self.dir_lr, '*' + self.ext[0])) )
 
@@ -230,7 +228,7 @@ class SRData(data.Dataset):
         path_bin =  os.path.join(self.apath, 'bin')
         os.makedirs(path_bin, exist_ok=True)
 
-        os.makedirs(self.dir_hr.replace(self.apath, path_bin), exist_ok=True)
+        os.makedirs(self.dir_lr.replace(self.apath, path_bin), exist_ok=True)
 
 
         images_hr_bin, images_lr_bin = [], []
@@ -240,12 +238,33 @@ class SRData(data.Dataset):
             images_hr_bin.append(b)
             self._check_and_load(self.args.ext, img, b, verbose=True)
 
-        for idx_s, ll in enumerate(self.images_lr_png):
-            for img in ll:
-                b = img.replace(self.apath, path_bin)
-                b = b.replace(self.ext[1], '.pt')
-                images_lr_bin[idx_s].append(b)
-                self._check_and_load(self.args.ext, img, b, verbose=True)
+        for img  in  self.images_lr_png:
+            b = img.replace(self.apath, path_bin)
+            b = b.replace(self.ext[1], '.pt')
+            images_lr_bin.append(b)
+            self._check_and_load(self.args.ext, img, b, verbose=True)
+        return images_hr_bin, images_lr_bin
+
+
+    def _make_bin_img_cbsd68(self):
+        path_bin =  os.path.join(self.apath, 'bin')
+        os.makedirs(path_bin, exist_ok=True)
+
+        os.makedirs(self.dir_hr.replace(self.apath, path_bin), exist_ok=True)
+        os.makedirs(self.dir_lr.replace(self.apath, path_bin), exist_ok=True)
+
+        images_hr_bin, images_lr_bin = [], []
+        for img in self.images_hr_png:
+            b = img.replace(self.apath, path_bin)
+            b = b.replace(self.ext[1], '.pt')
+            images_hr_bin.append(b)
+            self._check_and_load(self.args.ext, img, b, verbose=True)
+
+        for img  in  self.images_lr_png:
+            b = img.replace(self.apath, path_bin)
+            b = b.replace(self.ext[1], '.pt')
+            images_lr_bin.append(b)
+            self._check_and_load(self.args.ext, img, b, verbose=True)
         return images_hr_bin, images_lr_bin
 
 
@@ -264,15 +283,15 @@ class SRData(data.Dataset):
     def __getitem__(self, idx):
         if self.train == False and self.name in ['Rain100L'] and self.args.derain:  # 不进入此处
             norain, rain, filename = self._load_rain_test(idx)
-            pair = common.set_channel(*[norain, rain], n_channels=self.args.n_colors)
-            pair_t = common.np2Tensor(*pair, rgb_range=self.args.rgb_range)
+            pair = common.set_channel(*[norain, rain], n_channels = self.args.n_colors)
+            pair_t = common.np2Tensor(*pair, rgb_range = self.args.rgb_range)
             return pair_t[0], pair_t[1], filename
         if self.train == False and self.name in ['CBSD68'] and self.args.denoise: # 不进入此处
             hr,lr, filename = self._load_cbsd68_test(idx)
-            pair = self.get_cbsd68_patch(*[lr, hr])
-            pair = common.set_channel(*pair, n_channels=self.args.n_colors)
+            pair = self.get_patch_hr(hr)
+            pair = common.set_channel(*[pair], n_channels=self.args.n_colors)
             pair_t = common.np2Tensor(*pair, rgb_range=self.args.rgb_range)
-            return pair_t[0],pair_t[1], filename
+            return pair_t[0],pair_t[0], filename
         if self.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K']:
             # 默认，图像缩放任务
             lr, hr, filename = self._load_file(idx, )
@@ -288,12 +307,10 @@ class SRData(data.Dataset):
 
     def __len__(self):
         if self.train:
-            #print(color.higyellowfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}, len(self.images_hr) * self.repeat = {len(self.images_hr) * self.repeat} \n"))
-            # len(self.images_hr) * self.repeat = 16000
             return len(self.images_hr_png) * self.repeat
         else:
             if self.args.derain:
-                return int(len(self.images_lr_png)/self.args.derain_test)
+                return int(len(self.images_hr_png)/self.args.derain_test)
             return len(self.images_hr_png)
 
     def _get_index(self, idx):
@@ -308,25 +325,46 @@ class SRData(data.Dataset):
 
     def _load_cbsd68_test(self, idx):
         idx = self._get_index(idx)
+
+        if self.args.useBIN == True:
+            f_hr = self.images_hr_bin[idx]
+            filename, _ = os.path.splitext(os.path.basename(f_hr))
+            print(f"\n{self.name} 正在使用二进制图像源 {f_hr}\n")
+
+            with open(f_hr, 'rb') as _f:
+                origin = pickle.load(_f)
+            if self.images_lr_bin != []:
+                f_lr = self.images_lr_bin[idx]
+                with open(f_lr, 'rb') as _f:
+                    noise = pickle.load(_f)
+            else:
+                noise = []
+
+            return origin, noise, filename
+
         f_hr = self.images_hr[idx]
         f_lr = self.images_lr[idx]
-
         filename, _ = os.path.splitext(os.path.basename(f_hr))
-        if self.args.ext == 'img' or self.benchmark:
-            hr = imageio.imread(f_hr)
-            lr = imageio.imread(f_lr)
-        elif self.args.ext.find('sep') >= 0:
-            with open(f_hr, 'rb') as _f:
-                hr = pickle.load(_f)
-            with open(f_lr, 'rb') as _f1:
-                lr = pickle.load(_f1)
-        return hr, lr, filename
-
+        origin = imageio.imread(f_hr)
+        noise = imageio.imread(f_lr)
+        return origin, noise, filename
 
 
     def _load_rain_test(self, idx):
-        f_hr = self.images_hr[idx]
-        f_lr = self.images_lr[idx]
+        idx = self._get_index(idx)
+        if self.args.useBIN ==  True:
+            f_hr = self.images_hr_bin[idx]
+            f_lr = self.images_lr_bin[idx]
+            filename, _ = os.path.splitext(os.path.basename(f_lr))
+            with open(f_hr, 'rb') as _f:
+                norain = pickle.load(_f)
+            with open(f_lr, 'rb') as _f:
+                rain = pickle.load(_f)
+            print(f"\n{self.name} 正在使用二进制图像源 {f_lr}\n")
+            return norain, rain, filename
+
+        f_hr = self.images_hr_png[idx]
+        f_lr = self.images_lr_png[idx]
         filename, _ = os.path.splitext(os.path.basename(f_lr))
         norain = imageio.imread(f_hr)
         rain = imageio.imread(f_lr)
@@ -334,7 +372,6 @@ class SRData(data.Dataset):
 
     def _load_file(self, idx):
         idx = self._get_index(idx)
-        #print(color.higcyanfg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n idx = {idx}\n" ))
         if self.args.useBIN == True:
             f_hr = self.images_hr_bin[idx]
             f_lr = self.images_lr_bin[self.idx_scale][idx]
@@ -349,12 +386,8 @@ class SRData(data.Dataset):
         f_hr = self.images_hr_png[idx]
         f_lr = self.images_lr_png[self.idx_scale][idx]
         filename, _ = os.path.splitext(os.path.basename(f_hr))
-        #print(color.higfuchsiafg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n f_hr = {f_hr}, f_lr = {f_lr}, filename = {filename}\n" ))
-
         hr = imageio.imread(f_hr)
         lr = imageio.imread(f_lr)
-        #print(color.higgreenfg_whitebg(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}"))
-
         return lr, hr, filename
 
 #====================================================================================
@@ -383,6 +416,18 @@ class SRData(data.Dataset):
             return img
         return [_get_patch_cbsd68(a) for a in arg]
 
+    def get_patch_hr(self, hr):
+        scale = self.scale[self.idx_scale]
+        if self.train:
+            hr = self.get_patch_img_hr(
+                hr,
+                patch_size=self.args.patch_size,  # 48
+                scale=1
+            )
+
+        return hr
+
+
     def get_patch_img_hr(self, img, patch_size=96, scale=2):
         ih, iw = img.shape[:2]
 
@@ -400,12 +445,8 @@ class SRData(data.Dataset):
 
     def get_patch(self, lr, hr):
         scale = self.scale[self.idx_scale]
-        #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #    lr.shape = {lr.shape}, hr.shape = {hr.shape}, self.scale = {self.scale},scale = {scale}\n"))
-        #  lr.shape = (256, 256, 3), hr.shape = (512, 512, 3), self.scale = [2, 3, 4],scale = 2
         if  self.train:
-            #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-            #    lr.shape = {lr.shape}, hr.shape = {hr.shape}, self.scale = {self.scale},scale = {scale}\n"))
+
             lr, hr = common.get_patch(
                 lr, hr,
                 patch_size=self.args.patch_size*scale,
@@ -413,13 +454,10 @@ class SRData(data.Dataset):
                 multi=(len(self.scale) > 1)
             )
             if not self.args.no_augment: lr, hr = common.augment(lr, hr)
-            #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-            #    lr.shape = {lr.shape}, hr.shape = {hr.shape}, self.scale = {self.scale},scale = {scale}\n"))
         else:
             ih, iw = lr.shape[:2]
             hr = hr[0:ih * scale, 0:iw * scale]
-        #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #    lr.shape = {lr.shape}, hr.shape = {hr.shape},\n"))
+
         return lr, hr
 
     def set_scale(self, idx_scale):

@@ -444,7 +444,7 @@ class Ipt(nn.Module):
         self.scale = args.scale
         self.patch_size = args.patch_size  # 48
         self.idx_scale = 0
-        self.input_large = (args.model == 'VDSR')
+        self.input_large = (args.modelUse == 'VDSR')
         self.self_ensemble = args.self_ensemble  #  false
         self.precision = args.precision          #  choices=('single', 'half')
         self.cpu = args.cpu
@@ -495,9 +495,7 @@ class Ipt(nn.Module):
         if is_best:
             save_dirs.append(os.path.join(apath, 'model_best.pt'))
         if self.save_models:
-            save_dirs.append(
-                os.path.join(apath, 'model_{}.pt'.format(epoch))
-            )
+            save_dirs.append(os.path.join(apath, 'model_{}.pt'.format(epoch)))
 
         for s in save_dirs:
             torch.save(self.model.state_dict(), s)

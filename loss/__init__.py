@@ -47,9 +47,7 @@ class Loss(nn.modules.loss._Loss):
         self.loss_module.to(device)
         if args.precision == 'half': self.loss_module.half()
         if not args.cpu and args.n_GPUs > 1:
-            self.loss_module = nn.DataParallel(
-                self.loss_module, range(args.n_GPUs)
-            )
+            self.loss_module = nn.DataParallel( self.loss_module, range(args.n_GPUs) )
 
         if args.load != '': self.load(ckp.dir, cpu=args.cpu)
 
@@ -75,7 +73,7 @@ class Loss(nn.modules.loss._Loss):
                 l.scheduler.step()
 
     def start_log(self):
-         #  log.shape = [1,len(loss)],[2,len(loss)],[2,len(loss)]...,[epoch,len(loss)]
+        #  log.shape = [1,len(loss)],[2,len(loss)],[2,len(loss)]...,[epoch,len(loss)]
         self.log = torch.cat((self.log, torch.zeros(1, len(self.loss))))
 
     def end_log(self, n_batches):
@@ -119,10 +117,7 @@ class Loss(nn.modules.loss._Loss):
         else:
             kwargs = {}
 
-        self.load_state_dict(torch.load(
-            os.path.join(apath, 'loss.pt'),
-            **kwargs
-        ))
+        self.load_state_dict(torch.load(os.path.join(apath, 'loss.pt'), **kwargs))
         self.log = torch.load(os.path.join(apath, 'loss_log.pt'))
         for l in self.get_loss_module():
             if hasattr(l, 'scheduler'):

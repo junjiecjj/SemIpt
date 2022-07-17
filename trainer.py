@@ -209,30 +209,17 @@ class Trainer():
 
         for idx_data, d in enumerate(self.loader_test):
             i = 0
-            if d.dataset.name == 'CBSD68' or d.dataset.name == 'Rain100L':
-                tmpscale = [1]
-            else:
-                tmpscale = self.scale
-
+            print(color.higgreenfg_whitebg(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n  len(d) = {len(d)}\n"))  #   len(d) = 68
             for idx_scale, scale in enumerate(self.scale):
-
-                #print(color.higgreenfg_whitebg(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n idx_scale = {idx_scale}, scale = {scale}"))
-                # idx_scale = 0, scale = 2
-                # print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n d = {d}\n"))
-
                 d.dataset.set_scale(idx_scale)
                 # 对于测试数据集为Rain100L，去雨任务，忽略其他的scale，只针对sclae=1测试。
                 if self.args.derain and d.dataset.name == 'Rain100L' and scale ==1:
                     print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
                     for norain, rain, filename in tqdm(d, ncols=80):
                         print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, norain.shape = {norain.shape}, rain.shape = {rain.shape} \n "))
-# filename=('rain-051',), norain.shape = torch.Size([1, 3, 321, 481]), rain.shape = torch.Size([1, 3, 321, 481])
                         norain,rain = self.prepare(norain, rain)
                         sr = self.model(rain, idx_scale)
-                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, sr.shape = {sr.shape} \n "))
-# filename=('rain-051',), sr.shape = torch.Size([1, 3, 321, 481])
                         sr = utility.quantize(sr, self.args.rgb_range)
-
                         save_list = [sr]
                         self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr(
                             sr, norain, scale, self.args.rgb_range
@@ -256,7 +243,6 @@ class Trainer():
                     print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
                     for hr, lr,filename in tqdm(d, ncols=80):
                         print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, hr.shape = {hr.shape}, lr.shape = {lr.shape} \n "))
-                        # filename=('0000',), hr.shape = torch.Size([1, 3, 321, 481]), rain.shape = torch.Size([1, 3, 321, 481])
                         hr = self.prepare(hr)[0]
                         noisy_level = self.args.sigma
                         noise = torch.randn(hr.size()).mul_(noisy_level)
@@ -284,7 +270,7 @@ class Trainer():
                         )
                     )
                 elif d.dataset.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K']:
-                    print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n \n")
+                    print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale}  \n")
                     for lr, hr, filename in tqdm(d, ncols=80):
                         print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape} \n "))
                         # filename=('baby',),  lr.shape = torch.Size([1, 3, 256, 256]), hr.shape = torch.Size([1, 3, 512, 512])
@@ -336,10 +322,47 @@ class Trainer():
         if self.args.save_results:
             self.ckp.end_background()
 
-        self.ckp.write_log(
-            'Total: {:.2f}s\n'.format(timer_test.toc()), refresh=True
-        )
+        self.ckp.write_log('Total: {:.2f}s\n'.format(timer_test.toc()), refresh=True)
 
         torch.set_grad_enabled(True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

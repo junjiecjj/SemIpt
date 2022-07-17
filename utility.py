@@ -77,8 +77,10 @@ class checkpoint():
 
         open_type = 'a' if os.path.exists(self.get_path('log.txt')) else 'w'
         self.log_file = open(self.get_path('log.txt'), 'w')  # /home/jack/IPT-Pretrain/ipt/log.txt'
-        with open(self.get_path('config.txt'), open_type) as f:
-            f.write(now + '\n\n')
+        with open(self.get_path('config.txt'), 'w') as f:
+            f.write('#==========================================================\n')
+            f.write(now + '\n')
+            f.write('#==========================================================\n\n')
             for arg in vars(args):
                 f.write('{}: {}\n'.format(arg, getattr(args, arg)))
             f.write('\n')
@@ -210,8 +212,8 @@ def make_optimizer(args, net):
         kwargs_optimizer['eps'] = args.epsilon
 
     # scheduler, milestones = 0,   gamma = 0.5
-    milestones = list(map(lambda x: int(x), args.decay.split('-')))
-    kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}
+    milestones = list(map(lambda x: int(x), args.decay.split('-')))  # [200]
+    kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
     scheduler_class = lrs.MultiStepLR
 
     class CustomOptimizer(optimizer_class):
