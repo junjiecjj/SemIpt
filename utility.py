@@ -44,8 +44,11 @@ class timer():
     def reset(self):
         self.acc = 0
 
+
+# 功能：
+#
 class checkpoint():
-    def __init__(self, args):
+    def __init__(self, args, istrain = False):
         self.args = args
         self.ok = True
         self.log = torch.Tensor()
@@ -54,9 +57,9 @@ class checkpoint():
         # load =0
         if not args.load:
             print("check point 1 \n")
-            if not args.save:
+            if not args.save: # '/home/jack/IPT-Pretrain/results/'
                 args.save = now
-            self.dir = os.path.join('..', 'experiment', args.save)
+            self.dir = os.path.join(args.save, now)
             print(f"self.dir = {self.dir} \n")
         else:
             self.dir = os.path.join('..', 'experiment', args.load)
@@ -71,13 +74,13 @@ class checkpoint():
             args.load = ''
         #  print(f"self.dir = {self.dir}")   # /home/jack/IPT-Pretrain/ipt/
         os.makedirs(self.dir, exist_ok=True)
-        os.makedirs(self.get_path('model'), exist_ok=True)
+        os.makedirs(os.path.join(args.save, 'model'), exist_ok=True)
         for d in args.data_test:
             os.makedirs(self.get_path('results-{}'.format(d)), exist_ok=True)
 
         open_type = 'a' if os.path.exists(self.get_path('log.txt')) else 'w'
-        self.log_file = open(self.get_path('log.txt'), 'w')  # /home/jack/IPT-Pretrain/ipt/log.txt'
-        with open(self.get_path('config.txt'), 'w') as f:
+        self.log_file = open(self.get_path('log.txt'), open_type)  # /home/jack/IPT-Pretrain/ipt/log.txt'
+        with open(self.get_path('config.txt'), open_type) as f:
             f.write('#==========================================================\n')
             f.write(now + '\n')
             f.write('#==========================================================\n\n')
@@ -119,11 +122,7 @@ class checkpoint():
             fig = plt.figure()
             plt.title(label)
             for idx_scale, scale in enumerate(self.args.scale):
-                plt.plot(
-                    axis,
-                    self.log[:, idx_data, idx_scale].numpy(),
-                    label='Scale {}'.format(scale)
-                )
+                plt.plot(axis, self.log[:, idx_data, idx_scale].numpy(), label='Scale {}'.format(scale))
             plt.legend()
             plt.xlabel('Epochs')
             plt.ylabel('PSNR')
@@ -131,7 +130,7 @@ class checkpoint():
             plt.savefig(self.get_path('test_{}.pdf'.format(d)))
             plt.close(fig)
 
-    def begin_background(self):
+    def begin_queue(self):
         self.queue = Queue()
 
         def bg_target(queue):
@@ -146,7 +145,7 @@ class checkpoint():
         for p in self.process:
             p.start()
 
-    def end_background(self):
+    def end_queue(self):
         for _ in range(self.n_processes):
             self.queue.put((None, None))
         while not self.queue.empty():
@@ -154,7 +153,127 @@ class checkpoint():
         for p in self.process:
             p.join()
 
-    def save_results(self, dataset, filename, save_list, scale):
+    def save_results_byQueue(self, dataset, filename, save_list, scale):
+        if self.args.save_results:
+            filename = self.get_path('results-{}'.format(dataset.dataset.name),'{}_x{}_'.format(filename, scale))
+
+            postfix = ('SR', 'LR', 'HR')
+            for v, p in zip(save_list, postfix):
+                normalized = v[0].mul(255 / self.args.rgb_range)
+                tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
+                self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
+
+
+
+# 功能：
+#
+class checkpoint_origin():
+    def __init__(self, args):
+        self.args = args
+        self.ok = True
+        self.log = torch.Tensor()
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+
+        # load =0
+        if not args.load:
+            print("check point 1 \n")
+            if not args.save: # '/home/jack/IPT-Pretrain/results/'
+                args.save = now
+            self.dir = os.path.join(args.save, now)
+            print(f"self.dir = {self.dir} \n")
+        else:
+            self.dir = os.path.join('..', 'experiment', args.load)
+            if os.path.exists(self.dir):
+                self.log = torch.load(self.get_path('psnr_log.pt'))
+                print('Continue from epoch {}...'.format(len(self.log)))
+            else:
+                args.load = ''
+
+        if args.reset:
+            os.system('rm -rf ' + self.dir)
+            args.load = ''
+        #  print(f"self.dir = {self.dir}")   # /home/jack/IPT-Pretrain/ipt/
+        os.makedirs(self.dir, exist_ok=True)
+        os.makedirs(self.get_path('model'), exist_ok=True)
+        for d in args.data_test:
+            os.makedirs(self.get_path('results-{}'.format(d)), exist_ok=True)
+
+        open_type = 'a' if os.path.exists(self.get_path('log.txt')) else 'w'
+        self.log_file = open(self.get_path('log.txt'), open_type)  # /home/jack/IPT-Pretrain/ipt/log.txt'
+        with open(self.get_path('config.txt'), open_type) as f:
+            f.write('#==========================================================\n')
+            f.write(now + '\n')
+            f.write('#==========================================================\n\n')
+            for arg in vars(args):
+                f.write('{}: {}\n'.format(arg, getattr(args, arg)))
+            f.write('\n')
+
+        self.n_processes = 8
+
+    def get_path(self, *subdir):
+        return os.path.join(self.dir, *subdir)
+
+    def save(self, trainer, epoch, is_best=False):
+        trainer.model.save(self.get_path('model'), epoch, is_best=is_best)
+        trainer.loss.save(self.dir)
+        trainer.loss.plot_loss(self.dir, epoch)
+
+        self.plot_psnr(epoch)
+        trainer.optimizer.save(self.dir)
+        torch.save(self.log, self.get_path('psnr_log.pt'))
+
+    def add_log(self, log):
+        self.log = torch.cat([self.log, log])
+
+    def write_log(self, log, refresh=False):
+        print(log)
+        self.log_file.write(log + '\n')
+        if refresh:
+            self.log_file.close()
+            self.log_file = open(self.get_path('log.txt'), 'a')
+
+    def done(self):
+        self.log_file.close()
+
+    def plot_psnr(self, epoch):
+        axis = np.linspace(1, epoch, epoch)
+        for idx_data, d in enumerate(self.args.data_test):
+            label = 'SR on {}'.format(d)
+            fig = plt.figure()
+            plt.title(label)
+            for idx_scale, scale in enumerate(self.args.scale):
+                plt.plot(axis, self.log[:, idx_data, idx_scale].numpy(), label='Scale {}'.format(scale))
+            plt.legend()
+            plt.xlabel('Epochs')
+            plt.ylabel('PSNR')
+            plt.grid(True)
+            plt.savefig(self.get_path('test_{}.pdf'.format(d)))
+            plt.close(fig)
+
+    def begin_queue(self):
+        self.queue = Queue()
+
+        def bg_target(queue):
+            while True:
+                if not queue.empty():
+                    filename, tensor = queue.get()
+                    if filename is None: break
+                    imageio.imwrite(filename, tensor.numpy())
+
+        self.process = [ Process(target=bg_target, args=(self.queue,)) for _ in range(self.n_processes) ]
+
+        for p in self.process:
+            p.start()
+
+    def end_queue(self):
+        for _ in range(self.n_processes):
+            self.queue.put((None, None))
+        while not self.queue.empty():
+            time.sleep(1)
+        for p in self.process:
+            p.join()
+
+    def save_results_byQueue(self, dataset, filename, save_list, scale):
         if self.args.save_results:
             filename = self.get_path('results-{}'.format(dataset.dataset.name),'{}_x{}_'.format(filename, scale))
 
@@ -247,3 +366,23 @@ def make_optimizer(args, net):
     optimizer._register_scheduler(scheduler_class, **kwargs_scheduler)
     return optimizer
 
+
+
+#  使用时：
+"""
+
+model = net()
+LR = 0.01
+optimizer = make_optimizer( args,  model)
+
+
+lr_list1 = []
+
+for epoch in range(200):
+    optimizer.schedule()
+    lr_list1.append(optimizer.state_dict()['param_groups'][0]['lr'])
+plt.plot(range(200),lr_list1,color = 'r')
+
+plt.show()
+
+"""

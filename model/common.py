@@ -8,9 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 def default_conv(in_channels, out_channels, kernel_size, bias=True):
-    return nn.Conv2d(
-        in_channels, out_channels, kernel_size,
-        padding=(kernel_size//2), bias=bias)
+    return nn.Conv2d(in_channels, out_channels, kernel_size, padding=(kernel_size//2), bias=bias)
 
 """
 归一化处理,先是归一化，再是去归一化 ，变量sign控制
@@ -97,3 +95,43 @@ class Upsampler(nn.Sequential):
 
         super(Upsampler, self).__init__(*m)
 
+
+
+def AWGN(Tx_sig, n_var):
+    Rx_sig = Tx_sig + torch.normal(0, n_var, size=Tx_sig.shape).to(device)
+    return Rx_sig
+
+
+def PowerNormalize(x):
+
+    x_square = torch.mul(x, x)
+    power = torch.mean(x_square).sqrt()
+    if power > 1:
+        x = torch.div(x, power)
+
+    return x
+
+
+def SNR_to_noise(snr):
+    snr = 10**(snr / 10)
+    noise_std = 1 / np.sqrt(2 * snr)
+
+    return noise_std
+
+
+# 先将信号功率归一化，再计算噪声功率，再计算加躁的信号。
+def awgn_WithSignalPowerNormalized(x, snr):
+    noise_std = SNR_to_noise(snr)
+    # print("snr :", snr, ", sigma:", noise_std)
+    x_norm = PowerNormalize(x)
+    x_output = AWGN(x_norm, noise_std)
+    return x_output
+
+# 以实际信号功率计算噪声功率，再将信号加上噪声。
+def awgn(x, snr):
+    SNR = 10**(snr/10.0)
+    signal_power = ((x**2)*1.0).mean()
+    noise_power = signal_power/SNR
+    noise_std = torch.sqrt(noise_power)
+    noise = torch.normal(mean=0, std = noise_std, size=x.shape)
+    return x+noise

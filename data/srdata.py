@@ -66,7 +66,7 @@ class SRData(data.Dataset):
         self.input_large = (args.modelUse == 'VDSR')
         self.scale = args.scale  #  [1]
         self.idx_scale = 0
-        print(f" {name}  {train}  {benchmark}\n")
+        # print(f" {name}  {train}  {benchmark}\n")
 
         if self.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100']:
             self._set_filesystem_benchmark(args.dir_data)
@@ -102,14 +102,14 @@ class SRData(data.Dataset):
         if train:
             print(f"train ={train} !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
             n_patches = args.batch_size * args.test_every # 16*1000
-            n_images = len(args.data_train) * len(self.images_hr)
+            n_images = len(args.data_train) * len(self.images_hr_png)
 
             if n_images == 0:
                 self.repeat = 0
             else:
                 self.repeat = max(n_patches // n_images, 1)
             # print(f"n_patches = {n_patches}, n_images = {n_images} repead = {self.repeat}\n")
-            # n_patches = 16000, n_images = 800 repead = 20
+            # n_patches = 16000, n_images = 800  repead = 20
 
 
     def _scan_benchmark(self):
@@ -329,7 +329,7 @@ class SRData(data.Dataset):
         if self.args.useBIN == True:
             f_hr = self.images_hr_bin[idx]
             filename, _ = os.path.splitext(os.path.basename(f_hr))
-            print(f"\n{self.name} 正在使用二进制图像源 {f_hr}\n")
+            #print(f"\n{self.name} 正在使用二进制图像源 {f_hr}\n")
 
             with open(f_hr, 'rb') as _f:
                 origin = pickle.load(_f)
@@ -360,7 +360,7 @@ class SRData(data.Dataset):
                 norain = pickle.load(_f)
             with open(f_lr, 'rb') as _f:
                 rain = pickle.load(_f)
-            print(f"\n{self.name} 正在使用二进制图像源 {f_lr}\n")
+            #print(f"\n{self.name} 正在使用二进制图像源 {f_lr}\n")
             return norain, rain, filename
 
         f_hr = self.images_hr_png[idx]
@@ -380,7 +380,7 @@ class SRData(data.Dataset):
                 hr = pickle.load(_f)
             with open(f_lr, 'rb') as _f:
                 lr = pickle.load(_f)
-            print(f"\n{self.name} 正在使用二进制图像源 {f_hr}\n")
+            #print(f"\n{self.name} 正在使用二进制图像源 {f_hr}\n")
             return lr, hr, filename
 
         f_hr = self.images_hr_png[idx]

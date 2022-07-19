@@ -27,11 +27,7 @@ class Loss(nn.modules.loss._Loss):
             elif loss_type == 'L1':
                 loss_function = nn.L1Loss()
 
-            self.loss.append({
-                'type': loss_type,
-                'weight': float(weight),
-                'function': loss_function}
-            )
+            self.loss.append({'type': loss_type, 'weight': float(weight), 'function': loss_function} )
 
         if len(self.loss) > 1:
             self.loss.append({'type': 'Total', 'weight': 0, 'function': None})

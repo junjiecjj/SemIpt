@@ -59,7 +59,7 @@ class Trainer():
 # filename={filename}, norain.shape = {norain.shape}, rain.shape = {rain.shape} \n "))
 # filename=('rain-051',), norain.shape = torch.Size([1, 3, 321, 481]), rain.shape = torch.Size([1, 3, 321, 481])
                         norain,rain = self.prepare(norain, rain)
-                        sr = self.model(rain, idx_scale)
+                        sr = self.model(rain, idx_scale,15)
                         #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
 # filename={filename}, sr.shape = {sr.shape} \n "))
 # filename=('rain-051',), sr.shape = torch.Size([1, 3, 321, 481])
@@ -89,7 +89,7 @@ class Trainer():
                         noisy_level = self.args.sigma
                         noise = torch.randn(hr.size()).mul_(noisy_level).cuda()
                         nois_hr = (noise+hr).clamp(0,255)
-                        sr = self.model(nois_hr, idx_scale)
+                        sr = self.model(nois_hr, idx_scale,15)
                         sr = utility.quantize(sr, self.args.rgb_range)
 
                         save_list = [sr, nois_hr, hr]
@@ -120,7 +120,7 @@ class Trainer():
                         # filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape}"))
                         # lr.shape = torch.Size([1, 3, 256, 256]), hr.shape = torch.Size([1, 3, 512, 512])
 
-                        sr = self.model(lr, idx_scale)
+                        sr = self.model(lr, idx_scale,15)
 
                         #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
                         #   filename={filename},   sr.shape = {sr.shape}")) # sr.shape = torch.Size([1, 3, 512, 512])
@@ -184,10 +184,17 @@ class Trainer():
             return epoch >= self.args.epochs
 
     def train(self):
-        torch.set_grad_enabled(False)
+        torch.set_grad_enabled(True)
 
-        for lr, hr, filename  in tqdm(self.loader_train, ncols=80):
-            print(f"\nlr.shape = {lr.shape}, hr.shap = {hr.shape}, filename = {filename} \n")
+        for snr in self.args.trainSNR:
+
+            for comprate in self.args.CompressRate:
+
+                for epoch_idx in  range(self.args.epochs):
+                    for batch_idx, (lr, hr, filename)  in tqdm(enumerate(self.loader_train), ncols=80):
+                        if epoch_idx%10 == 0:
+                            print(f"\n[SNR={snr} CompressaRate = {comprate}] Epoch:{epoch_idx}/{self.args.epochs} Iter:{batch_idx}/{len(self.loader_train)} ")
+                            print(f"\n lr.shape = {lr.shape}, hr.shap = {hr.shape}, filename = {filename} \n")
 
 
     def test1(self):  # 测试
@@ -203,9 +210,9 @@ class Trainer():
         self.model.eval()
         timer_test = utility.timer()
         if self.args.save_results:
-            self.ckp.begin_background()
+            self.ckp.begin_queue()
 
-        ind1_scale = self.args.scale.index(1)  #  args.scale中1的索引
+        # ind1_scale = self.args.scale.index(1)  #  args.scale中1的索引
 
         for idx_data, d in enumerate(self.loader_test):
             i = 0
@@ -214,18 +221,18 @@ class Trainer():
                 d.dataset.set_scale(idx_scale)
                 # 对于测试数据集为Rain100L，去雨任务，忽略其他的scale，只针对sclae=1测试。
                 if self.args.derain and d.dataset.name == 'Rain100L' and scale ==1:
-                    print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
+                    #print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
                     for norain, rain, filename in tqdm(d, ncols=80):
-                        print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, norain.shape = {norain.shape}, rain.shape = {rain.shape} \n "))
+                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, norain.shape = {norain.shape}, rain.shape = {rain.shape} \n "))
                         norain,rain = self.prepare(norain, rain)
-                        sr = self.model(rain, idx_scale)
+                        sr = self.model(rain, idx_scale, 15, 0.3)
                         sr = utility.quantize(sr, self.args.rgb_range)
                         save_list = [sr]
                         self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr(
                             sr, norain, scale, self.args.rgb_range
                         )
                         if self.args.save_results:
-                            self.ckp.save_results(d, filename[0], save_list, 1)
+                            self.ckp.save_results_byQueue(d, filename[0], save_list, 1)
                     self.ckp.log[-1, idx_data, idx_scale] /= len(d)
                     best = self.ckp.log.max(0)
                     self.ckp.write_log(
@@ -242,21 +249,19 @@ class Trainer():
                 elif self.args.denoise and d.dataset.name == 'CBSD68' and scale == 1 :
                     print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
                     for hr, lr,filename in tqdm(d, ncols=80):
-                        print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, hr.shape = {hr.shape}, lr.shape = {lr.shape} \n "))
+                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, hr.shape = {hr.shape}, lr.shape = {lr.shape} \n "))
                         hr = self.prepare(hr)[0]
                         noisy_level = self.args.sigma
                         noise = torch.randn(hr.size()).mul_(noisy_level)
                         nois_hr = (noise+hr).clamp(0,255)
-                        sr = self.model(nois_hr, idx_scale)
-                        print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename},sr.shape = {sr.shape}, hr.shape = {hr.shape}, lr.shape = {lr.shape} \n "))
+                        sr = self.model(nois_hr, idx_scale, 15, 0.3)
+                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename},sr.shape = {sr.shape}, hr.shape = {hr.shape}, lr.shape = {lr.shape} \n "))
                         sr = utility.quantize(sr, self.args.rgb_range)
 
                         save_list = [sr, nois_hr, hr]
-                        self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr(
-                            sr, hr, scale, self.args.rgb_range
-                        )
+                        self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr( sr, hr, scale, self.args.rgb_range )
                         if self.args.save_results:
-                            self.ckp.save_results(d, filename[0], save_list, 50)
+                            self.ckp.save_results_byQueue(d, filename[0], save_list, 50)
 
                     self.ckp.log[-1, idx_data, idx_scale] /= len(d)
                     best = self.ckp.log.max(0)
@@ -272,16 +277,16 @@ class Trainer():
                 elif d.dataset.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K']:
                     print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale}  \n")
                     for lr, hr, filename in tqdm(d, ncols=80):
-                        print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape} \n "))
+                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape} \n "))
                         # filename=('baby',),  lr.shape = torch.Size([1, 3, 256, 256]), hr.shape = torch.Size([1, 3, 512, 512])
 
                         lr, hr = self.prepare(lr, hr)
-                        print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape}"))
+                        #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape}"))
                         # lr.shape = torch.Size([1, 3, 256, 256]), hr.shape = torch.Size([1, 3, 512, 512])
 
-                        sr = self.model(lr, idx_scale)
+                        sr = self.model(lr, idx_scale, 15, 0.3)
 
-                        print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename},   sr.shape = {sr.shape}"))
+                        #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename},   sr.shape = {sr.shape}"))
                         # sr.shape = torch.Size([1, 3, 512, 512])
 
                         sr = utility.quantize(sr, self.args.rgb_range)
@@ -289,14 +294,14 @@ class Trainer():
                         #   filename={filename},   sr.shape = {sr.shape}")) # sr.shape = torch.Size([1, 3, 512, 512])
 
                         save_list = [sr]
-                        self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr( sr, hr, scale, self.args.rgb_range)
+                        self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr(sr, hr, scale, self.args.rgb_range)
                         #import pdb
                         #pdb.set_trace()
                         if self.args.save_gt:
                             save_list.extend([lr, hr])
 
                         if self.args.save_results:
-                            self.ckp.save_results(d, filename[0], save_list, scale)
+                            self.ckp.save_results_byQueue(d, filename[0], save_list, scale)
                         i = i+1
                     #print(f"line  = 137, idx_data = {idx_data}, idx_scale = {idx_scale}\n\
 #self.ckp.log=\n{self.ckp.log}  \n")
@@ -320,7 +325,7 @@ class Trainer():
         self.ckp.write_log('Saving...')
 
         if self.args.save_results:
-            self.ckp.end_background()
+            self.ckp.end_queue()
 
         self.ckp.write_log('Total: {:.2f}s\n'.format(timer_test.toc()), refresh=True)
 

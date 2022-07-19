@@ -73,18 +73,20 @@ if checkpoint.ok:
         _model = ModelSet[args.modelUse](args )
 
     if args.pretrain != "":# 用预训练模型
+        print(f"用最原始的预训练模型\n")
         state_dict = torch.load(args.pretrain, map_location=torch.device('cpu'))
         _model.model.load_state_dict(state_dict, strict=False)
 
     # args.test_only = false
-    _loss = loss.Loss(args, checkpoint) if not args.wanttest else None
-    tr = Trainer(args, loader, _model, _loss, checkpoint)
+    los = loss.Loss(args, checkpoint) if not args.wanttest else None
+    tr = Trainer(args, loader, _model, los, checkpoint)
     if  args.wanttrain:
         print(f"I want train \n")
-        tr.train()
+        #tr.train()
     if  args.wanttest:
         tr.test1()
-        print(f"I want test \n")
+        #print(f"I want test \n")
+        pass
     checkpoint.done()
 
 

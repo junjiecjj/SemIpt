@@ -42,7 +42,7 @@ parser.add_argument('--dir_demo', type=str, default='../test', help='demo image 
 parser.add_argument('--data_train', type=str, default='DIV2K', help='train dataset name')
 
 # 测试集数据名称
-parser.add_argument('--data_test',type=str,  default='Set1', help='test dataset name')
+parser.add_argument('--data_test',type=str,  default='Set5+Set14+Rain100L+CBSD68', help='test dataset name')
 # parser.add_argument('--data_test', type=str, default='Set5+Set14+B100+Urban100+DIV2K', help='test dataset name')  # cjj
 
 parser.add_argument('--useBIN',  action='store_false', help='是否使用bin图像')
@@ -57,11 +57,13 @@ parser.add_argument('--rgb_range', type=int, default=255, help='maximum value of
 parser.add_argument('--n_colors', type=int, default=3, help='number of color channels to use')
 parser.add_argument('--no_augment', action='store_true',  help='do not use data augmentation')
 
+parser.add_argument('--CompressRate', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
+parser.add_argument('--trainSNR',  type=str, default='0,5,10',  help='SNR for train')
 
 # Training and test  specifications
 # cjj
 parser.add_argument('--wanttest',  action='store_false', help='set this option to test the model')
-parser.add_argument('--wanttrain', action='store_true', help='set this option to train the model')
+parser.add_argument('--wanttrain', action='store_false', help='set this option to train the model')
 parser.add_argument('--reset', action='store_true', help='reset the training')
 parser.add_argument('--test_every', type=int, default=1000, help='do test per every N batches')
 parser.add_argument('--epochs', type=int, default=300,  help='number of epochs to train')
@@ -85,7 +87,7 @@ parser.add_argument('--derain_test', type=int, default=1)
 
 # Optimization specifications
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
-parser.add_argument('--decay', type=str, default='200',  help='learning rate decay type')
+parser.add_argument('--decay', type=str, default='20-40-60-80-100-120',  help='learning rate decay type')
 parser.add_argument('--gamma',  type=float, default=0.5, help='learning rate decay factor for step decay')
 parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSprop'), help='optimizer to use (SGD | ADAM | RMSprop)')
 parser.add_argument('--momentum', type=float, default=0.9, help='SGD momentum')
@@ -100,7 +102,7 @@ parser.add_argument('--skip_threshold', type=float, default='1e8', help='skippin
 
 # Log specifications
 # parser.add_argument('--save', type=str, default='/cache/results/ipt/', help='file name to save')
-parser.add_argument('--save', type=str, default='/home/jack/IPT-Pretrain/results/ipt/',  help='file name to save')  #cjj
+parser.add_argument('--save', type=str, default='/home/jack/IPT-Pretrain/results/',  help='file name to save')  #cjj
 parser.add_argument('--load', type=str, default='', help='file name to load')
 parser.add_argument('--resume', type=int,  default=0, help='resume from specific checkpoint')
 parser.add_argument('--save_models', action='store_true', help='save all intermediate models')
@@ -132,6 +134,10 @@ args, unparsed = parser.parse_known_args()
 args.scale = list(map(lambda x: int(x), args.scale.split('+')))
 args.data_train = args.data_train.split('+')
 args.data_test = args.data_test.split('+')  #  ['DIV2K']
+
+
+args.CompressRate = list(map(lambda x: float(x), args.CompressRate.split(',')))
+args.trainSNR = list(map(lambda x: int(x), args.trainSNR.split(',')))
 
 if args.epochs == 0:
     args.epochs = 1e8
