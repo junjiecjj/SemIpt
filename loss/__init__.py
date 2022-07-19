@@ -37,7 +37,7 @@ class Loss(nn.modules.loss._Loss):
                 print('{:.3f} * {}'.format(l['weight'], l['type']))
                 self.loss_module.append(l['function'])
 
-        self.log = torch.Tensor()
+        self.losslog = torch.Tensor()
 
         device = torch.device('cpu' if args.cpu else 'cuda')
         self.loss_module.to(device)
@@ -54,13 +54,13 @@ class Loss(nn.modules.loss._Loss):
                 loss = l['function'](sr, hr)
                 effective_loss = l['weight'] * loss
                 losses.append(effective_loss)
-                self.log[-1, i] += effective_loss.item()
+                self.losslog[-1, i] += effective_loss.item()
             elif l['type'] == 'DIS':
-                self.log[-1, i] += self.loss[i - 1]['function'].loss
+                self.losslog[-1, i] += self.loss[i - 1]['function'].loss
 
         loss_sum = sum(losses)
         if len(self.loss) > 1:
-            self.log[-1, -1] += loss_sum.item()
+            self.losslog[-1, -1] += loss_sum.item()
         return loss_sum
 
     def step(self):
@@ -69,16 +69,16 @@ class Loss(nn.modules.loss._Loss):
                 l.scheduler.step()
 
     def start_log(self):
-        #  log.shape = [1,len(loss)],[2,len(loss)],[2,len(loss)]...,[epoch,len(loss)]
-        self.log = torch.cat((self.log, torch.zeros(1, len(self.loss))))
+        #  losslog.shape = [1,len(loss)],[2,len(loss)],[2,len(loss)]...,[epoch,len(loss)]
+        self.losslog = torch.cat((self.losslog, torch.zeros(1, len(self.loss))))
 
     def end_log(self, n_batches):
-        self.log[-1].div_(n_batches)
+        self.losslog[-1].div_(n_batches)
 
     def display_loss(self, batch):
         n_samples = batch + 1
         log = []
-        for l, c in zip(self.loss, self.log[-1]):
+        for l, c in zip(self.loss, self.losslog[-1]):
             log.append('[{}: {:.4f}]'.format(l['type'], c/n_samples))
 
         return ''.join(log)
@@ -89,7 +89,7 @@ class Loss(nn.modules.loss._Loss):
             label = '{} Loss'.format(l['type'])
             fig = plt.figure()
             plt.title(label)
-            plt.plot(axis, self.log[:, i].numpy(), label=label)
+            plt.plot(axis, self.losslog[:, i].numpy(), label=label)
             plt.legend()
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
@@ -104,8 +104,8 @@ class Loss(nn.modules.loss._Loss):
             return self.loss_module.module
 
     def save(self, apath):
-        torch.save(self.state_dict(), os.path.join(apath, 'loss.pt'))
-        torch.save(self.log, os.path.join(apath, 'loss_log.pt'))
+        torch.save(self.state_dict(), os.path.join(apath, 'loss_state.pt'))
+        torch.save(self.losslog, os.path.join(apath, 'loss_log.pt'))
 
     def load(self, apath, cpu=False):
         if cpu:
@@ -113,9 +113,9 @@ class Loss(nn.modules.loss._Loss):
         else:
             kwargs = {}
 
-        self.load_state_dict(torch.load(os.path.join(apath, 'loss.pt'), **kwargs))
-        self.log = torch.load(os.path.join(apath, 'loss_log.pt'))
+        self.load_state_dict(torch.load(os.path.join(apath, 'loss_state.pt'), **kwargs))
+        self.losslog = torch.load(os.path.join(apath, 'loss_log.pt'))
         for l in self.get_loss_module():
             if hasattr(l, 'scheduler'):
-                for _ in range(len(self.log)): l.scheduler.step()
+                for _ in range(len(self.losslog)): l.scheduler.step()
 

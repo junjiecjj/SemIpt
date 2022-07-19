@@ -464,7 +464,7 @@ class Ipt(nn.Module):
         self.self_ensemble = args.self_ensemble  #  false
         self.precision = args.precision          #  choices=('single', 'half')
         self.cpu = args.cpu
-        self.device = torch.device('cpu' if args.cpu else 'cuda')
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
         # self.device = torch.device('cpu' if args.cpu else 'cuda:0')
 
         self.n_GPUs = args.n_GPUs    # 1

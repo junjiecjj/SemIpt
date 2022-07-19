@@ -51,7 +51,7 @@ class checkpoint():
     def __init__(self, args, istrain = False):
         self.args = args
         self.ok = True
-        self.log = torch.Tensor()
+        self.psnrlog = torch.Tensor()
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
 
         # load =0
@@ -64,8 +64,8 @@ class checkpoint():
         else:
             self.dir = os.path.join('..', 'experiment', args.load)
             if os.path.exists(self.dir):
-                self.log = torch.load(self.get_path('psnr_log.pt'))
-                print('Continue from epoch {}...'.format(len(self.log)))
+                self.psnrlog = torch.load(self.get_path('psnr_log.pt'))
+                print('Continue from epoch {}...'.format(len(self.psnrlog)))
             else:
                 args.load = ''
 
@@ -100,10 +100,10 @@ class checkpoint():
 
         self.plot_psnr(epoch)
         trainer.optimizer.save(self.dir)
-        torch.save(self.log, self.get_path('psnr_log.pt'))
+        torch.save(self.psnrlog, self.get_path('psnr_log.pt'))
 
     def add_log(self, log):
-        self.log = torch.cat([self.log, log])
+        self.psnrlog = torch.cat([self.psnrlog, log])
 
     def write_log(self, log, refresh=False):
         print(log)
@@ -122,7 +122,7 @@ class checkpoint():
             fig = plt.figure()
             plt.title(label)
             for idx_scale, scale in enumerate(self.args.scale):
-                plt.plot(axis, self.log[:, idx_data, idx_scale].numpy(), label='Scale {}'.format(scale))
+                plt.plot(axis, self.psnrlog[:, idx_data, idx_scale].numpy(), label='Scale {}'.format(scale))
             plt.legend()
             plt.xlabel('Epochs')
             plt.ylabel('PSNR')
