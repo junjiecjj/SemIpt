@@ -3,7 +3,12 @@
 import sys
 import utility
 import torch
+from torch.autograd import Variable
 from tqdm import tqdm
+
+
+# 本项目自己编写的库
+from trainer import Trainer
 from ColorPrint  import ColoPrint
 color = ColoPrint()
 print(color.fuchsia("Color Print Test Pass"))
@@ -16,13 +21,24 @@ class Trainer():
         self.ckp = ckp
         self.loader_train = loader.loader_train
         self.loader_test = loader.loader_test
-        self.model = my_model
-        self.loss = my_loss
-        self.optimizer = utility.make_optimizer(args, self.model)
-        if self.args.load != '':
-            self.optimizer.load(ckp.dir, epoch=len(ckp.psnrlog))
 
         self.error_last = 1e8
+
+
+    def loadmodel(self):
+        # 初始化模型
+        if args.modelUse == 'ipt':
+            _model = ModelSet[args.modelUse](args,checkpoint)
+        elif args.modelUse == 'DeepSC':
+            _model = ModelSet[args.modelUse](args， compressRate)
+
+        # 加载最初的预训练模型
+        if args.pretrain != "":# 用预训练模型
+            print(f"用最原始的预训练模型\n")
+            state_dict = torch.load(args.pretrain, map_location=torch.device('cpu'))
+            _model.model.load_state_dict(state_dict, strict=False)
+
+
 
     def test(self):
 
@@ -185,16 +201,44 @@ class Trainer():
 
     def train(self):
         torch.set_grad_enabled(True)
+        ind1_scale = self.args.scale.index(1)
+        self.loader_train.dataset.set_scale(ind1_scale)
+        # 依次遍历压缩率
+        for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33, 0.4]
 
-        for snr in self.args.trainSNR:
+            self.model = self.loadmodel()
+            self.loss = my_loss
+            self.optimizer = utility.make_optimizer(args, self.model)
+            if self.args.load != '':
+                self.optimizer.load(ckp.dir, epoch=len(ckp.psnrlog))
 
-            for comprate in self.args.CompressRate:
+            # 依次遍历信噪比
+            for snr_idx, snr in enumerate(self.args.trainSNR): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+                print(f"\ncomprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
 
+                # 遍历epoch
                 for epoch_idx in  range(self.args.epochs):
+
+                    # 遍历训练数据集
                     for batch_idx, (lr, hr, filename)  in tqdm(enumerate(self.loader_train), ncols=80):
-                        if epoch_idx%10 == 0:
-                            print(f"\n[SNR={snr} CompressaRate = {comprate}] Epoch:{epoch_idx}/{self.args.epochs} Iter:{batch_idx}/{len(self.loader_train)} ")
-                            print(f"\n lr.shape = {lr.shape}, hr.shap = {hr.shape}, filename = {filename} \n")
+                        print(f"\nepoch_idx = {epoch_idx}, batch_idx = {batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
+
+
+                        # lr, hr = self.prepare(lr, hr)
+
+                        # self.optimizer.zero_grad()
+                        # sr = self.model(lr, idx_scale=0, snr=snr, compressrate=compressrate)
+                        # sr = utility.quantize(sr, self.args.rgb_range)
+
+                        # lss = self.loss(sr, hr)
+                        # lss = Variable(lss, requires_grad = True)
+
+                        # lss.backward()
+                        # self.optimizer.step()
+
+                        # if epoch_idx%10 == 0:
+                        #     print(f"\n[SNR={snr} CompressaRate = {comprate}] Epoch:{epoch_idx}/{self.args.epochs} Iter:{batch_idx}/{len(self.loader_train)} ")
+                        #     print(f"\n lr.shape = {lr.shape}, hr.shap = {hr.shape}, filename = {filename} \n")
 
 
     def test1(self):  # 测试

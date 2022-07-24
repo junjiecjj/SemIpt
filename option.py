@@ -57,8 +57,12 @@ parser.add_argument('--rgb_range', type=int, default=255, help='maximum value of
 parser.add_argument('--n_colors', type=int, default=3, help='number of color channels to use')
 parser.add_argument('--no_augment', action='store_true',  help='do not use data augmentation')
 
-parser.add_argument('--CompressRate', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
-parser.add_argument('--trainSNR',  type=str, default='0,5,10',  help='SNR for train')
+parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
+parser.add_argument('--trainSNR',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
+
+parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
+parser.add_argument('--testSNR',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
+
 
 # Training and test  specifications
 # cjj
@@ -97,7 +101,7 @@ parser.add_argument('--weight_decay', type=float, default=0, help='weight decay'
 parser.add_argument('--gclip', type=float, default=0, help='gradient clipping threshold (0 = no clipping)')
 
 # Loss specifications
-parser.add_argument('--loss', type=str, default='1*L1', help='loss function configuration')
+parser.add_argument('--loss', type=str, default='1*MSE', help='loss function configuration')
 parser.add_argument('--skip_threshold', type=float, default='1e8', help='skipping batch that has large error')
 
 # Log specifications
@@ -136,7 +140,7 @@ args.data_train = args.data_train.split('+')
 args.data_test = args.data_test.split('+')  #  ['DIV2K']
 
 
-args.CompressRate = list(map(lambda x: float(x), args.CompressRate.split(',')))
+args.CompressRateTrain = list(map(lambda x: float(x), args.CompressRateTrain.split(',')))
 args.trainSNR = list(map(lambda x: int(x), args.trainSNR.split(',')))
 
 if args.epochs == 0:

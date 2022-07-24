@@ -197,11 +197,9 @@ class VisionTransformer(nn.Module):
                     nn.init.normal_(m.weight, std = 1/m.weight.size(1))
 
     def forward(self, x, query_idx, snr, CompRate, con=False):
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
         x = torch.nn.functional.unfold(x,self.patch_dim,stride=self.patch_dim).transpose(1,2).transpose(0,1).contiguous()
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
 
         if self.mlp==False:
             x = self.dropout_layer1(self.linear_encoding(x)) + x
@@ -219,8 +217,7 @@ class VisionTransformer(nn.Module):
         if not self.no_pos:
             pos = self.position_encoding(x).transpose(0,1)
             # pos.shape = # (1,576,256)
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n pos.shape = {pos.shape}"))  # pos.shape = torch.Size([256, 1, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n pos.shape = {pos.shape}"))  # pos.shape = torch.Size([256, 1, 576])
 
         if self.pos_every:
             x = self.encoder(x, pos=pos)
@@ -229,27 +226,22 @@ class VisionTransformer(nn.Module):
             x = self.encoder(x)
             x = self.decoder(x, x, query_pos=query_embed)
         else:
-            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-            #                     \n (x+pos).shape = {(x+pos).shape}"))  # (x+pos).shape = torch.Size([256, 1, 576])
+            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n (x+pos).shape = {(x+pos).shape}"))  # (x+pos).shape = torch.Size([256, 1, 576])
             x = self.encoder(x+pos)
-            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-            #                    \n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
+            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
             #print(f"In IPT VisionTransformer forward snr = {snr} ")
 
             # print(f"\n In IPT VisionTransformer forward Compress rare = {CompRate}\n")
             x = common.awgn(x, snr)
 
             x = self.decoder(x, x, query_pos=query_embed)
-            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-            #      \n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
+            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
 
         if self.mlp==False:
             x = self.mlp_head(x) + x
-            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-            #    \n x.shape = {x.shape}"))  # pos.shape = torch.Size([256, 1, 576])
+            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # pos.shape = torch.Size([256, 1, 576])
         x = x.transpose(0,1).contiguous().view(x.size(1), -1, self.flatten_dim)
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 256, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 256, 576])
         if con:
             print("i'am in con ........")
             con_x = x
@@ -257,8 +249,7 @@ class VisionTransformer(nn.Module):
             return x, con_x
 
         x = torch.nn.functional.fold(x.transpose(1,2).contiguous(),int(self.img_dim),self.patch_dim,stride=self.patch_dim)
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
         return x
 
 class LearnedPositionalEncoding(nn.Module):
@@ -328,30 +319,22 @@ class TransformerEncoderLayer(nn.Module):
         return tensor if pos is None else tensor + pos
 
     def forward(self, src, pos = None):
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n src.shape = {src.shape}, pos = {pos}"))  # src.shape = torch.Size([256, 1, 576]), pos = None
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src.shape = {src.shape}, pos = {pos}"))  # src.shape = torch.Size([256, 1, 576]), pos = None
         src2 = self.norm1(src)
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
         q = k = self.with_pos_embed(src2, pos)
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n q.shape = {q.shape}"))  # q.shape = torch.Size([256, 1, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n q.shape = {q.shape}"))  # q.shape = torch.Size([256, 1, 576])
         src2 = self.self_attn(q, k, src2)
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n src2[0].shape = {src2[0].shape}, src2[1].shape = {src2[1].shape}"))
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src2[0].shape = {src2[0].shape}, src2[1].shape = {src2[1].shape}"))
         # src2[0].shape = torch.Size([256, 1, 576]), src2[1].shape = torch.Size([1, 256, 256])
         src = src + self.dropout1(src2[0])
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n src.shape = {src.shape}"))  # src.shape = torch.Size([256, 1, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src.shape = {src.shape}"))  # src.shape = torch.Size([256, 1, 576])
         src2 = self.norm2(src)
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
         src2 = self.linear2(self.dropout(self.activation(self.linear1(src2))))
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
         src = src + self.dropout2(src2)
-        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n src.shape = {src.shape}"))  # src.shape = torch.Size([256, 1, 576])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src.shape = {src.shape}"))  # src.shape = torch.Size([256, 1, 576])
         return src
 
 
@@ -478,10 +461,9 @@ class Ipt(nn.Module):
         self.load(ckp.get_path('model'), resume=args.resume, cpu=args.cpu)
         print(self.model, file=ckp.log_file)
 
-    def forward(self, x, idx_scale, snr, compressrate):
+    def forward(self, x, idx_scale=0, snr=10, compressrate=0.17):
         self.idx_scale = idx_scale
-        # print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x.shape = {x.shape}, idx_scale = {idx_scale}"))
+        # print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, idx_scale = {idx_scale}"))
         #  x.shape = torch.Size([1, 3, 256, 256]), idx_scale = 0
         if hasattr(self.model, 'set_scale'):
             self.model.set_scale(idx_scale)
@@ -549,7 +531,7 @@ class Ipt(nn.Module):
                 os.path.join(apath, 'model_{}.pt'.format(resume)),
                 **kwargs
             )
-
+        print(f"load_from = {load_from}\n")
         if load_from:
             self.model.load_state_dict(load_from, strict=False)
 
@@ -610,12 +592,10 @@ class Ipt(nn.Module):
 
         padsize = int(self.patch_size)  # 48
         shave = int(self.patch_size/2)  # 24
-        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n h = {h}, w = {w}, padsize = {padsize}, shave = {shave}"))  # h = 256, w = 256, padsize = 48, shave = 24
+        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n h = {h}, w = {w}, padsize = {padsize}, shave = {shave}"))  # h = 256, w = 256, padsize = 48, shave = 24
 
         scale = self.scale[self.idx_scale]
-        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n scale = {scale} "))  #  scale = 2
+        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n scale = {scale} "))  #  scale = 2
 
         h_cut = (h-padsize)%(int(shave/2))   #   w_cut = 4
         w_cut = (w-padsize)%(int(shave/2))   #   h_cut = 4
@@ -623,62 +603,49 @@ class Ipt(nn.Module):
         #      \n h_cut = {h_cut}, w_cut = {w_cut} "))  # h_cut = 4, w_cut = 4
 
         x_unfold = torch.nn.functional.unfold(x, padsize, stride=int(shave/2)).transpose(0,2).contiguous()
-        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_unfold.shape = {x_unfold.shape} "))  #   x_unfold.shape = torch.Size([324, 6912, 1]),
+        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_unfold.shape = {x_unfold.shape} "))  #   x_unfold.shape = torch.Size([324, 6912, 1]),
         x_hw_cut = x[...,(h-padsize):,(w-padsize):]
-        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n  x_hw_cut.shape = {x_hw_cut.shape} "))
+        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n  x_hw_cut.shape = {x_hw_cut.shape} "))
         #  x_hw_cut.shape = torch.Size([1, 3, 48, 48])
 
         # y_hw_cut = self.model.forward(x_hw_cut.cuda()).cpu()
         # cjj change
         y_hw_cut = self.model.forward(x_hw_cut)
 
-        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_hw_cut.shape = {y_hw_cut.shape} "))  #  y_hw_cut.shape = torch.Size([1, 3, 96, 96])
+        #print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_hw_cut.shape = {y_hw_cut.shape} "))  #  y_hw_cut.shape = torch.Size([1, 3, 96, 96])
 
         # 1
         x_h_cut = x[...,(h-padsize):,:]
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_h_cut.shape = {x_h_cut.shape}\n"))  #   x_h_cut.shape = torch.Size([1, 3, 48, 256])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_h_cut.shape = {x_h_cut.shape}\n"))  #   x_h_cut.shape = torch.Size([1, 3, 48, 256])
 
         # 2
         x_w_cut = x[...,:,(w-padsize):]
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_w_cut.shape = {x_w_cut.shape}\n"))  #  x_w_cut.shape = torch.Size([1, 3, 256, 48])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_w_cut.shape = {x_w_cut.shape}\n"))  #  x_w_cut.shape = torch.Size([1, 3, 256, 48])
 
         # x_h_cut.shape = Size([1, 3, 48, 256]), h=w=256, h_cut=4, w_cut=4, padsize=48, shave=24, scale=2, batchsize=64
         y_h_cut = self.cut_h(x_h_cut, h, w, h_cut, w_cut, padsize, shave, scale, batchsize)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_h_cut.shape = {y_h_cut.shape}\n"))  #  y_h_cut.shape = torch.Size([1, 3, 96, 504])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_h_cut.shape = {y_h_cut.shape}\n"))  #  y_h_cut.shape = torch.Size([1, 3, 96, 504])
 
         y_w_cut = self.cut_w(x_w_cut, h, w, h_cut, w_cut, padsize, shave, scale, batchsize)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_w_cut.shape = {y_w_cut.shape}\n"))  #  y_w_cut.shape = torch.Size([1, 3, 504, 96])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_w_cut.shape = {y_w_cut.shape}\n"))  #  y_w_cut.shape = torch.Size([1, 3, 504, 96])
 
         # 3
         x_h_top = x[...,:padsize,:]
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_h_top.shape = {x_h_top.shape}\n"))  #   x_h_top.shape = torch.Size([1, 3, 48, 256])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_h_top.shape = {x_h_top.shape}\n"))  #   x_h_top.shape = torch.Size([1, 3, 48, 256])
 
         # 4
         x_w_top = x[...,:,:padsize]
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_w_top.shape = {x_w_top.shape}\n"))  #  x_w_top.shape = torch.Size([1, 3, 256, 48])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_w_top.shape = {x_w_top.shape}\n"))  #  x_w_top.shape = torch.Size([1, 3, 256, 48])
 
 
         y_h_top = self.cut_h(x_h_top, h, w, h_cut, w_cut, padsize, shave, scale, batchsize)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_h_top.shape = {y_h_top.shape}\n"))  #  y_h_top.shape = torch.Size([1, 3, 96, 504])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_h_top.shape = {y_h_top.shape}\n"))  #  y_h_top.shape = torch.Size([1, 3, 96, 504])
 
         y_w_top = self.cut_w(x_w_top, h, w, h_cut, w_cut, padsize, shave, scale, batchsize)
-        # print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_w_top.shape = {y_w_top.shape}\n"))  #  y_w_top.shape = torch.Size([1, 3, 504, 96])
-
+        # print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_w_top.shape = {y_w_top.shape}\n"))  #  y_w_top.shape = torch.Size([1, 3, 504, 96])
 
         x_unfold = x_unfold.view(x_unfold.size(0),-1,padsize,padsize)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n x_unfold.shape = {x_unfold.shape}\n"))  #  x_unfold.shape = torch.Size([324, 3, 48, 48])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_unfold.shape = {x_unfold.shape}\n"))  #  x_unfold.shape = torch.Size([324, 3, 48, 48])
 
         y_unfold = []
 
@@ -713,34 +680,27 @@ class Ipt(nn.Module):
         #      \n y_unfold.shape = {y_unfold.shape}\n"))  #   y_unfold.shape = torch.Size([324, 3, 48, 48])
 
         y_inter = torch.nn.functional.fold(y_unfold.view(y_unfold.size(0),-1,1).transpose(0,2).contiguous(),((h-h_cut-shave)*scale,(w-w_cut-shave)*scale), padsize*scale-shave*scale, stride=int(shave/2*scale))
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_inter.shape = {y_inter.shape}\n"))  #   y_inter.shape = torch.Size([1, 3, 456, 456])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_inter.shape = {y_inter.shape}\n"))  #   y_inter.shape = torch.Size([1, 3, 456, 456])
 
         y_ones = torch.ones(y_inter.shape, dtype=y_inter.dtype)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_ones.shape = {y_ones.shape}\n"))  #   y_ones.shape = torch.Size([1, 3, 456, 456])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_ones.shape = {y_ones.shape}\n"))  #   y_ones.shape = torch.Size([1, 3, 456, 456])
 
         divisor = torch.nn.functional.fold(torch.nn.functional.unfold(y_ones, padsize*scale-shave*scale, stride=int(shave/2*scale)),((h-h_cut-shave)*scale,(w-w_cut-shave)*scale), padsize*scale-shave*scale, stride=int(shave/2*scale))
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n divisor.shape = {divisor.shape}\n"))  #    divisor.shape = torch.Size([1, 3, 456, 456])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n divisor.shape = {divisor.shape}\n"))  #    divisor.shape = torch.Size([1, 3, 456, 456])
 
         y_inter = y_inter/divisor
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_inter.shape = {y_inter.shape}\n"))  #   y_inter.shape = torch.Size([1, 3, 456, 456])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_inter.shape = {y_inter.shape}\n"))  #   y_inter.shape = torch.Size([1, 3, 456, 456])
 
         y[...,int(shave/2*scale):(h-h_cut)*scale-int(shave/2*scale),int(shave/2*scale):(w-w_cut)*scale-int(shave/2*scale)] = y_inter
 
         y = torch.cat([y[...,:y.size(2)-int((padsize-h_cut)/2*scale),:],y_h_cut[...,int((padsize-h_cut)/2*scale+0.5):,:]],dim=2)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y.shape = {y.shape}\n"))  #   y.shape = torch.Size([1, 3, 512, 504])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y.shape = {y.shape}\n"))  #   y.shape = torch.Size([1, 3, 512, 504])
 
         y_w_cat = torch.cat([y_w_cut[...,:y_w_cut.size(2)-int((padsize-h_cut)/2*scale),:],y_hw_cut[...,int((padsize-h_cut)/2*scale+0.5):,:]],dim=2)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_w_cat.shape = {y_w_cat.shape}\n"))  #   y_w_cat.shape = torch.Size([1, 3, 512, 96])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_w_cat.shape = {y_w_cat.shape}\n"))  #   y_w_cat.shape = torch.Size([1, 3, 512, 96])
 
         y = torch.cat([y[...,:,:y.size(3)-int((padsize-w_cut)/2*scale)],y_w_cat[...,:,int((padsize-w_cut)/2*scale+0.5):]],dim=3)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y.shape = {y.shape}\n"))  #   y.shape = torch.Size([1, 3, 512, 512])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y.shape = {y.shape}\n"))  #   y.shape = torch.Size([1, 3, 512, 512])
 
         if not self.args.cpu:
             return y.cuda()
@@ -749,21 +709,17 @@ class Ipt(nn.Module):
 
     # x_h_cut.shape = Size([1, 3, 48, 256]), h=w=256, h_cut=4, w_cut=4, padsize=48, shave=24, scale=2, batchsize=64
     def cut_h(self, x_h_cut, h, w, h_cut, w_cut, padsize, shave, scale, batchsize):
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #       \n x_h_cut.shape = {x_h_cut.shape}, h={h}, w={w}, h_cut={h_cut}, w_cut={w_cut}, padsize={padsize}, shave={shave},scale={scale},batchsize={batchsize}\n"))
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_h_cut.shape = {x_h_cut.shape}, h={h}, w={w}, h_cut={h_cut}, w_cut={w_cut}, padsize={padsize}, shave={shave},scale={scale},batchsize={batchsize}\n"))
         #  x_h_cut.shape = torch.Size([1, 3, 48, 256]), h=256, w=256, h_cut=4, w_cut=4, padsize=48, shave=24,scale=2,batchsize=64
 
         x_h_cut_unfold = torch.nn.functional.unfold(x_h_cut, padsize, stride=int(shave/2)).transpose(0,2).contiguous()
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_h_cut_unfold.shape = {x_h_cut_unfold.shape}\n"))  #  x_h_cut_unfold.shape = torch.Size([18, 6912, 1])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_h_cut_unfold.shape = {x_h_cut_unfold.shape}\n"))  #  x_h_cut_unfold.shape = torch.Size([18, 6912, 1])
 
         x_h_cut_unfold = x_h_cut_unfold.view(x_h_cut_unfold.size(0),-1,padsize,padsize)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_h_cut_unfold.shape = {x_h_cut_unfold.shape}\n")) #  x_h_cut_unfold.shape = torch.Size([18, 3, 48, 48])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_h_cut_unfold.shape = {x_h_cut_unfold.shape}\n")) #  x_h_cut_unfold.shape = torch.Size([18, 3, 48, 48])
 
         x_range = x_h_cut_unfold.size(0)//batchsize + (x_h_cut_unfold.size(0)%batchsize !=0)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_range  = {x_range }  \n")) #  x_range = 1
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_range  = {x_range }  \n")) #  x_range = 1
         y_h_cut_unfold=[]
 
         # cjj
@@ -773,8 +729,7 @@ class Ipt(nn.Module):
             pass
 
         for i in range(x_range):
-            #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-            #       \n i,batchsize = {i}, {batchsize} {x_h_cut_unfold[i*batchsize:(i+1)*batchsize,...].shape} \n"))
+            #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n i,batchsize = {i}, {batchsize} {x_h_cut_unfold[i*batchsize:(i+1)*batchsize,...].shape} \n"))
             #  i,batchsize = 0, 64 torch.Size([18, 3, 48, 48])
             # y_h_cut_unfold.append(P.data_parallel(self.model, x_h_cut_unfold[i*batchsize:(i+1)*batchsize,...], range(self.n_GPUs)).cpu())
             if not self.args.cpu:
@@ -786,57 +741,46 @@ class Ipt(nn.Module):
                 # print("I'am use CPU...\n")
                 y_h_cut_unfold.append(self.model(x_h_cut_unfold[i*batchsize:(i+1)*batchsize,...]).cpu())
 
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #       \n len(y_h_cut_unfold)  = {len(y_h_cut_unfold)}, y_h_cut_unfold[0].shape = {y_h_cut_unfold[0].shape}  \n")) #  x_range = 1
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n len(y_h_cut_unfold)  = {len(y_h_cut_unfold)}, y_h_cut_unfold[0].shape = {y_h_cut_unfold[0].shape}  \n")) #  x_range = 1
         #  len(y_h_cut_unfold)  = 1, y_h_cut_unfold[0].shape = torch.Size([18, 3, 96, 96])
 
         y_h_cut_unfold = torch.cat(y_h_cut_unfold,dim=0)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #        \n y_h_cut_unfold = {y_h_cut_unfold.shape} \n"))
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_h_cut_unfold = {y_h_cut_unfold.shape} \n"))
         #   y_h_cut_unfold = torch.Size([18, 3, 96, 96])
 
         y_h_cut = torch.nn.functional.fold(y_h_cut_unfold.view(y_h_cut_unfold.size(0),-1,1).transpose(0,2).contiguous(),(padsize*scale,(w-w_cut)*scale), padsize*scale, stride=int(shave/2*scale))
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #        \n y_h_cut.shape = {y_h_cut.shape}, \n"))
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_h_cut.shape = {y_h_cut.shape}, \n"))
         #   y_h_cut.shape = torch.Size([1, 3, 96, 504]), y_h_cut_unfold.view(y_h_cut_unfold.size(0),-1,1).shape = torch.Size([18, 27648, 1])
 
         y_h_cut_unfold = y_h_cut_unfold[...,:,int(shave/2*scale):padsize*scale-int(shave/2*scale)].contiguous()
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #        \n y_h_cut_unfold.shape = {y_h_cut_unfold.shape} \n"))
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_h_cut_unfold.shape = {y_h_cut_unfold.shape} \n"))
         #   y_h_cut_unfold.shape = torch.Size([18, 3, 96, 48])
 
         y_h_cut_inter = torch.nn.functional.fold(y_h_cut_unfold.view(y_h_cut_unfold.size(0),-1,1).transpose(0,2).contiguous(),(padsize*scale,(w-w_cut-shave)*scale), (padsize*scale,padsize*scale-shave*scale), stride=int(shave/2*scale))
-        # print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #        \n y_h_cut_inter.shape = {y_h_cut_inter.shape} \n"))#  y_h_cut_inter.shape = torch.Size([1, 3, 96, 456])
+        # print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_h_cut_inter.shape = {y_h_cut_inter.shape} \n"))#  y_h_cut_inter.shape = torch.Size([1, 3, 96, 456])
 
         y_ones = torch.ones(y_h_cut_inter.shape, dtype=y_h_cut_inter.dtype)  #  torch.Size([1, 3, 96, 456])
         divisor = torch.nn.functional.fold(torch.nn.functional.unfold(y_ones ,(padsize*scale,padsize*scale-shave*scale), stride=int(shave/2*scale)),(padsize*scale,(w-w_cut-shave)*scale), (padsize*scale,padsize*scale-shave*scale), stride=int(shave/2*scale))
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #        \n divisor.shape = {divisor.shape} \n"))  # divisor.shape = torch.Size([1, 3, 96, 456])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n divisor.shape = {divisor.shape} \n"))  # divisor.shape = torch.Size([1, 3, 96, 456])
 
         y_h_cut_inter = y_h_cut_inter/divisor
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #        \n y_h_cut_inter.shape = {y_h_cut_inter.shape} \n"))  # divisor.shape = torch.Size([1, 3, 96, 456])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_h_cut_inter.shape = {y_h_cut_inter.shape} \n"))  # divisor.shape = torch.Size([1, 3, 96, 456])
 
         y_h_cut[...,:,int(shave/2*scale):(w-w_cut)*scale-int(shave/2*scale)] = y_h_cut_inter
         return y_h_cut
 
     def cut_w(self, x_w_cut, h, w, h_cut, w_cut, padsize, shave, scale, batchsize):
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #       \n x_w_cut.shape = {x_w_cut.shape}, h={h}, w={w}, h_cut={h_cut}, w_cut={w_cut}, padsize={padsize}, shave={shave},scale={scale},batchsize={batchsize}\n"))
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_w_cut.shape = {x_w_cut.shape}, h={h}, w={w}, h_cut={h_cut}, w_cut={w_cut}, padsize={padsize}, shave={shave},scale={scale},batchsize={batchsize}\n"))
         #   x_w_cut.shape = torch.Size([1, 3, 256, 48]), h=256, w=256, h_cut=4, w_cut=4, padsize=48, shave=24,scale=2,batchsize=64
 
         x_w_cut_unfold = torch.nn.functional.unfold(x_w_cut, padsize, stride=int(shave/2)).transpose(0,2).contiguous()
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_w_cut_unfold.shape = {x_w_cut_unfold.shape}\n"))  #   x_w_cut_unfold.shape = torch.Size([18, 6912, 1])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_w_cut_unfold.shape = {x_w_cut_unfold.shape}\n"))  #   x_w_cut_unfold.shape = torch.Size([18, 6912, 1])
 
         x_w_cut_unfold = x_w_cut_unfold.view(x_w_cut_unfold.size(0),-1,padsize,padsize)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_w_cut_unfold.shape = {x_w_cut_unfold.shape}\n"))  #   x_w_cut_unfold.shape = torch.Size([18, 3, 48, 48])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_w_cut_unfold.shape = {x_w_cut_unfold.shape}\n"))  #   x_w_cut_unfold.shape = torch.Size([18, 3, 48, 48])
 
         x_range = x_w_cut_unfold.size(0)//batchsize + (x_w_cut_unfold.size(0)%batchsize !=0)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n x_range = {x_range}\n"))  #   x_range = 1
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x_range = {x_range}\n"))  #   x_range = 1
 
         y_w_cut_unfold=[]
 
@@ -861,25 +805,20 @@ class Ipt(nn.Module):
         #      \n y_w_cut_unfold.shape = {y_w_cut_unfold.shape}\n"))  #   y_w_cut_unfold.shape = torch.Size([18, 3, 96, 96])
 
         y_w_cut = torch.nn.functional.fold(y_w_cut_unfold.view(y_w_cut_unfold.size(0),-1,1).transpose(0,2).contiguous(),((h-h_cut)*scale,padsize*scale), padsize*scale, stride=int(shave/2*scale))
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n y_w_cut.shape = {y_w_cut.shape}\n"))  #   y_w_cut.shape = torch.Size([1, 3, 504, 96])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_w_cut.shape = {y_w_cut.shape}\n"))  #   y_w_cut.shape = torch.Size([1, 3, 504, 96])
 
         y_w_cut_unfold = y_w_cut_unfold[...,int(shave/2*scale):padsize*scale-int(shave/2*scale),:].contiguous()
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_w_cut_unfold.shape = {y_w_cut_unfold.shape}\n"))  #  y_w_cut_unfold.shape = torch.Size([18, 3, 48, 96])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_w_cut_unfold.shape = {y_w_cut_unfold.shape}\n"))  #  y_w_cut_unfold.shape = torch.Size([18, 3, 48, 96])
 
         y_w_cut_inter = torch.nn.functional.fold(y_w_cut_unfold.view(y_w_cut_unfold.size(0),-1,1).transpose(0,2).contiguous(),((h-h_cut-shave)*scale,padsize*scale), (padsize*scale-shave*scale,padsize*scale), stride=int(shave/2*scale))
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n y_w_cut_inter.shape = {y_w_cut_inter.shape}\n"))  # y_w_cut_inter.shape = torch.Size([1, 3, 456, 96])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_w_cut_inter.shape = {y_w_cut_inter.shape}\n"))  # y_w_cut_inter.shape = torch.Size([1, 3, 456, 96])
 
 
         y_ones = torch.ones(y_w_cut_inter.shape, dtype=y_w_cut_inter.dtype)
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #     \n y_ones.shape = {y_ones.shape}\n"))  # y_ones.shape = torch.Size([1, 3, 456, 96])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n y_ones.shape = {y_ones.shape}\n"))  # y_ones.shape = torch.Size([1, 3, 456, 96])
 
         divisor = torch.nn.functional.fold(torch.nn.functional.unfold(y_ones ,(padsize*scale-shave*scale,padsize*scale), stride=int(shave/2*scale)),((h-h_cut-shave)*scale,padsize*scale), (padsize*scale-shave*scale,padsize*scale), stride=int(shave/2*scale))
-        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #      \n divisor.shape = {divisor.shape}\n"))  #   divisor.shape = torch.Size([1, 3, 456, 96])
+        #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n divisor.shape = {divisor.shape}\n"))  #   divisor.shape = torch.Size([1, 3, 456, 96])
 
         y_w_cut_inter = y_w_cut_inter/divisor
 

@@ -19,31 +19,6 @@ import torch
 import torch.optim as optim
 import torch.optim.lr_scheduler as lrs
 
-# Timer
-class timer():
-    def __init__(self):
-        self.acc = 0
-        self.tic()
-
-    def tic(self):  # time.time()函数返回自纪元以来经过的秒数。
-        self.t0 = time.time()
-
-    def toc(self, restart=False):
-        diff = time.time() - self.t0
-        if restart: self.t0 = time.time()
-        return diff
-
-    def hold(self):
-        self.acc += self.toc()
-
-    def release(self):
-        ret = self.acc
-        self.acc = 0
-        return ret
-
-    def reset(self):
-        self.acc = 0
-
 
 # 功能：
 #
@@ -99,7 +74,7 @@ class checkpoint():
         trainer.loss.plot_loss(self.dir, epoch)
 
         self.plot_psnr(epoch)
-        trainer.optimizer.save(self.dir)
+        # trainer.optimizer.save(self.dir)
         torch.save(self.psnrlog, self.get_path('psnr_log.pt'))
 
     def add_log(self, log):
@@ -331,7 +306,7 @@ def make_optimizer(args, net):
         kwargs_optimizer['eps'] = args.epsilon
 
     # scheduler, milestones = 0,   gamma = 0.5
-    milestones = list(map(lambda x: int(x), args.decay.split('-')))  # [200]
+    milestones = list(map(lambda x: int(x), args.decay.split('-')))  # [20, 40, 60, 80, 100, 120]
     kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
     scheduler_class = lrs.MultiStepLR
 
@@ -379,6 +354,8 @@ optimizer = make_optimizer( args,  model)
 lr_list1 = []
 
 for epoch in range(200):
+    if train:
+        optimizer.step()
     optimizer.schedule()
     lr_list1.append(optimizer.state_dict()['param_groups'][0]['lr'])
 plt.plot(range(200),lr_list1,color = 'r')
