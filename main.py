@@ -40,12 +40,23 @@ if checkpoint.ok:
     # 数据迭代器，DataLoader
     loader = data_generator.DataGenerator(args)
 
+    # 初始化模型
+    if args.modelUse == 'ipt':
+        _model = ModelSet[args.modelUse](args,checkpoint)
+    elif args.modelUse == 'DeepSC':
+        _model = ModelSet[args.modelUse](args)
+
+    # 加载最初的预训练模型
+    if args.pretrain != "":# 用预训练模型
+        print(f"用最原始的预训练模型\n")
+        state_dict = torch.load(args.pretrain, map_location=torch.device('cpu'))
+        _model.model.load_state_dict(state_dict, strict=False)
 
     # 损失函数类
     los = Loss.LOSS(args, checkpoint) if not args.wanttest else None
 
     # 训练器，包括训练测试模块
-    tr = Trainer(args, loader, los, checkpoint)
+    tr = Trainer(args, loader, _model, los, checkpoint)
 
     # 训练
     if  args.wanttrain:
@@ -54,7 +65,7 @@ if checkpoint.ok:
 
     # 测试
     if  args.wanttest:
-        # tr.test1()
+        #tr.test1()
         #print(f"I want test \n")
         pass
     checkpoint.done()

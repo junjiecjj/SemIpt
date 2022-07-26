@@ -1,6 +1,11 @@
-# 2021.05.07-Changed for IPT
-#            Huawei Technologies Co., Ltd. <foss@huawei.com>
 
+# -*- coding: utf-8 -*-
+"""
+Created on 2022/07/07
+
+@author: Junjie Chen
+
+"""
 import os
 import math
 import time
@@ -20,48 +25,76 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lrs
 
 
+# Timer
+class timer():
+    def __init__(self):
+        self.acc = 0
+        self.tic()
+
+    def tic(self):  # time.time()函数返回自纪元以来经过的秒数。
+        self.t0 = time.time()
+
+    def toc(self, restart=False):
+        diff = time.time() - self.t0
+        if restart: self.t0 = time.time()
+        return diff
+
+    def hold(self):
+        self.acc += self.toc()
+
+    def release(self):
+        ret = self.acc
+        self.acc = 0
+        return ret
+
+    def reset(self):
+        self.acc = 0
+
 # 功能：
 #
 class checkpoint():
-    def __init__(self, args, istrain = False):
+    def __init__(self, args ):
         self.args = args
         self.ok = True
-        self.psnrlog = torch.Tensor()
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
 
-        # load =0
-        if not args.load:
-            print("check point 1 \n")
-            if not args.save: # '/home/jack/IPT-Pretrain/results/'
-                args.save = now
-            self.dir = os.path.join(args.save, now)
-            print(f"self.dir = {self.dir} \n")
-        else:
-            self.dir = os.path.join('..', 'experiment', args.load)
-            if os.path.exists(self.dir):
-                self.psnrlog = torch.load(self.get_path('psnr_log.pt'))
-                print('Continue from epoch {}...'.format(len(self.psnrlog)))
-            else:
-                args.load = ''
-
-        if args.reset:
-            os.system('rm -rf ' + self.dir)
-            args.load = ''
-        #  print(f"self.dir = {self.dir}")   # /home/jack/IPT-Pretrain/ipt/
+        self.dir = args.save
+        print(f"self.dir = {self.dir} \n")
         os.makedirs(self.dir, exist_ok=True)
         os.makedirs(os.path.join(args.save, 'model'), exist_ok=True)
-        for d in args.data_test:
-            os.makedirs(self.get_path('results-{}'.format(d)), exist_ok=True)
 
-        open_type = 'a' if os.path.exists(self.get_path('log.txt')) else 'w'
-        self.log_file = open(self.get_path('log.txt'), open_type)  # /home/jack/IPT-Pretrain/ipt/log.txt'
-        with open(self.get_path('config.txt'), open_type) as f:
+        open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
+        self.log_file = open(self.get_path('trainLog.txt'), open_type)
+
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        with open(self.get_path('argsConfig.txt'), open_type) as f:
             f.write('#==========================================================\n')
             f.write(now + '\n')
             f.write('#==========================================================\n\n')
             for arg in vars(args):
                 f.write('{}: {}\n'.format(arg, getattr(args, arg)))
             f.write('\n')
+
+
+        self.psnrlog = {}
+        for comprateTmp in args.CompressRateTrain:
+            for snrTmp in args.SNRtrain:
+                self.psnrlog["psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)] = torch.Tensor()
+
+
+
+        if os.path.isfile(self.get_path('psnr_log.pt')):
+            pass
+
+
+        if args.reset:
+            os.system('rm -rf ' + self.dir)
+            args.load = ''
+
+
+        #  print(f"self.dir = {self.dir}")   # /home/jack/IPT-Pretrain/ipt/
+
+        for d in args.data_test:
+            os.makedirs(self.get_path('results-{}'.format(d)), exist_ok=True)
 
         self.n_processes = 8
 

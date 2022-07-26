@@ -41,7 +41,7 @@ class ipt(nn.Module):
         # print(f"current =  {os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}")
         self.scale_idx = 0
         self.snr = 10
-        self.compRate = 0.12
+        self.compr_idx = 0
 
         self.args = args
         # print(f"In Ipt, args.scale = {args.scale} \n")
@@ -65,7 +65,7 @@ class ipt(nn.Module):
         hidden_dim=64*3*3*4,num_queries=1,dropout_rate=0,mlp=false,pos_every=false,no_pos=false,
         no_norm=false
         """
-        self.body = VisionTransformer(img_dim=args.patch_size, patch_dim=args.patch_dim,
+        self.body = VisionTransformer(args = args, img_dim=args.patch_size, patch_dim=args.patch_dim,
                                     num_channels=n_feats,
                                     embedding_dim=n_feats*args.patch_dim*args.patch_dim,
                                     num_heads=args.num_heads, num_layers=args.num_layers,
@@ -89,14 +89,12 @@ class ipt(nn.Module):
         #print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
         #      \n sub mean x.shape = {x.shape}"))  # x.shape = torch.Size([1, 3, 48, 48])
         x = self.head[self.scale_idx](x)
-        #print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #       \n after head x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
+        #print(color.fuchsia(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after head x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
 
         # print(f"In IPT ipt snr = {self.snr}\n")
 
-        res = self.body(x, self.scale_idx, self.snr, self.compRate)
-        #print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-        #    \n after body x.shape = {x.shape}, self.scale_idx={self.scale_idx}"))  # x.shape = torch.Size([1, 64, 48, 48])  self.scale_idx=0
+        res = self.body(x, self.scale_idx, self.snr, self.compr_idx)
+        #print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after body x.shape = {x.shape}, res.shape ={res.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])  self.scale_idx=0
         res += x
 
         x = self.tail[self.scale_idx](res)
@@ -114,8 +112,8 @@ class ipt(nn.Module):
     def set_snr(self, snr):
         self.snr = snr
 
-    def set_comprate(self, compressrate):
-        self.compRate = compressrate
+    def set_comprate(self, compr_idx):
+        self.compr_idx = compr_idx
 
 """
 img_dim=48, patch_dim=3, num_channels=64, embedding_dim=64*3*3 ,num_heads=12,num_layers=12,
@@ -125,6 +123,7 @@ no_norm=false
 class VisionTransformer(nn.Module):
     def __init__(
         self,
+        args,
         img_dim,
         patch_dim,
         num_channels,
@@ -138,12 +137,14 @@ class VisionTransformer(nn.Module):
         no_norm=False,
         mlp=False,
         pos_every=False,
-        no_pos = False
+        no_pos = False,
+        conv=common.default_conv,
     ):
         super(VisionTransformer, self).__init__()
 
         assert embedding_dim % num_heads == 0  #  64*3*3/12
         assert img_dim % patch_dim == 0     #  48/3
+        # self.args = args
         self.no_norm = no_norm              #  false
         self.mlp = mlp                      #  false
         self.embedding_dim = embedding_dim  #  64*3*3 = 576
@@ -158,6 +159,8 @@ class VisionTransformer(nn.Module):
         self.flatten_dim = patch_dim * patch_dim * num_channels  #   576
 
         self.out_dim = patch_dim * patch_dim * num_channels      #   576
+        n_feats = args.n_feats  # number of feature maps = 64
+
 
         self.no_pos = no_pos       # false
 
@@ -180,6 +183,20 @@ class VisionTransformer(nn.Module):
         decoder_layer = TransformerDecoderLayer(embedding_dim, num_heads, hidden_dim, dropout_rate, self.no_norm)
         self.decoder = TransformerDecoder(decoder_layer, num_layers)
 
+        H_hat = int(1+int(self.img_dim+2*args.cpPad-args.cpKerSize)//args.cpStride)
+        n = args.n_colors*img_dim**2
+
+
+
+        self.compress = nn.ModuleList([
+        common.conv2d_prelu(n_feats, common.calculate_channel(comprate,F=H_hat, n=n), args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
+        ])
+
+
+        self.decompress = nn.ModuleList([
+        common.convTrans2d_prelu(common.calculate_channel(comprate,F=H_hat, n=n), num_channels, args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
+        ])
+
 
         if not self.no_pos:
             #  256, 576, 256
@@ -196,7 +213,8 @@ class VisionTransformer(nn.Module):
                 if isinstance(m, nn.Linear):
                     nn.init.normal_(m.weight, std = 1/m.weight.size(1))
 
-    def forward(self, x, query_idx, snr, CompRate, con=False):
+    def forward(self, x, query_idx, snr, compr_idx, con=False):
+        #print(f"1  con = {con}\n")
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
         x = torch.nn.functional.unfold(x,self.patch_dim,stride=self.patch_dim).transpose(1,2).transpose(0,1).contiguous()
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
@@ -231,17 +249,33 @@ class VisionTransformer(nn.Module):
             #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
             #print(f"In IPT VisionTransformer forward snr = {snr} ")
 
+            x = torch.nn.functional.fold(x.permute(1,2,0),int(self.img_dim),self.patch_dim,stride=self.patch_dim)
+            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 64, 48, 48])
+
+
+            x = self.compress[compr_idx](x)
+            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 9, 11, 11])
+
             # print(f"\n In IPT VisionTransformer forward Compress rare = {CompRate}\n")
             x = common.awgn(x, snr)
 
+            x = self.decompress[compr_idx](x)
+            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 64, 48, 48])
+
+
+            x = torch.nn.functional.unfold(x,self.patch_dim,stride=self.patch_dim).transpose(1,2).transpose(0,1).contiguous()
+            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #   x.shape = torch.Size([256, 1, 576])
+
             x = self.decoder(x, x, query_pos=query_embed)
-            #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
+            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
 
         if self.mlp==False:
             x = self.mlp_head(x) + x
             #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # pos.shape = torch.Size([256, 1, 576])
         x = x.transpose(0,1).contiguous().view(x.size(1), -1, self.flatten_dim)
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 256, 576])
+
+        print(f"con = {con}\n")
         if con:
             print("i'am in con ........")
             con_x = x
@@ -461,7 +495,7 @@ class Ipt(nn.Module):
         self.load(ckp.get_path('model'), resume=args.resume, cpu=args.cpu)
         print(self.model, file=ckp.log_file)
 
-    def forward(self, x, idx_scale=0, snr=10, compressrate=0.17):
+    def forward(self, x, idx_scale=0, snr=10, compr_idx=0):
         self.idx_scale = idx_scale
         # print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, idx_scale = {idx_scale}"))
         #  x.shape = torch.Size([1, 3, 256, 256]), idx_scale = 0
@@ -475,7 +509,7 @@ class Ipt(nn.Module):
 
 
         if hasattr(self.model, 'set_comprate'):
-            self.model.set_comprate(compressrate)
+            self.model.set_comprate(compr_idx)
 
         if self.training:
             print("\nI'm in self.training.............\n")

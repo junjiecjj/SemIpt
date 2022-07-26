@@ -58,10 +58,10 @@ parser.add_argument('--n_colors', type=int, default=3, help='number of color cha
 parser.add_argument('--no_augment', action='store_true',  help='do not use data augmentation')
 
 parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
-parser.add_argument('--trainSNR',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
+parser.add_argument('--SNRtrain',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
 
 parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
-parser.add_argument('--testSNR',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
+parser.add_argument('--SNRtest',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
 
 
 # Training and test  specifications
@@ -87,6 +87,18 @@ parser.add_argument('--sigma', type=float, default=30)
 #derain
 parser.add_argument('--derain', action='store_false')
 parser.add_argument('--derain_test', type=int, default=1)
+
+
+# 压缩层和解压缩层参数设置
+parser.add_argument('--cpKerSize', type=int,  default=12, help='压缩层的卷积核大小')
+parser.add_argument('--cpStride', type=int,  default=4, help='压缩层的步长')
+parser.add_argument('--cpPad', type=int,  default=2, help='压缩层的padding')
+
+parser.add_argument('--dcpKerSize', type=int,  default=10, help='压缩层的卷积核大小')
+parser.add_argument('--dcpStride', type=int,  default=4, help='压缩层的步长')
+parser.add_argument('--dcpPad', type=int,  default=1, help='压缩层的padding')
+
+
 
 
 # Optimization specifications
@@ -141,7 +153,7 @@ args.data_test = args.data_test.split('+')  #  ['DIV2K']
 
 
 args.CompressRateTrain = list(map(lambda x: float(x), args.CompressRateTrain.split(',')))
-args.trainSNR = list(map(lambda x: int(x), args.trainSNR.split(',')))
+args.SNRtrain = list(map(lambda x: int(x), args.SNRtrain.split(',')))
 
 if args.epochs == 0:
     args.epochs = 1e8

@@ -1,6 +1,11 @@
-# 2021.05.07-Changed for IPT
-#            Huawei Technologies Co., Ltd. <foss@huawei.com>
 
+# -*- coding: utf-8 -*-
+"""
+Created on 2022/07/07
+
+@author: Junjie Chen
+
+"""
 import math
 
 import torch
@@ -9,6 +14,40 @@ import torch.nn.functional as F
 
 def default_conv(in_channels, out_channels, kernel_size, bias=True):
     return nn.Conv2d(in_channels, out_channels, kernel_size, padding=(kernel_size//2), bias=bias)
+
+# 根据压缩比和输出输入的图像大小计算压缩层的输出通道数。
+def calculate_channel(comp_ratio, F=5, n=3072):
+    K = (comp_ratio * n) / F**2
+    return int(K)
+
+
+
+def conv2d_prelu(in_channels, out_channels, kernel_size, stride, pad=0):
+    return nn.Sequential(
+        nn.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=pad,
+            bias=True,
+        ),
+        nn.PReLU(),
+    )
+
+def convTrans2d_prelu(in_channels, out_channels, kernel_size, stride, pad=0, out_pad=0):
+    return nn.Sequential(
+        nn.ConvTranspose2d(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=pad,
+            bias=True,
+        ),
+        nn.PReLU(),
+    )
+
 
 """
 归一化处理,先是归一化，再是去归一化 ，变量sign控制

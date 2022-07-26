@@ -1,6 +1,11 @@
-# 2021.05.07-Changed for IPT
-#            Huawei Technologies Co., Ltd. <foss@huawei.com>
 
+# -*- coding: utf-8 -*-
+"""
+Created on 2022/07/07
+
+@author: Junjie Chen
+
+"""
 import os
 from importlib import import_module
 
