@@ -10,7 +10,7 @@ Created on 2022/07/07
 # 本项目自己编写的库
 from option import args
 import data
-from loss import Loss
+from loss.Loss import LOSS
 from trainer import Trainer
 #from  model import IPT
 
@@ -53,7 +53,7 @@ if checkpoint.ok:
         _model.model.load_state_dict(state_dict, strict=False)
 
     # 损失函数类
-    los = Loss.LOSS(args, checkpoint) if not args.wanttest else None
+    los = LOSS(args, checkpoint)
 
     # 训练器，包括训练测试模块
     tr = Trainer(args, loader, _model, los, checkpoint)

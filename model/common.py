@@ -11,6 +11,8 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+
 
 def default_conv(in_channels, out_channels, kernel_size, bias=True):
     return nn.Conv2d(in_channels, out_channels, kernel_size, padding=(kernel_size//2), bias=bias)
@@ -137,7 +139,7 @@ class Upsampler(nn.Sequential):
 
 
 def AWGN(Tx_sig, n_var):
-    Rx_sig = Tx_sig + torch.normal(0, n_var, size=Tx_sig.shape).to(device)
+    Rx_sig = Tx_sig + torch.normal(0, n_var, size=Tx_sig.shape)# .to(device)
     return Rx_sig
 
 
@@ -168,9 +170,11 @@ def awgn_WithSignalPowerNormalized(x, snr):
 
 # 以实际信号功率计算噪声功率，再将信号加上噪声。
 def awgn(x, snr):
-    SNR = 10**(snr/10.0)
+    SNR = 10.0**(snr/10.0)
     signal_power = ((x**2)*1.0).mean()
     noise_power = signal_power/SNR
     noise_std = torch.sqrt(noise_power)
-    noise = torch.normal(mean=0, std = noise_std, size=x.shape)
+    print(f"x.shape = {x.shape}, signal_power = {signal_power}, noise_power={noise_power}, noise_std={noise_std}")
+
+    noise = torch.normal(mean=0, std = float(noise_std), size=x.shape)
     return x+noise

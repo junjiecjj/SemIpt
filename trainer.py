@@ -208,27 +208,47 @@ class Trainer():
         for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33, 0.4]
             # 依次遍历信噪比
             for snr_idx, snr in enumerate(self.args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-                print(f"\ncomprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
+                print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
 
+                epoch = 0
+
+                self.ckp.InitPsnrLog(compressrate, snr)
                 # 遍历epoch
                 for epoch_idx in  range(self.args.epochs):
+                    epoch += 1
+                    #初始化特定信噪比和压缩率下的存储字典
+                    self.ckp.AddPsnrLog(compressrate, snr)
+
+                    self.loss.start_log()
+
+                    print(f"len(self.loader_train) = {len(self.loader_train)}\n")
 
                     # 遍历训练数据集
                     for batch_idx, (lr, hr, filename)  in tqdm(enumerate(self.loader_train), ncols=80):
-                        print(f"\nepoch_idx = {epoch_idx}, batch_idx = {batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
+
+                        if batch_idx % 200 == 0:
+                            print(f"\nepoch_idx = {epoch_idx}, batch_idx = {batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
+                            #print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape} \n")
 
 
-                        # lr, hr = self.prepare(lr, hr)
+                        #lr, hr = self.prepare(lr, hr)
 
-                        # self.optimizer.zero_grad()
-                        # sr = self.model(lr, idx_scale=ind1_scale, snr=snr, compressrate=compressrate)
-                        # sr = utility.quantize(sr, self.args.rgb_range)
+                        #self.optimizer.zero_grad()
+                        #sr = self.model(lr, idx_scale=ind1_scale, snr=snr, compr_idx=comprate_idx)
+                        #sr = utility.quantize(sr, self.args.rgb_range)
+                        #print(f"sr.shape = {sr.shape}, hr.shape = {hr.shape} \n")
 
-                        # lss = self.loss(sr, hr)
-                        # lss = Variable(lss, requires_grad = True)
-
+                        #lss = self.loss(sr, hr)
+                        #lss = Variable(lss, requires_grad = True)
                         # lss.backward()
                         # self.optimizer.step()
+
+                        #psnr = utility.calc_psnr(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range)
+                        self.ckp.UpdatePsnrLog(compressrate, snr, 1)
+
+
+                    self.ckp.meanPsnrLog(compressrate, snr, len(self.loader_train))
+
 
                         # if epoch_idx%10 == 0:
                         #     print(f"\n[SNR={snr} CompressaRate = {comprate}] Epoch:{epoch_idx}/{self.args.epochs} Iter:{batch_idx}/{len(self.loader_train)} ")

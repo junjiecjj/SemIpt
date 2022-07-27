@@ -102,7 +102,7 @@ parser.add_argument('--dcpPad', type=int,  default=1, help='压缩层的padding'
 
 
 # Optimization specifications
-parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
+parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--decay', type=str, default='20-40-60-80-100-120',  help='learning rate decay type')
 parser.add_argument('--gamma',  type=float, default=0.5, help='learning rate decay factor for step decay')
 parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSprop'), help='optimizer to use (SGD | ADAM | RMSprop)')

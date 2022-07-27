@@ -14,16 +14,19 @@ from multiprocessing import Process
 from multiprocessing import Queue
 
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 import numpy as np
 import imageio
-
+import torch.nn as nn
 import torch
 import torch.optim as optim
 import torch.optim.lr_scheduler as lrs
+import collections
 
+# 本项目自己编写的库
+from option import args
 
 # Timer
 class timer():
@@ -56,6 +59,8 @@ class checkpoint():
     def __init__(self, args ):
         self.args = args
         self.ok = True
+        self.n_processes = 8
+        self.mark = False
 
         self.dir = args.save
         print(f"self.dir = {self.dir} \n")
@@ -74,189 +79,136 @@ class checkpoint():
                 f.write('{}: {}\n'.format(arg, getattr(args, arg)))
             f.write('\n')
 
-
         self.psnrlog = {}
-        for comprateTmp in args.CompressRateTrain:
-            for snrTmp in args.SNRtrain:
-                self.psnrlog["psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)] = torch.Tensor()
+
+        if os.path.isfile(self.get_path('trainPsnr_log.pt')):
+            self.psnrlog = torch.load(self.get_path('trainPsnr_log.pt'))
+            epoch = self.checkSameLen()
+            if self.mark == True:
+                print('\n从epoch={}继续训练...\n'.format(len(self.psnrlog['psnrlog:CompRatio=0.17,SNR=6'])))
+            else:
+                print('\nepoch验证不通过，重新开始训练...\n')
+
+        if args.reset:
+            os.system('rm -rf ' + self.dir)
+
+    def checkSameLen(self):
+        lens = []
+        for key in list(self.psnrlog.keys()):
+            lens.append(len(self.psnrlog[key]))
+        lens = set(lens)
+        if len(lens) == 1:
+            print(f"所有的压缩率和信噪比组合都训练了等长的Epoch...\n")
+            self.mark = True
+            return 
+        else:
+            print(f"所有的压缩率和信噪比组合下的Epoch不等...\n")
+            self.mark = False
 
 
-
-        if os.path.isfile(self.get_path('psnr_log.pt')):
+    def InitPsnrLog(self, comprateTmp, snrTmp):
+        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        if tmpS not in self.psnrlog.keys():
+            self.psnrlog[tmpS] = torch.Tensor()
+        else:
             pass
 
+    def AddPsnrLog(self, comprateTmp, snrTmp):
+        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
-        if args.reset:
-            os.system('rm -rf ' + self.dir)
-            args.load = ''
+        self.psnrlog[tmpS] = torch.cat([ self.psnrlog[tmpS], torch.zeros(1, 1)])
 
+    def UpdatePsnrLog(self, comprateTmp, snrTmp, psnr):
+        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        self.psnrlog[tmpS][-1] += psnr
 
-        #  print(f"self.dir = {self.dir}")   # /home/jack/IPT-Pretrain/ipt/
-
-        for d in args.data_test:
-            os.makedirs(self.get_path('results-{}'.format(d)), exist_ok=True)
-
-        self.n_processes = 8
-
-    def get_path(self, *subdir):
-        return os.path.join(self.dir, *subdir)
-
-    def save(self, trainer, epoch, is_best=False):
-        trainer.model.save(self.get_path('model'), epoch, is_best=is_best)
-        trainer.loss.save(self.dir)
-        trainer.loss.plot_loss(self.dir, epoch)
-
-        self.plot_psnr(epoch)
-        # trainer.optimizer.save(self.dir)
-        torch.save(self.psnrlog, self.get_path('psnr_log.pt'))
-
-    def add_log(self, log):
-        self.psnrlog = torch.cat([self.psnrlog, log])
-
-    def write_log(self, log, refresh=False):
-        print(log)
-        self.log_file.write(log + '\n')
-        if refresh:
-            self.log_file.close()
-            self.log_file = open(self.get_path('log.txt'), 'a')
-
-    def done(self):
-        self.log_file.close()
-
-    def plot_psnr(self, epoch):
-        axis = np.linspace(1, epoch, epoch)
-        for idx_data, d in enumerate(self.args.data_test):
-            label = 'SR on {}'.format(d)
-            fig = plt.figure()
-            plt.title(label)
-            for idx_scale, scale in enumerate(self.args.scale):
-                plt.plot(axis, self.psnrlog[:, idx_data, idx_scale].numpy(), label='Scale {}'.format(scale))
-            plt.legend()
-            plt.xlabel('Epochs')
-            plt.ylabel('PSNR')
-            plt.grid(True)
-            plt.savefig(self.get_path('test_{}.pdf'.format(d)))
-            plt.close(fig)
-
-    def begin_queue(self):
-        self.queue = Queue()
-
-        def bg_target(queue):
-            while True:
-                if not queue.empty():
-                    filename, tensor = queue.get()
-                    if filename is None: break
-                    imageio.imwrite(filename, tensor.numpy())
-
-        self.process = [ Process(target=bg_target, args=(self.queue,)) for _ in range(self.n_processes) ]
-
-        for p in self.process:
-            p.start()
-
-    def end_queue(self):
-        for _ in range(self.n_processes):
-            self.queue.put((None, None))
-        while not self.queue.empty():
-            time.sleep(1)
-        for p in self.process:
-            p.join()
-
-    def save_results_byQueue(self, dataset, filename, save_list, scale):
-        if self.args.save_results:
-            filename = self.get_path('results-{}'.format(dataset.dataset.name),'{}_x{}_'.format(filename, scale))
-
-            postfix = ('SR', 'LR', 'HR')
-            for v, p in zip(save_list, postfix):
-                normalized = v[0].mul(255 / self.args.rgb_range)
-                tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
-                self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
+    def meanPsnrLog(self, comprateTmp, snrTmp, n_batch):
+        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        self.psnrlog[tmpS][-1] /= n_batch
 
 
-
-# 功能：
-#
-class checkpoint_origin():
-    def __init__(self, args):
-        self.args = args
-        self.ok = True
-        self.log = torch.Tensor()
+    def InittestDir(self):
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        self.testResDir = os.path.join(self.dir, now)
+        os.makedirs(self.testResDir)
+        for d in self.args.data_test:
+            os.makedirs(os.path.join(self.testResDir,'results-{}'.format(d)), exist_ok=True)
 
-        # load =0
-        if not args.load:
-            print("check point 1 \n")
-            if not args.save: # '/home/jack/IPT-Pretrain/results/'
-                args.save = now
-            self.dir = os.path.join(args.save, now)
-            print(f"self.dir = {self.dir} \n")
-        else:
-            self.dir = os.path.join('..', 'experiment', args.load)
-            if os.path.exists(self.dir):
-                self.log = torch.load(self.get_path('psnr_log.pt'))
-                print('Continue from epoch {}...'.format(len(self.log)))
-            else:
-                args.load = ''
-
-        if args.reset:
-            os.system('rm -rf ' + self.dir)
-            args.load = ''
-        #  print(f"self.dir = {self.dir}")   # /home/jack/IPT-Pretrain/ipt/
-        os.makedirs(self.dir, exist_ok=True)
-        os.makedirs(self.get_path('model'), exist_ok=True)
-        for d in args.data_test:
-            os.makedirs(self.get_path('results-{}'.format(d)), exist_ok=True)
-
-        open_type = 'a' if os.path.exists(self.get_path('log.txt')) else 'w'
-        self.log_file = open(self.get_path('log.txt'), open_type)  # /home/jack/IPT-Pretrain/ipt/log.txt'
-        with open(self.get_path('config.txt'), open_type) as f:
-            f.write('#==========================================================\n')
-            f.write(now + '\n')
-            f.write('#==========================================================\n\n')
-            for arg in vars(args):
-                f.write('{}: {}\n'.format(arg, getattr(args, arg)))
-            f.write('\n')
-
-        self.n_processes = 8
 
     def get_path(self, *subdir):
         return os.path.join(self.dir, *subdir)
 
     def save(self, trainer, epoch, is_best=False):
-        trainer.model.save(self.get_path('model'), epoch, is_best=is_best)
-        trainer.loss.save(self.dir)
-        trainer.loss.plot_loss(self.dir, epoch)
+        #trainer.model.save(self.get_path('model'), epoch, is_best=is_best)
+        #trainer.loss.save(self.dir)
+        #trainer.loss.plot_loss(self.dir, epoch)
 
-        self.plot_psnr(epoch)
-        trainer.optimizer.save(self.dir)
-        torch.save(self.log, self.get_path('psnr_log.pt'))
+        self.plot_AllTrainPsnr( )
+        # trainer.optimizer.save(self.dir)
+        torch.save(self.psnrlog, self.get_path('trainPsnr_log.pt'))
 
-    def add_log(self, log):
-        self.log = torch.cat([self.log, log])
+
 
     def write_log(self, log, refresh=False):
         print(log)
-        self.log_file.write(log + '\n')
+        self.log_file.write(log + '\n')  # write() argument must be str, not dict
         if refresh:
             self.log_file.close()
-            self.log_file = open(self.get_path('log.txt'), 'a')
+            self.log_file = open(self.get_path('trainLog.txt'), 'a')
 
     def done(self):
         self.log_file.close()
 
-    def plot_psnr(self, epoch):
+
+    def plot_trainPsnr(self, comprateTmp, snrTmp):
+        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+
+        epoch = len(self.psnrlog[tmpS])
+
         axis = np.linspace(1, epoch, epoch)
-        for idx_data, d in enumerate(self.args.data_test):
-            label = 'SR on {}'.format(d)
-            fig = plt.figure()
-            plt.title(label)
-            for idx_scale, scale in enumerate(self.args.scale):
-                plt.plot(axis, self.log[:, idx_data, idx_scale].numpy(), label='Scale {}'.format(scale))
-            plt.legend()
-            plt.xlabel('Epochs')
-            plt.ylabel('PSNR')
-            plt.grid(True)
-            plt.savefig(self.get_path('test_{}.pdf'.format(d)))
-            plt.close(fig)
+
+        label = 'CompRatio={},SNR={}'.format(comprateTmp, snrTmp)
+        fig = plt.figure()
+        plt.title(label)
+        plt.plot(axis, self.psnrlog[tmpS])
+        plt.legend()
+        plt.xlabel('Epochs')
+        plt.ylabel('PSNR')
+        plt.grid(True)
+
+        out_fig = plt.gcf()
+        out_fig.savefig(self.get_path('train,epoch-psnr,CompRatio={},SNR={}.pdf'.format(comprateTmp, snrTmp)))
+        plt.show()
+        plt.close(fig)
+
+
+
+    def plot_AllTrainPsnr(self):
+        fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(20,20))
+        for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
+            for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
+                tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+                epoch = len(self.psnrlog[tmpS])
+                axis = np.linspace(1, epoch, epoch)
+
+                label = 'CompRatio={},SNR={}'.format(comprateTmp, snrTmp)
+                axs[snr_idx,comprate_idx].set_title(label)
+
+                axs[snr_idx,comprate_idx].plot(axis, self.psnrlog[tmpS],'r-',label=label,)
+                axs[snr_idx,comprate_idx].legend()
+                axs[snr_idx,comprate_idx].set_xlabel('Epochs')
+                axs[snr_idx,comprate_idx].set_ylabel('PSNR')
+                #axs[snr_idx,comprate_idx].grid(True)
+                #axs[snr_idx,comprate_idx].tick_params(direction='in')
+                axs[snr_idx,comprate_idx].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
+        fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
+        plt.tight_layout()#  使得图像的四周边缘空白最小化
+        out_fig = plt.gcf()
+        out_fig.savefig(self.get_path('AllPsnr.pdf'))
+        plt.show()
+        plt.close(fig)
+
+
 
     def begin_queue(self):
         self.queue = Queue()
@@ -290,6 +242,34 @@ class checkpoint_origin():
                 normalized = v[0].mul(255 / self.args.rgb_range)
                 tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
+
+
+ckp = checkpoint(args)
+# 依次遍历压缩率
+for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
+    # 依次遍历信噪比
+    for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+        #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
+
+        epoch = 0
+
+        ckp.InitPsnrLog(compressrate, snr)
+        # 遍历epoch
+        for epoch_idx in  range(10):
+            epoch += 1
+            #初始化特定信噪比和压缩率下的存储字典
+            ckp.AddPsnrLog(compressrate, snr)
+
+            # 遍历训练数据集
+            for i in range(20):
+                # pass
+                ckp.UpdatePsnrLog(compressrate, snr, epoch_idx+i)
+            ckp.meanPsnrLog(compressrate, snr, 20)
+
+ckp.plot_trainPsnr(0.4, 18)
+#ckp.plot_AllTrainPsnr()
+
+
 
 #  功能：将img每个像素点的至夹在[0,255]之间
 def quantize(img, rgb_range):
@@ -313,6 +293,15 @@ def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
     mse = valid.pow(2).mean()
 
     return -10 * math.log10(mse)
+
+
+class net(nn.Module):
+    def __init__(self):
+        super(net,self).__init__()
+        self.fc = nn.Linear(1,10)
+    def forward(self,x):
+        return self.fc(x)
+
 
 def make_optimizer(args, net):
     '''
@@ -339,7 +328,7 @@ def make_optimizer(args, net):
         kwargs_optimizer['eps'] = args.epsilon
 
     # scheduler, milestones = 0,   gamma = 0.5
-    milestones = list(map(lambda x: int(x), args.decay.split('-')))  # [20, 40, 60, 80, 100, 120]
+    milestones = list(map(lambda x: int(x), args.decay.split('-')))  #  [20, 40, 60, 80, 100, 120]
     kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
     scheduler_class = lrs.MultiStepLR
 
@@ -370,9 +359,45 @@ def make_optimizer(args, net):
         def get_last_epoch(self):
             return self.scheduler.last_epoch
 
+        def reset_state(self):
+            self.state = collections.defaultdict(dict)
+            #self.scheduler.last_epoch = 0
+            #self.scheduler._last_lr = 0
+            for param_group in self.param_groups:
+                param_group["lr"] = args.lr
+
+            milestones = list(map(lambda x: int(x), args.decay.split('-')))  #  [20, 40, 60, 80, 100, 120]
+            kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
+            self.scheduler = scheduler_class(self, **kwargs_scheduler)
+
     optimizer = CustomOptimizer(trainable, **kwargs_optimizer)
     optimizer._register_scheduler(scheduler_class, **kwargs_scheduler)
     return optimizer
+
+
+
+# model = net()
+# LR = 0.01
+# opt = make_optimizer(args,model)
+# loss = torch.nn.CrossEntropyLoss()
+
+# lr_list1 = []
+# lr_list2 = []
+# for epoch in range(200):
+#      for i in range(20):
+#          y = torch.randint(0, 9, (10,10))*1.0
+#          opt.zero_grad()
+#          out = model(torch.randn(10,1))
+#          lss = loss(out, y)
+#          lss.backward()
+#          opt.step()
+#      opt.schedule()
+#      lr_list2.append(opt.get_lr())
+#      lr_list1.append(opt.state_dict()['param_groups'][0]['lr'])
+# plt.plot(range(200),lr_list1,color = 'r')
+# #plt.plot(range(100),lr_list2,color = 'b')
+# out_fig = plt.gcf()
+# plt.show()
 
 
 
@@ -387,7 +412,7 @@ optimizer = make_optimizer( args,  model)
 lr_list1 = []
 
 for epoch in range(200):
-    if train:
+    for X,y in dataloder:
         optimizer.step()
     optimizer.schedule()
     lr_list1.append(optimizer.state_dict()['param_groups'][0]['lr'])

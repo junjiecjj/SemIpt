@@ -19,7 +19,7 @@ import torch.nn.functional as F
 
 class LOSS(nn.modules.loss._Loss):
     def __init__(self, args, ckp):
-        super(Loss, self).__init__()
+        super(LOSS, self).__init__()
         print('Preparing loss function:')
 
         self.n_GPUs = args.n_GPUs
