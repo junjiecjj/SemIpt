@@ -254,7 +254,7 @@ class VisionTransformer(nn.Module):
 
 
             x = self.compress[compr_idx](x)
-            print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, query_idx = {query_idx} snr = {snr}, compr_idx = {compr_idx}\n"))  # x.shape = torch.Size([1, 9, 11, 11])
+            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, query_idx = {query_idx} snr = {snr}, compr_idx = {compr_idx}\n"))  # x.shape = torch.Size([1, 9, 11, 11])
 
             # print(f"\n In IPT VisionTransformer forward Compress rare = {CompRate}\n")
             x = common.awgn(x, snr)
@@ -509,7 +509,7 @@ class Ipt(nn.Module):
             self.model.set_comprate(compr_idx)
 
         if self.training:
-            print("\nI'm in self.training.............\n")
+            #print("\nI'm in self.training.............\n")
             if self.n_GPUs > 1:
                 return P.data_parallel(self.model, x, range(self.n_GPUs))
             else:

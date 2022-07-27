@@ -216,7 +216,7 @@ class Trainer():
                 # 遍历epoch
                 for epoch_idx in  range(self.args.epochs):
                     epoch += 1
-                    #初始化特定信噪比和压缩率下的存储字典
+                    #初始化特定信噪比和压缩率下的Psnr存储字典
                     self.ckp.AddPsnrLog(compressrate, snr)
 
                     self.loss.start_log()
@@ -228,32 +228,28 @@ class Trainer():
 
                         if batch_idx % 200 == 0:
                             print(f"\nepoch_idx = {epoch_idx}, batch_idx = {batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
-                            #print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape} \n")
+                        print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape} \n")
 
 
-                        #lr, hr = self.prepare(lr, hr)
+                        lr, hr = self.prepare(lr, hr)
 
-                        #self.optimizer.zero_grad()
-                        #sr = self.model(lr, idx_scale=ind1_scale, snr=snr, compr_idx=comprate_idx)
-                        #sr = utility.quantize(sr, self.args.rgb_range)
-                        #print(f"sr.shape = {sr.shape}, hr.shape = {hr.shape} \n")
+                        self.optimizer.zero_grad()
+                        sr = self.model(lr, idx_scale=ind1_scale, snr=snr, compr_idx=comprate_idx)
+                        sr = utility.quantize(sr, self.args.rgb_range)
+                        print(f"sr.shape = {sr.shape}, hr.shape = {hr.shape} \n")
 
-                        #lss = self.loss(sr, hr)
-                        #lss = Variable(lss, requires_grad = True)
-                        # lss.backward()
-                        # self.optimizer.step()
-
-                        #psnr = utility.calc_psnr(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range)
-                        self.ckp.UpdatePsnrLog(compressrate, snr, 1)
-
-
+                        lss = self.loss(sr, hr)
+                        lss = Variable(lss, requires_grad = True)
+                        lss.backward()
+                        self.optimizer.step()
+                        psnr = utility.calc_psnr(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range)
+                        self.ckp.UpdatePsnrLog(compressrate, snr, psnr)
                     self.ckp.meanPsnrLog(compressrate, snr, len(self.loader_train))
 
-
-                        # if epoch_idx%10 == 0:
-                        #     print(f"\n[SNR={snr} CompressaRate = {comprate}] Epoch:{epoch_idx}/{self.args.epochs} Iter:{batch_idx}/{len(self.loader_train)} ")
-                        #     print(f"\n lr.shape = {lr.shape}, hr.shap = {hr.shape}, filename = {filename} \n")
-
+                    # 学习率递减器
+                    self.optimizer.schedule()
+                # 在每个压缩率和信噪比下都重置一次优化器
+                self.optimizer.reset_state()
 
     def test(self):
         pass

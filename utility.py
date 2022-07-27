@@ -24,6 +24,8 @@ import torch
 import torch.optim as optim
 import torch.optim.lr_scheduler as lrs
 import collections
+from torch.utils.tensorboard import SummaryWriter
+
 
 # 本项目自己编写的库
 from option import args
@@ -100,7 +102,7 @@ class checkpoint():
         if len(lens) == 1:
             print(f"所有的压缩率和信噪比组合都训练了等长的Epoch...\n")
             self.mark = True
-            return 
+            return
         else:
             print(f"所有的压缩率和信噪比组合下的Epoch不等...\n")
             self.mark = False

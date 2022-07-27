@@ -109,8 +109,8 @@ class LOSS(nn.modules.loss._Loss):
             return self.loss_module.module
 
     def save(self, apath):
-        torch.save(self.state_dict(), os.path.join(apath, 'loss_state.pt'))
-        torch.save(self.losslog, os.path.join(apath, 'loss_log.pt'))
+        torch.save(self.state_dict(), os.path.join(apath, 'TrainLossState.pt'))
+        torch.save(self.losslog, os.path.join(apath, 'TrainLossLog.pt'))
 
     def load(self, apath, cpu=False):
         if cpu:
@@ -118,8 +118,8 @@ class LOSS(nn.modules.loss._Loss):
         else:
             kwargs = {}
 
-        self.load_state_dict(torch.load(os.path.join(apath, 'loss_state.pt'), **kwargs))
-        self.losslog = torch.load(os.path.join(apath, 'loss_log.pt'))
+        self.load_state_dict(torch.load(os.path.join(apath, 'TrainLossState.pt'), **kwargs))
+        self.losslog = torch.load(os.path.join(apath, 'TrainLossLog.pt'))
         for l in self.get_loss_module():
             if hasattr(l, 'scheduler'):
                 for _ in range(len(self.losslog)): l.scheduler.step()

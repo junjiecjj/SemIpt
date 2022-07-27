@@ -174,7 +174,7 @@ def awgn(x, snr):
     signal_power = ((x**2)*1.0).mean()
     noise_power = signal_power/SNR
     noise_std = torch.sqrt(noise_power)
-    print(f"x.shape = {x.shape}, signal_power = {signal_power}, noise_power={noise_power}, noise_std={noise_std}")
+    #print(f"x.shape = {x.shape}, signal_power = {signal_power}, noise_power={noise_power}, noise_std={noise_std}")
 
     noise = torch.normal(mean=0, std = float(noise_std), size=x.shape)
     return x+noise
