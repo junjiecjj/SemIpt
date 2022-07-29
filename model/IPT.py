@@ -94,7 +94,7 @@ class ipt(nn.Module):
         # print(f"In IPT ipt snr = {self.snr}\n")
 
         res = self.body(x, self.scale_idx, self.snr, self.compr_idx)
-        #print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after body x.shape = {x.shape}, res.shape ={res.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])  self.scale_idx=0
+        print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after body x.shape = {x.shape}, res.shape ={res.shape}"))  # x.shape = torch.Size([1, 64, 48, 48]), res.shape =torch.Size([1, 64, 48, 48])
         res += x
 
         x = self.tail[self.scale_idx](res)
@@ -482,7 +482,7 @@ class Ipt(nn.Module):
         # self.device = torch.device('cpu' if args.cpu else 'cuda:0')
 
         self.n_GPUs = args.n_GPUs    # 1
-        self.save_models = args.save_models   # false
+        self.saveModelEveryEpoch = args.saveModelEveryEpoch   # false
 
         self.model = ipt(args).to(self.device)
         if args.precision == 'half':
@@ -524,13 +524,13 @@ class Ipt(nn.Module):
                 #print("\nhi, i'm here...\n")
                 return forward_function(x)
 
-    def save(self, apath, epoch, is_best=False):
+    def save(self, apath, compratio, snr, epoch, is_best=False):
         save_dirs = [os.path.join(apath, 'model_latest.pt')]
 
         if is_best:
             save_dirs.append(os.path.join(apath, 'model_best.pt'))
-        if self.save_models:
-            save_dirs.append(os.path.join(apath, 'model_{}.pt'.format(epoch)))
+        if self.saveModelEveryEpoch:
+            save_dirs.append(os.path.join(apath, 'model_CompRatio={}_SNR={}_Epoch={}.pt'.format(compratio, snr, epoch) ) )
 
         for s in save_dirs:
             torch.save(self.model.state_dict(), s)

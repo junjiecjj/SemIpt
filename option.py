@@ -119,9 +119,9 @@ parser.add_argument('--skip_threshold', type=float, default='1e8', help='skippin
 # Log specifications
 # parser.add_argument('--save', type=str, default='/cache/results/ipt/', help='file name to save')
 parser.add_argument('--save', type=str, default='/home/jack/IPT-Pretrain/results/',  help='file name to save')  #cjj
-parser.add_argument('--load', type=str, default='', help='file name to load')
+parser.add_argument('--load', type=str, default='/home/jack/IPT-Pretrain/results/', help='file name to load')
 parser.add_argument('--resume', type=int,  default=0, help='resume from specific checkpoint')
-parser.add_argument('--save_models', action='store_true', help='save all intermediate models')
+parser.add_argument('--saveModelEveryEpoch', action='store_false', help='save all intermediate models')
 parser.add_argument('--print_every',type=int, default=100,help='how many batches to wait before logging training status')
 parser.add_argument('--save_results', action='store_false', help='save output results')
 parser.add_argument('--save_gt',action='store_false',help='save low-resolution and high-resolution images together')

@@ -34,8 +34,8 @@ class Trainer():
         self.loss = my_loss
         self.optimizer = utility.make_optimizer(args, self.model)
         if self.args.load != '':
-            self.optimizer.load(ckp.dir, epoch=len(ckp.log))
-
+            if self.ckp.mark == True:
+                self.optimizer.load(ckp.dir, epoch=ckp.startEpoch)
 
         self.error_last = 1e8
 
@@ -186,6 +186,7 @@ class Trainer():
 
     def prepare(self, *args):
         device = torch.device('cpu' if self.args.cpu else 'cuda')
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         def _prepare(tensor):
             if self.args.precision == 'half': tensor = tensor.half()
             return tensor.to(device)
@@ -213,9 +214,12 @@ class Trainer():
                 epoch = 0
 
                 self.ckp.InitPsnrLog(compressrate, snr)
+
                 # 遍历epoch
-                for epoch_idx in  range(self.args.epochs):
+
+                for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+self.args.epochs):
                     epoch += 1
+                    self.loss.start_log()
                     #初始化特定信噪比和压缩率下的Psnr存储字典
                     self.ckp.AddPsnrLog(compressrate, snr)
 
@@ -230,7 +234,6 @@ class Trainer():
                             print(f"\nepoch_idx = {epoch_idx}, batch_idx = {batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
                         print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape} \n")
 
-
                         lr, hr = self.prepare(lr, hr)
 
                         self.optimizer.zero_grad()
@@ -239,17 +242,19 @@ class Trainer():
                         print(f"sr.shape = {sr.shape}, hr.shape = {hr.shape} \n")
 
                         lss = self.loss(sr, hr)
-                        lss = Variable(lss, requires_grad = True)
+                        #lss = Variable(lss, requires_grad = True)
                         lss.backward()
                         self.optimizer.step()
                         psnr = utility.calc_psnr(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range)
                         self.ckp.UpdatePsnrLog(compressrate, snr, psnr)
                     self.ckp.meanPsnrLog(compressrate, snr, len(self.loader_train))
-
+                    self.loss.end_log(len(self.loader_train))
                     # 学习率递减器
                     self.optimizer.schedule()
                 # 在每个压缩率和信噪比下都重置一次优化器
                 self.optimizer.reset_state()
+                self.ckp.saveModel(self,)
+        self.ckp.saveLossPsnrOptim(self)
 
     def test(self):
         pass
@@ -263,7 +268,7 @@ class Trainer():
 
         epoch = self.optimizer.get_last_epoch()
         self.ckp.write_log('\nEvaluation:')
-        self.ckp.add_log(torch.zeros(1, len(self.loader_test), len(self.scale)))
+        #self.ckp.add_log(torch.zeros(1, len(self.loader_test), len(self.scale)))
         print(f"trainer.pt  37: {len(self.loader_test)}, {len(self.scale)} \n")
         self.model.eval()
         timer_test = utility.timer()

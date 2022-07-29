@@ -50,6 +50,7 @@ class LOSS(nn.modules.loss._Loss):
         if not args.cpu and args.n_GPUs > 1:
             self.loss_module = nn.DataParallel( self.loss_module, range(args.n_GPUs) )
 
+        # TODO
         if args.load != '': self.load(ckp.dir, cpu=args.cpu)
 
     def forward(self, sr, hr):
@@ -88,7 +89,8 @@ class LOSS(nn.modules.loss._Loss):
 
         return ''.join(log)
 
-    def plot_loss(self, apath, epoch):
+    def plot_loss(self, apath):
+        epoch = self.losslog[:, 0]
         axis = np.linspace(1, epoch, epoch)
         for i, l in enumerate(self.loss):
             label = '{} Loss'.format(l['type'])
@@ -99,7 +101,7 @@ class LOSS(nn.modules.loss._Loss):
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
             plt.grid(True)
-            plt.savefig(os.path.join(apath, 'loss_{}.pdf'.format(l['type'])))
+            plt.savefig(os.path.join(apath, 'TrainLossPlot_{}.pdf'.format(l['type'])))
             plt.close(fig)
 
     def get_loss_module(self):
@@ -108,6 +110,7 @@ class LOSS(nn.modules.loss._Loss):
         else:
             return self.loss_module.module
 
+    # 所有的epoch训练完再调用保存
     def save(self, apath):
         torch.save(self.state_dict(), os.path.join(apath, 'TrainLossState.pt'))
         torch.save(self.losslog, os.path.join(apath, 'TrainLossLog.pt'))
@@ -117,10 +120,58 @@ class LOSS(nn.modules.loss._Loss):
             kwargs = {'map_location': lambda storage, loc: storage}
         else:
             kwargs = {}
+        if  os.path.isfile(os.path.join(apath,'TrainLossState.pt')):
+            self.load_state_dict(torch.load(os.path.join(apath, 'TrainLossState.pt'), **kwargs))
 
-        self.load_state_dict(torch.load(os.path.join(apath, 'TrainLossState.pt'), **kwargs))
-        self.losslog = torch.load(os.path.join(apath, 'TrainLossLog.pt'))
+        if  os.path.isfile(os.path.join(apath,'TrainLossLog.pt')):
+            self.losslog = torch.load(os.path.join(apath, 'TrainLossLog.pt'))
+
         for l in self.get_loss_module():
             if hasattr(l, 'scheduler'):
                 for _ in range(len(self.losslog)): l.scheduler.step()
+
+
+# from torch.autograd import Variable
+# los = LOSS(args,ckp)
+
+# CompressRate = [1,2,3]
+# SNR = [-10,-6,-2,0,2,6,10]
+
+# for cp_idx, CP in enumerate(CompressRate):
+#     for snr_idx, snr in enumerate(SNR):
+#         for epoch_idx in range(20):
+#             sr = torch.randn(1,3,4,4)
+#             hr = torch.randn(1,3,4,4)
+#             los.start_log()
+#             lss = los(sr, hr)
+#             lss = Variable(lss, requires_grad = True)
+#             lss.backward()
+#             los.end_log(10)
+
+
+
+# los.plot_loss(ckp.dir, 420)
+# los.save(ckp.dir)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

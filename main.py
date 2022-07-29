@@ -61,11 +61,11 @@ if checkpoint.ok:
     # 训练
     if  args.wanttrain:
         print(f"I want train \n")
-        tr.train()
+        #tr.train()
 
     # 测试
     if  args.wanttest:
-        #tr.test1()
+        tr.test1()
         #print(f"I want test \n")
         pass
     checkpoint.done()

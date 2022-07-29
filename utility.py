@@ -63,6 +63,7 @@ class checkpoint():
         self.ok = True
         self.n_processes = 8
         self.mark = False
+        self.startEpoch = 0
 
         self.dir = args.save
         print(f"self.dir = {self.dir} \n")
@@ -87,25 +88,28 @@ class checkpoint():
             self.psnrlog = torch.load(self.get_path('trainPsnr_log.pt'))
             epoch = self.checkSameLen()
             if self.mark == True:
+                self.startEpoch = epoch
                 print('\n从epoch={}继续训练...\n'.format(len(self.psnrlog['psnrlog:CompRatio=0.17,SNR=6'])))
             else:
-                print('\nepoch验证不通过，重新开始训练...\n')
+                print('\nepoch验证不通过, 重新开始训练...\n')
 
         if args.reset:
             os.system('rm -rf ' + self.dir)
 
+    # 检查在每个压缩率和信噪比下训练的epoch是否相等
     def checkSameLen(self):
         lens = []
         for key in list(self.psnrlog.keys()):
             lens.append(len(self.psnrlog[key]))
-        lens = set(lens)
-        if len(lens) == 1:
+        set1 = set(lens)
+        if len(set1) == 1 and lens[0]>=1:
             print(f"所有的压缩率和信噪比组合都训练了等长的Epoch...\n")
             self.mark = True
-            return
+            return lens[0]
         else:
             print(f"所有的压缩率和信噪比组合下的Epoch不等...\n")
             self.mark = False
+            return 0
 
 
     def InitPsnrLog(self, comprateTmp, snrTmp):
@@ -140,15 +144,21 @@ class checkpoint():
     def get_path(self, *subdir):
         return os.path.join(self.dir, *subdir)
 
-    def save(self, trainer, epoch, is_best=False):
-        #trainer.model.save(self.get_path('model'), epoch, is_best=is_best)
-        #trainer.loss.save(self.dir)
-        #trainer.loss.plot_loss(self.dir, epoch)
+    def saveModel(self, trainer,  compratio, snr, epoch, is_best=False):
+        trainer.model.save(self.get_path('model'), compratio, snr, epoch, is_best=is_best)
 
-        self.plot_AllTrainPsnr( )
-        # trainer.optimizer.save(self.dir)
+
+    def saveLossPsnrOptim(self, trainer):
+        # 画图和保存Loss日志
+        trainer.loss.save(self.dir)
+        trainer.loss.plot_loss(self.dir)
+
+        # 保存优化器参数
+        trainer.optimizer.save(self.dir)
+
+        # 画图和保存PSNR日志
+        self.plot_AllTrainPsnr()
         torch.save(self.psnrlog, self.get_path('trainPsnr_log.pt'))
-
 
 
     def write_log(self, log, refresh=False):
@@ -206,7 +216,7 @@ class checkpoint():
         fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
         plt.tight_layout()#  使得图像的四周边缘空白最小化
         out_fig = plt.gcf()
-        out_fig.savefig(self.get_path('AllPsnr.pdf'))
+        out_fig.savefig(self.get_path('PsnrEpoch_Plot.pdf'))
         plt.show()
         plt.close(fig)
 
@@ -247,29 +257,29 @@ class checkpoint():
 
 
 ckp = checkpoint(args)
-# 依次遍历压缩率
-for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
-    # 依次遍历信噪比
-    for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-        #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
+# # 依次遍历压缩率
+# for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
+#     # 依次遍历信噪比
+#     for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+#         #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
 
-        epoch = 0
+#         epoch = 0
 
-        ckp.InitPsnrLog(compressrate, snr)
-        # 遍历epoch
-        for epoch_idx in  range(10):
-            epoch += 1
-            #初始化特定信噪比和压缩率下的存储字典
-            ckp.AddPsnrLog(compressrate, snr)
+#         ckp.InitPsnrLog(compressrate, snr)
+#         # 遍历epoch
+#         for epoch_idx in  range(10):
+#             epoch += 1
+#             #初始化特定信噪比和压缩率下的存储字典
+#             ckp.AddPsnrLog(compressrate, snr)
 
-            # 遍历训练数据集
-            for i in range(20):
-                # pass
-                ckp.UpdatePsnrLog(compressrate, snr, epoch_idx+i)
-            ckp.meanPsnrLog(compressrate, snr, 20)
+#             # 遍历训练数据集
+#             for i in range(20):
+#                 # pass
+#                 ckp.UpdatePsnrLog(compressrate, snr, epoch_idx+i)
+#             ckp.meanPsnrLog(compressrate, snr, 20)
 
-ckp.plot_trainPsnr(0.4, 18)
-#ckp.plot_AllTrainPsnr()
+# ckp.plot_trainPsnr(0.4, 18)
+# ckp.plot_AllTrainPsnr()
 
 
 
@@ -345,9 +355,10 @@ def make_optimizer(args, net):
             torch.save(self.state_dict(), self.get_dir(save_dir))
 
         def load(self, load_dir, epoch=1):
-            self.load_state_dict(torch.load(self.get_dir(load_dir)))
-            if epoch > 1:
-                for _ in range(epoch): self.scheduler.step()
+            if os.path.isfile(self.get_dir(load_dir)):
+                self.load_state_dict(torch.load(self.get_dir(load_dir)))
+                if epoch > 1:
+                    for _ in range(epoch): self.scheduler.step()
 
         def get_dir(self, dir_path):
             return os.path.join(dir_path, 'optimizer.pt')
