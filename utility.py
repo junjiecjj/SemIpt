@@ -96,7 +96,7 @@ class checkpoint():
         if args.reset:
             os.system('rm -rf ' + self.dir)
 
-    # 检查在每个压缩率和信噪比下训练的epoch是否相等
+    # 因为多个不同压缩率的不同层是融合在一个模型里的，所以需要检查在每个压缩率和信噪比下训练的epoch是否相等
     def checkSameLen(self):
         lens = []
         for key in list(self.psnrlog.keys()):

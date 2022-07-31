@@ -29,7 +29,10 @@ os.system('pip install einops')
 torch.manual_seed(args.seed)
 
 
+
+# 加载所有参数的类
 checkpoint = utility.checkpoint(args)
+
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

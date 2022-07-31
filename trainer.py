@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from ColorPrint  import ColoPrint
 color = ColoPrint()
-print(color.fuchsia("Color Print Test Pass"))
+# print(color.fuchsia("Color Print Test Pass"))
 
 class Trainer():
     def __init__(self, args, loader, my_model, my_loss, ckp):
@@ -209,14 +209,12 @@ class Trainer():
         for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33, 0.4]
             # 依次遍历信噪比
             for snr_idx, snr in enumerate(self.args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-                print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
-
+                print(color.fuchsia( f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n"))
                 epoch = 0
 
                 self.ckp.InitPsnrLog(compressrate, snr)
 
                 # 遍历epoch
-
                 for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+self.args.epochs):
                     epoch += 1
                     self.loss.start_log()
@@ -253,7 +251,7 @@ class Trainer():
                     self.optimizer.schedule()
                 # 在每个压缩率和信噪比下都重置一次优化器
                 self.optimizer.reset_state()
-                self.ckp.saveModel(self,)
+                self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs)
         self.ckp.saveLossPsnrOptim(self)
 
     def test(self):
