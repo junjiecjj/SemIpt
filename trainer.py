@@ -96,13 +96,13 @@ class Trainer():
                         if batch_idx % 200 == 0:
                             print(f"\nepoch_idx = {epoch_idx}, batch_idx = {batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
                         #print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape} \n")
-
+                        print(f"\n Epoch {}/{}, Iter {}/{}, \n")
                         lr, hr = self.prepare(lr, hr)
 
                         self.optimizer.zero_grad()
                         sr = self.model(lr, idx_scale=ind1_scale, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
-                        print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape}, sr.shape = {sr.shape} \n")
+                        print(f"训练完一个epoch： lr.shape = {lr.shape}, hr.shape = {hr.shape}, sr.shape = {sr.shape} \n")
 
                         # 计算batch内的loss
                         lss = self.loss(sr, hr)
