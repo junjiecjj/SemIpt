@@ -33,6 +33,9 @@ class Trainer():
         self.model = my_model
         self.loss = my_loss
         self.optimizer = utility.make_optimizer(args, self.model)
+
+        self.wr.WrModel(self.model)
+
         if self.args.load != '':
             if self.ckp.mark == True:
                 self.optimizer.load(ckp.dir, epoch=ckp.startEpoch)
@@ -205,23 +208,26 @@ class Trainer():
         torch.set_grad_enabled(True)
         ind1_scale = self.args.scale.index(1)
         self.loader_train.dataset.set_scale(ind1_scale)
+        AllEpoch = 0
         # 依次遍历压缩率
         for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33, 0.4]
             # 依次遍历信噪比
             for snr_idx, snr in enumerate(self.args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
                 print(color.fuchsia( f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n"))
-                epoch = 0
 
+                # 初始化 特定信噪比和压缩率下 的Psnr日志
                 self.ckp.InitPsnrLog(compressrate, snr)
 
                 # 遍历epoch
                 for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+self.args.epochs):
-                    epoch += 1
-                    self.loss.start_log()
-                    #初始化特定信噪比和压缩率下的Psnr存储字典
-                    self.ckp.AddPsnrLog(compressrate, snr)
+                    AllEpoch += 1
+                    self.ckp.UpdateEpoch()
 
+                    # 初始化loss日志
                     self.loss.start_log()
+
+                    # 动态增加特定信噪比和压缩率下的Psnr日志
+                    self.ckp.AddPsnrLog(compressrate, snr)
 
                     print(f"len(self.loader_train) = {len(self.loader_train)}\n")
 
@@ -239,20 +245,40 @@ class Trainer():
                         sr = utility.quantize(sr, self.args.rgb_range)
                         print(f"sr.shape = {sr.shape}, hr.shape = {hr.shape} \n")
 
+                        # 计算batch内的loss
                         lss = self.loss(sr, hr)
                         #lss = Variable(lss, requires_grad = True)
                         lss.backward()
                         self.optimizer.step()
+
+                        # 计算bach内的psnr
                         psnr = utility.calc_psnr(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range)
+
+                        # 更新 bach内的psnr
                         self.ckp.UpdatePsnrLog(compressrate, snr, psnr)
-                    self.ckp.meanPsnrLog(compressrate, snr, len(self.loader_train))
-                    self.loss.end_log(len(self.loader_train))
-                    # 学习率递减器
+
+                    # 计算并更新epoch的PSNR和LOSS
+                    epochPsnr = self.ckp.meanPsnrLog(compressrate, snr, len(self.loader_train))
+                    epochLos = self.loss.end_log(len(self.loader_train))
+
+                    # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
+                    self.wr.WrTLoss(epochLos, int(self.ckp.LastSumEpoch+AllEpoch))
+                    self.wr.WrTrainPsnr(compressrate, snr, epochPsnr, epoch_idx)
+                    self.wr.WrTrainLoss(compressrate, snr, epochLos, epoch_idx)
+
+                    # 学习率递减
                     self.optimizer.schedule()
                 # 在每个压缩率和信噪比下都重置一次优化器
                 self.optimizer.reset_state()
+
+                # 在训练完每个压缩率和信噪比下的所有Epoch后,保存一次模型
                 self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
-        self.ckp.saveLossPsnrOptim(self)
+        # 在训练完所有压缩率和信噪比后，保存损失日志
+        self.ckp.saveLoss(self)
+        # 在训练完所有压缩率和信噪比后，保存优化器
+        self.ckp.saveOptim(self)
+        # 在训练完所有压缩率和信噪比后，保存PSNR等指标日志
+        self.ckp.save()
 
     def test(self):
         pass

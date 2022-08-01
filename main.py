@@ -23,7 +23,7 @@ from trainer import Trainer
 
 from model.__init__ import ModelSet
 
-
+# Loss、PSNR等结果可视化等
 from visual.summwriter import SummWriter
 
 
@@ -67,7 +67,7 @@ if checkpoint.ok:
     # 损失函数类
     los = LOSS(args, checkpoint)
 
-    # tensorboard
+    # tensorboard可视化
     wr = SummWriter(args)
 
     # 训练器，包括训练测试模块
@@ -76,11 +76,11 @@ if checkpoint.ok:
     # 训练
     if  args.wanttrain:
         print(f"I want train \n")
-        #tr.train()
+        tr.train()
 
     # 测试
     if  args.wanttest:
-        tr.test1()
+        #tr.test1()
         #print(f"I want test \n")
         pass
     checkpoint.done()

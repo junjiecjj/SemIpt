@@ -10,12 +10,13 @@ import os
 from importlib import import_module
 
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 
 class LOSS(nn.modules.loss._Loss):
     def __init__(self, args, ckp):
@@ -90,14 +91,36 @@ class LOSS(nn.modules.loss._Loss):
 
         return ''.join(log)
 
+    # 在同一个画布中画出所有Loss的结果
+    def plot_AllLoss(self, apath):
+        fig, axs = plt.subplots(len(self.loss),1, figsize=(12,8))
+        for i, l in enumerate(self.loss):
+            epoch = len(self.losslog[:, i])
+            X = np.linspace(1, epoch, epoch)
+            label = '{} Loss'.format(l['type'])
+            axs[i].set_title(label)
+            axs[i].plot(X, self.losslog[:, i].numpy(), label=label)
+            axs[i].set_xlabel('Epochs')
+            axs[i].set_ylabel(label)
+            axs[i].grid(True)
+            axs[i].legend()
+            axs[i].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
+        fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
+        plt.tight_layout()#  使得图像的四周边缘空白最小化
+        out_fig = plt.gcf()
+        out_fig.savefig(os.path.join(apath, 'AllTrainLossPlot.pdf'))
+        plt.show()
+        plt.close(fig)
+
+    # 在不同的画布中画各个损失函数的结果.
     def plot_loss(self, apath):
-        epoch = self.losslog[:, 0]
-        axis = np.linspace(1, epoch, epoch)
+        epoch = len(self.losslog[:, 0])
+        X = np.linspace(1, epoch, epoch)
         for i, l in enumerate(self.loss):
             label = '{} Loss'.format(l['type'])
             fig = plt.figure()
             plt.title(label)
-            plt.plot(axis, self.losslog[:, i].numpy(), label=label)
+            plt.plot(X, self.losslog[:, i].numpy(), label=label)
             plt.legend()
             plt.xlabel('Epochs')
             plt.ylabel('Loss')
@@ -111,7 +134,7 @@ class LOSS(nn.modules.loss._Loss):
         else:
             return self.loss_module.module
 
-    # 所有的epoch训练完再调用保存
+    # 在每个压缩率和信噪比下，所有的epoch训练完再调用保存
     def save(self, apath):
         torch.save(self.state_dict(), os.path.join(apath, 'TrainLossState.pt'))
         torch.save(self.losslog, os.path.join(apath, 'TrainLossLog.pt'))
@@ -132,6 +155,7 @@ class LOSS(nn.modules.loss._Loss):
                 for _ in range(len(self.losslog)): l.scheduler.step()
 
 
+# # test LOSS module
 # from torch.autograd import Variable
 # los = LOSS(args,ckp)
 
@@ -141,17 +165,21 @@ class LOSS(nn.modules.loss._Loss):
 # for cp_idx, CP in enumerate(CompressRate):
 #     for snr_idx, snr in enumerate(SNR):
 #         for epoch_idx in range(20):
-#             sr = torch.randn(1,3,4,4)
-#             hr = torch.randn(1,3,4,4)
 #             los.start_log()
-#             lss = los(sr, hr)
-#             lss = Variable(lss, requires_grad = True)
-#             lss.backward()
-#             los.end_log(10)
+#             for batch in range(20):
+#                 sr = torch.randn(1,3,4,4)
+#                 hr = torch.randn(1,3,4,4)
+#                 lss = los(sr, hr)
+#                 lss = Variable(lss, requires_grad = True)
+#                 lss.backward()
+#             #los.end_log(10)
 
 
 
-# los.plot_loss(ckp.dir, 420)
+# los.plot_loss(ckp.dir,)
+# los.plot_AllLoss(ckp.dir,)
+
+
 # los.save(ckp.dir)
 
 
