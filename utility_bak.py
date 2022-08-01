@@ -29,11 +29,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 # 本项目自己编写的库
 from option import args
-import sys,os
-sys.path.append("..")
-from  ColorPrint import ColoPrint
-color =  ColoPrint()
-
 
 # Timer
 class timer():
@@ -108,8 +103,6 @@ class checkpoint():
         if args.reset:
             os.system('rm -rf ' + self.dir)
 
-        print(color.fuchsia(f"\n#================================ checkpoint 准备完毕 =======================================\n"))
-
     # 更新全局的Epoch
     def UpdateEpoch(self):
         self.SumEpoch += 1
@@ -123,10 +116,8 @@ class checkpoint():
             lens.append(len(self.psnrlog[key]))
             sumepoch +=  len(self.psnrlog[key])
         set1 = set(lens)
-        if lens == []:
-            print(f"Epoch == 0, 重新训练.....\n")
-        elif len(set1) == 1 and lens[0]>=1:
-            #print(f"所有的压缩率和信噪比组合都训练了等长的Epoch...\n")
+        if len(set1) == 1 and lens[0]>=1:
+            print(f"所有的压缩率和信噪比组合都训练了等长的Epoch...\n")
             self.mark = True
             return lens[0], sumepoch
         else:
@@ -284,33 +275,34 @@ class checkpoint():
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
 
 
-# ckp = checkpoint(args)
-# # 依次遍历压缩率
-# for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
-#     # 依次遍历信噪比
-#     for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-#         #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
+ckp = checkpoint(args)
+# 依次遍历压缩率
+for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
+    # 依次遍历信噪比
+    for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+        #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
 
-#         epoch = 0
+        epoch = 0
 
-#         ckp.InitPsnrLog(compressrate, snr)
-#         # 遍历epoch
-#         for epoch_idx in  range(10):
-#             ckp.UpdateEpoch()
-#             epoch += 1
-#             #初始化特定信噪比和压缩率下的存储字典
-#             ckp.AddPsnrLog(compressrate, snr)
+        ckp.InitPsnrLog(compressrate, snr)
+        # 遍历epoch
+        for epoch_idx in  range(10):
+            ckp.UpdateEpoch()
+            epoch += 1
+            #初始化特定信噪比和压缩率下的存储字典
+            ckp.AddPsnrLog(compressrate, snr)
 
-#             # 遍历训练数据集
-#             for i in range(20):
-#                 # pass
-#                 ckp.UpdatePsnrLog(compressrate, snr, epoch_idx+i)
-#             ckp.meanPsnrLog(compressrate, snr, 20)
+            # 遍历训练数据集
+            for i in range(20):
+                # pass
+                ckp.UpdatePsnrLog(compressrate, snr, epoch_idx+i)
+            ckp.meanPsnrLog(compressrate, snr, 20)
 
-# #ckp.plot_trainPsnr(0.4, 18)
-# ckp.plot_AllTrainPsnr()
+#ckp.plot_trainPsnr(0.4, 18)
+ckp.plot_AllTrainPsnr()
 
-# ckp.save()
+
+ckp.save()
 
 
 #  功能：将img每个像素点的至夹在[0,255]之间

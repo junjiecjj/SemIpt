@@ -54,7 +54,7 @@ class DataGenerator(object):
                 batch_size=args.batch_size,  # 16
                 shuffle=True,
                 pin_memory=not args.cpu,
-                num_workers=args.n_threads,
+                num_workers= 3 # args.n_threads,
             )
 
         self.loader_test = []
@@ -75,9 +75,10 @@ class DataGenerator(object):
                         batch_size=  args.test_batch_size,  #  1
                         shuffle=False,
                         pin_memory=not args.cpu,
-                        num_workers=args.n_threads,
+                        num_workers=3 #args.n_threads,
                     )
                 )
+        print(color.fuchsia(f"\n#================================ DataLoader 准备完毕 =======================================\n"))
 
 
 

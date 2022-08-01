@@ -13,7 +13,7 @@ from option import args
 from torch.utils.tensorboard import SummaryWriter
 import os, sys
 import torch
-
+import numpy as np
 
 
 class SummWriter(SummaryWriter):
@@ -26,11 +26,17 @@ class SummWriter(SummaryWriter):
     def WrTLoss(self, trainloss, epoch):
         self.add_scalar('train/Loss/allLoss', trainloss, epoch)
 
+    def WrTrLossOne(self, compratio, snr,  trainloss, epoch):
+        self.add_scalars('train/Loss/', {'CompreRatio={},SNR={}'.format(compratio, snr): trainloss}, epoch)
+
     def WrTrainLoss(self,  compratio, snr, trainloss, epoch):
         self.add_scalar('train/Loss/CompreRatio={},SNR={}'.format(compratio, snr), trainloss, epoch)
 
     def WrTrainPsnr(self, compratio, snr, trainPsnr, epoch):
         self.add_scalar('train/PSNR/CompreRatio={},SNR={}'.format(compratio, snr), trainPsnr, epoch)
+
+    def WrTrPsnrOne(self, compratio, snr,  trainPsnr, epoch):
+        self.add_scalars('train/PSNR/', {'CompreRatio={},SNR={}'.format(compratio, snr): trainPsnr}, epoch)
 
     def WrModel(self, model, images ):
         self.add_graph(model, images)
@@ -38,32 +44,33 @@ class SummWriter(SummaryWriter):
     def WrClose(self):
         self.close()
 
-wr = SummWriter(args)
 
 
+# wr = SummWriter(args)
 
-# x = range(100)
-# for i in x:
-#     wr.add_scalar('Loss/train', i * 2, i)
+# x = range(300,400)
+
+# AllEpoch = 0
+# for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
+#     for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+#         for epch_idx in range(200):
+#             AllEpoch += 1
+#             for batch_idx  in range(10):
+#                 pass
+#             wr.WrTLoss( torch.tensor(comprate_idx+snr_idx+epch_idx+0.121), AllEpoch )
+            
+#             # 
+#             wr.WrTrLossOne(compressrate, snr, torch.tensor(np.random.randint(100)+epch_idx), epch_idx)
+#             wr.WrTrPsnrOne(compressrate, snr, torch.tensor(np.random.randint(100)+epch_idx), epch_idx)
+            
+#             #
+#             #wr.WrTrainLoss(compressrate, snr, torch.tensor(1.22+epch_idx), epch_idx)
+#             #wr.WrTrainPsnr(compressrate, snr, torch.tensor(2.11+epch_idx), epch_idx)
+
 # wr.close()
 
 
-x = range(300,400)
-
-AllEpoch = 0
-for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
-    for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-        for epch_idx in range(200):
-            AllEpoch += 1
-            for batch_idx  in range(10):
-                pass
-            wr.WrTLoss( torch.tensor(comprate_idx+snr_idx+epch_idx+0.121), AllEpoch )
-            wr.WrTrainLoss(compressrate, snr, torch.tensor(1.22+epch_idx), epch_idx)
-            wr.WrTrainPsnr(compressrate, snr, torch.tensor(2.11+epch_idx), epch_idx)
-
-
-wr.close()
-
+#================================================================================================================
 
 # from torch.utils.tensorboard import SummaryWriter
 # import numpy as np

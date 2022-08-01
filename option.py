@@ -50,7 +50,8 @@ parser.add_argument('--data_test',type=str,  default='Set5+Set14+Rain100L+CBSD68
 
 parser.add_argument('--useBIN',  action='store_false', help='是否使用bin图像')
 
-parser.add_argument('--data_range', type=str, default='1-800/801-810', help='train/test data range')
+#parser.add_argument('--data_range', type=str, default='1-800/801-810', help='train/test data range')
+parser.add_argument('--data_range', type=str, default='1-48', help='train/test data range')
 parser.add_argument('--ext', type=str, default='sep', help='dataset file extension')
 # parser.add_argument('--scale', type=str, default='2+3+4+5+6+1', help='super resolution scale')
 parser.add_argument('--scale', type=str, default='2+3+4+1', help='super resolution scale') # cjj

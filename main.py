@@ -60,7 +60,7 @@ if checkpoint.ok:
 
     # 加载最初的预训练模型
     if args.pretrain != "":# 用预训练模型
-        print(f"用最原始的预训练模型\n")
+        print(f"加载最原始的预训练模型\n")
         state_dict = torch.load(args.pretrain, map_location=torch.device('cpu'))
         _model.model.load_state_dict(state_dict, strict=False)
 

@@ -82,6 +82,7 @@ class SRData(data.Dataset):
             if self.args.useBIN == True:
                 self.images_hr_bin, self.images_lr_bin = self._make_bin_img_magnify()
 
+
         # 去雨任务，且数据集是去雨任务的数据集'Rain100L'
         if self.name in ['Rain100L',] and self.args.derain:
             self.apath = os.path.join(args.dir_data, "Rain100L")
@@ -91,6 +92,7 @@ class SRData(data.Dataset):
             self.images_hr_png = [path.replace("rainy/","no") for path in self.images_lr_png]
             if self.args.useBIN == True:
                 self.images_hr_bin, self.images_lr_bin = self._make_bin_img_rain100l()
+
 
         if self.name in ['CBSD68', ] and self.args.denoise:
             self._set_filesystem_CBSD68(args.dir_data)
@@ -145,8 +147,6 @@ class SRData(data.Dataset):
         names_hr = names_hr[self.begin - 1:self.end]
         names_lr = [n[self.begin - 1:self.end] for n in names_lr]
         return names_hr, names_lr
-
-
 
 
     def _scan_CBSD68(self):
@@ -294,7 +294,7 @@ class SRData(data.Dataset):
             return pair_t[0],pair_t[0], filename
         if self.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K']:
             # 默认，图像缩放任务
-            lr, hr, filename = self._load_file(idx, )
+            lr, hr, filename = self._load_file(idx)
             pair = self.get_patch(lr, hr)
             pair = common.set_channel(*pair, n_channels=self.args.n_colors)
             pair_t = common.np2Tensor(*pair, rgb_range=self.args.rgb_range)  # rgb_range=255
@@ -307,7 +307,8 @@ class SRData(data.Dataset):
 
     def __len__(self):
         if self.train:
-            return len(self.images_hr_png) * self.repeat
+            #return len(self.images_hr_png) * self.repeat
+            return len(self.images_hr_png) * 10
         else:
             if self.args.derain:
                 return int(len(self.images_hr_png)/self.args.derain_test)
@@ -462,8 +463,8 @@ class SRData(data.Dataset):
 
     def set_scale(self, idx_scale):
         if not self.input_large:
-            print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno},  idx_scale = {idx_scale} \n"))
             self.idx_scale = idx_scale
+            print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno},  idx_scale = {idx_scale} \n"))
         else:
             self.idx_scale = random.randint(0, len(self.scale) - 1)
 

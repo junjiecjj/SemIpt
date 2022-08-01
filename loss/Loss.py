@@ -6,7 +6,10 @@ Created on 2022/07/07
 @author: Junjie Chen
 
 """
-import os
+import sys,os
+sys.path.append("..")
+from  ColorPrint import ColoPrint
+color =  ColoPrint()
 from importlib import import_module
 
 import matplotlib
@@ -53,6 +56,9 @@ class LOSS(nn.modules.loss._Loss):
 
         # TODO
         if args.load != '': self.load(ckp.dir, cpu=args.cpu)
+
+        print(color.fuchsia(f"\n#================================ LOSS 准备完毕 =======================================\n"))
+
 
     def forward(self, sr, hr):
         losses = []

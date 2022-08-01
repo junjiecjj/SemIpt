@@ -8,12 +8,12 @@ Created on 2022/07/07
 """
 
 
-import sys,os
+
 #sys.path.append(os.getcwd())
 from model  import common
 # 或
 # from .  import common
-
+import sys,os
 sys.path.append("..")
 from  ColorPrint import ColoPrint
 color =  ColoPrint()
@@ -37,7 +37,7 @@ def make_model(args, parent=False):
 class ipt(nn.Module):
     def __init__(self, args, conv=common.default_conv):
         super(ipt, self).__init__()
-        print(f"initialing IPT Model.....\n")
+        print(f"initialing ipt Model.....\n")
         # print(f"current =  {os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}")
         self.scale_idx = 0
         self.snr = 10
@@ -80,6 +80,7 @@ class ipt(nn.Module):
                 conv(n_feats, args.n_colors, kernel_size)
             ) for s in args.scale
         ])
+        print(color.fuchsia(f"\n#================================ ipt 准备完毕 =======================================\n"))
 
 
     def forward(self, x):
@@ -94,7 +95,7 @@ class ipt(nn.Module):
         # print(f"In IPT ipt snr = {self.snr}\n")
 
         res = self.body(x, self.scale_idx, self.snr, self.compr_idx)
-        print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after body x.shape = {x.shape}, res.shape ={res.shape}"))  # x.shape = torch.Size([1, 64, 48, 48]), res.shape =torch.Size([1, 64, 48, 48])
+        # print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after body x.shape = {x.shape}, res.shape ={res.shape}"))  # x.shape = torch.Size([1, 64, 48, 48]), res.shape =torch.Size([1, 64, 48, 48])
         res += x
 
         x = self.tail[self.scale_idx](res)
@@ -275,7 +276,7 @@ class VisionTransformer(nn.Module):
         x = x.transpose(0,1).contiguous().view(x.size(1), -1, self.flatten_dim)
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 256, 576])
 
-        print(f"con = {con}\n")
+        #print(f"con = {con}\n")
         if con:
             print("i'am in con ........")
             con_x = x
@@ -469,7 +470,7 @@ def _get_activation_fn(activation):
 class Ipt(nn.Module):
     def __init__(self, args, ckp):
         super(Ipt, self).__init__()
-        print('Making global model...')
+        print('Making global Ipt model...')
         self.args = args
         self.scale = args.scale
         self.patch_size = args.patch_size  # 48
@@ -491,6 +492,9 @@ class Ipt(nn.Module):
         #  /cache/results/ipt/model
         self.load(ckp.get_path('model'), resume=args.resume, cpu=args.cpu)
         print(self.model, file=ckp.log_file)
+
+        print(color.fuchsia(f"\n#================================ Ipt 准备完毕 =======================================\n"))
+
 
     def forward(self, x, idx_scale=0, snr=10, compr_idx=0):
         self.idx_scale = idx_scale
@@ -562,7 +566,7 @@ class Ipt(nn.Module):
                 os.path.join(apath, 'model_{}.pt'.format(resume)),
                 **kwargs
             )
-        print(f"load_from = {load_from}\n")
+        #print(f"load_from = {load_from}\n")
         if load_from:
             self.model.load_state_dict(load_from, strict=False)
 
