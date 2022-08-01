@@ -80,6 +80,7 @@ class LOSS(nn.modules.loss._Loss):
 
     def end_log(self, n_batches):
         self.losslog[-1].div_(n_batches)
+        return self.losslog[-1]
 
     def display_loss(self, batch):
         n_samples = batch + 1

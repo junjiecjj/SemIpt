@@ -22,11 +22,11 @@ color = ColoPrint()
 # print(color.fuchsia("Color Print Test Pass"))
 
 class Trainer():
-    def __init__(self, args, loader, my_model, my_loss, ckp):
+    def __init__(self, args, loader, my_model, my_loss, ckp, writer):
         self.args = args
         self.scale = args.scale
         print(f"trainer  self.scale = {self.scale} \n")
-
+        self.wr = writer
         self.ckp = ckp
         self.loader_train = loader.loader_train
         self.loader_test = loader.loader_test
@@ -251,7 +251,7 @@ class Trainer():
                     self.optimizer.schedule()
                 # 在每个压缩率和信噪比下都重置一次优化器
                 self.optimizer.reset_state()
-                self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs)
+                self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
         self.ckp.saveLossPsnrOptim(self)
 
     def test(self):

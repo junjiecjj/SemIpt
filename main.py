@@ -8,14 +8,23 @@ Created on 2022/07/07
 """
 
 # 本项目自己编写的库
+# 参数
 from option import args
+# 数据集
 import data
+from data import    data_generator
+
+# 损失函数
 from loss.Loss import LOSS
+
+# 训练器
 from trainer import Trainer
 #from  model import IPT
 
 from model.__init__ import ModelSet
-from data import    data_generator
+
+
+from visual.summwriter import SummWriter
 
 
 #  系统库
@@ -58,8 +67,11 @@ if checkpoint.ok:
     # 损失函数类
     los = LOSS(args, checkpoint)
 
+    # tensorboard
+    wr = SummWriter(args)
+
     # 训练器，包括训练测试模块
-    tr = Trainer(args, loader, _model, los, checkpoint)
+    tr = Trainer(args, loader, _model, los, checkpoint, wr)
 
     # 训练
     if  args.wanttrain:

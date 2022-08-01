@@ -111,7 +111,7 @@ class checkpoint():
             self.mark = False
             return 0
 
-
+# <<< 训练过程的PSNR等指标的动态记录
     def InitPsnrLog(self, comprateTmp, snrTmp):
         tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
         if tmpS not in self.psnrlog.keys():
@@ -132,6 +132,8 @@ class checkpoint():
         tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
         self.psnrlog[tmpS][-1] /= n_batch
 
+        return self.psnrlog[tmpS][-1]
+# 训练过程的PSNR等指标的动态记录 >>>
 
     def InittestDir(self):
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
@@ -256,7 +258,7 @@ class checkpoint():
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
 
 
-ckp = checkpoint(args)
+# ckp = checkpoint(args)
 # # 依次遍历压缩率
 # for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
 #     # 依次遍历信噪比

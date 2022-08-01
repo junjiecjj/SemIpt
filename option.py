@@ -37,6 +37,9 @@ parser.add_argument('--seed', type=int, default=1, help='random seed')
 # 数据根目录
 parser.add_argument('--dir_data', type=str, default='/home/jack/IPT-Pretrain/Data/', help='dataset directory')  # cjj
 parser.add_argument('--dir_demo', type=str, default='../test', help='demo image directory')
+parser.add_argument('--SummaryWriteDir', type=str, default='/home/jack/IPT-Pretrain/results/summary', help='demo image directory')
+
+
 
 # 训练数据名称
 parser.add_argument('--data_train', type=str, default='DIV2K', help='train dataset name')
