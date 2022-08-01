@@ -308,7 +308,7 @@ class SRData(data.Dataset):
     def __len__(self):
         if self.train:
             #return len(self.images_hr_png) * self.repeat
-            return len(self.images_hr_png) * 10
+            return len(self.images_hr_png)
         else:
             if self.args.derain:
                 return int(len(self.images_hr_png)/self.args.derain_test)

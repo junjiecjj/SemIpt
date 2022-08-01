@@ -61,7 +61,7 @@ class Trainer():
             return epoch >= self.args.epochs
 
     def train(self):
-        
+        print(color.fuchsia(f"\n#================================ 开始训练 =======================================\n"))
         torch.set_grad_enabled(True)
         ind1_scale = self.args.scale.index(1)
 
@@ -72,7 +72,7 @@ class Trainer():
         for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33, 0.4]
             # 依次遍历信噪比
             for snr_idx, snr in enumerate(self.args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-                print(color.fuchsia( f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n"))
+                print(color.fuchsia( f"\ 开始在压缩率索引为:{comprate_idx}, 压缩率为:{compressrate}， 信噪比索引为:{snr_idx}, 信噪比为:{snr} 下训练\n"))
 
                 # 初始化 特定信噪比和压缩率下 的Psnr日志
                 self.ckp.InitPsnrLog(compressrate, snr)
@@ -88,21 +88,21 @@ class Trainer():
                     # 动态增加特定信噪比和压缩率下的Psnr日志
                     self.ckp.AddPsnrLog(compressrate, snr)
 
-                    print(f"len(self.loader_train) = {len(self.loader_train)}\n")
+                    print(f"训练数据集的batch数 = {len(self.loader_train)}\n")
 
                     # 遍历训练数据集
                     for batch_idx, (lr, hr, filename)  in tqdm(enumerate(self.loader_train), ncols=80):
 
                         if batch_idx % 200 == 0:
                             print(f"\nepoch_idx = {epoch_idx}, batch_idx = {batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
-                        print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape} \n")
+                        #print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape} \n")
 
                         lr, hr = self.prepare(lr, hr)
 
                         self.optimizer.zero_grad()
                         sr = self.model(lr, idx_scale=ind1_scale, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
-                        print(f"sr.shape = {sr.shape}, hr.shape = {hr.shape} \n")
+                        print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape}, sr.shape = {sr.shape} \n")
 
                         # 计算batch内的loss
                         lss = self.loss(sr, hr)
