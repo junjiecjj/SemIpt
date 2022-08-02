@@ -464,7 +464,7 @@ class SRData(data.Dataset):
     def set_scale(self, idx_scale):
         if not self.input_large:
             self.idx_scale = idx_scale
-            print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno},  idx_scale = {idx_scale} \n"))
+            #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno},  idx_scale = {idx_scale} \n"))
         else:
             self.idx_scale = random.randint(0, len(self.scale) - 1)
 

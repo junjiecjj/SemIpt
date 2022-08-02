@@ -39,8 +39,6 @@ parser.add_argument('--dir_data', type=str, default='/home/jack/IPT-Pretrain/Dat
 parser.add_argument('--dir_demo', type=str, default='../test', help='demo image directory')
 parser.add_argument('--SummaryWriteDir', type=str, default='/home/jack/IPT-Pretrain/results/summary', help='demo image directory')
 
-
-
 # 训练数据名称
 parser.add_argument('--data_train', type=str, default='DIV2K', help='train dataset name')
 
@@ -61,8 +59,8 @@ parser.add_argument('--rgb_range', type=int, default=255, help='maximum value of
 parser.add_argument('--n_colors', type=int, default=3, help='number of color channels to use')
 parser.add_argument('--no_augment', action='store_true',  help='do not use data augmentation')
 
-parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
-parser.add_argument('--SNRtrain',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
+parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33 ',  help='Compress rate for test')
+parser.add_argument('--SNRtrain',  type=str, default='-6, -2, 0,  10, 18',  help='SNR for train')
 
 parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
 parser.add_argument('--SNRtest',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
@@ -74,7 +72,7 @@ parser.add_argument('--wanttest',  action='store_false', help='set this option t
 parser.add_argument('--wanttrain', action='store_false', help='set this option to train the model')
 parser.add_argument('--reset', action='store_true', help='reset the training')
 parser.add_argument('--test_every', type=int, default=1000, help='do test per every N batches')
-parser.add_argument('--epochs', type=int, default=300,  help='number of epochs to train')
+parser.add_argument('--epochs', type=int, default=4,  help='number of epochs to train')
 parser.add_argument('--batch_size', type=int, default=16, help='input batch size for training')
 parser.add_argument('--test_batch_size', type=int,  default=1,help='input batch size for training')
 parser.add_argument('--crop_batch_size', type=int, default=64, help='input batch size for training')

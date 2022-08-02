@@ -35,6 +35,19 @@ from  ColorPrint import ColoPrint
 color =  ColoPrint()
 
 
+
+
+
+def printArgs(args):
+    print("########################################################################")
+    print("################################  args  ################################")
+    print("########################################################################")
+    for k, v in args.__dict__.items():
+        print(f"{k: <40}: {str(v): <40}  {str(type(v)): <20}")
+    print("################################  end  ################################")
+
+
+
 # Timer
 class timer():
     def __init__(self):
@@ -43,22 +56,20 @@ class timer():
 
     def tic(self):  # time.time()函数返回自纪元以来经过的秒数。
         self.t0 = time.time()
+        self.ts = self.t0
 
-    def toc(self, restart=False):
-        diff = time.time() - self.t0
-        if restart: self.t0 = time.time()
+    # 返回从ts开始历经的秒数。
+    def toc(self):
+        diff = time.time() - self.ts
+        self.ts = time.time()
         return diff
 
+    # 从计时开始到现在的时间.
     def hold(self):
-        self.acc += self.toc()
+        self.acc = time.time() - self.t0
+        return self.acc
 
-    def release(self):
-        ret = self.acc
-        self.acc = 0
-        return ret
 
-    def reset(self):
-        self.acc = 0
 
 
 # 功能：
