@@ -116,7 +116,7 @@ parser.add_argument('--gclip', type=float, default=0, help='gradient clipping th
 parser.add_argument('--loss', type=str, default='1*MSE+1*L1', help='loss function configuration')
 parser.add_argument('--skip_threshold', type=float, default='1e8', help='skipping batch that has large error')
 
-parser.add_argument('--metric', type=str, default='Psnr, MSE', help='loss function configuration')
+parser.add_argument('--metrics', type=str, default='Psnr, MSE', help='loss function configuration')
 
 # Log specifications
 # parser.add_argument('--save', type=str, default='/cache/results/ipt/', help='file name to save')
@@ -153,7 +153,7 @@ args.scale = list(map(lambda x: int(x), args.scale.split('+')))
 args.data_train = args.data_train.split('+')
 args.data_test = args.data_test.split('+')  #  ['DIV2K']
 
-args.metric = args.metric.split(',') 
+args.metrics = list(map(lambda x: x.strip(" "), args.metrics.split(','))) 
 
 
 args.CompressRateTrain = list(map(lambda x: float(x), args.CompressRateTrain.split(',')))

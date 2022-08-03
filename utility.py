@@ -109,8 +109,8 @@ class checkpoint():
 
         self.psnrlog = {}
 
-        if os.path.isfile(self.get_path('trainPsnr_log.pt')):
-            self.psnrlog = torch.load(self.get_path('trainPsnr_log.pt'))
+        if os.path.isfile(self.get_path('TrainMetric_log.pt')):
+            self.psnrlog = torch.load(self.get_path('TrainMetric_log.pt'))
             epoch, sepoch = self.checkSameLen()
             self.LastSumEpoch = sepoch
             if self.mark == True:
@@ -153,23 +153,23 @@ class checkpoint():
 
 # <<< 训练过程的PSNR等指标的动态记录
     def InitPsnrLog(self, comprateTmp, snrTmp):
-        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
         if tmpS not in self.psnrlog.keys():
             self.psnrlog[tmpS] = torch.Tensor()
         else:
             pass
 
     def AddPsnrLog(self, comprateTmp, snrTmp):
-        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
         self.psnrlog[tmpS] = torch.cat([ self.psnrlog[tmpS], torch.zeros(1, len(self.args.metric))])
 
-    def UpdatePsnrLog(self, comprateTmp, snrTmp, psnr):
-        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-        self.psnrlog[tmpS][-1] += psnr
+    def UpdateMetricLog(self, comprateTmp, snrTmp, metric):
+        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        self.psnrlog[tmpS][-1] += metric
 
-    def meanPsnrLog(self, comprateTmp, snrTmp, n_batch):
-        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+    def MeanMetricLog(self, comprateTmp, snrTmp, n_batch):
+        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
         self.psnrlog[tmpS][-1] /= n_batch
 
         return self.psnrlog[tmpS][-1]
@@ -203,7 +203,7 @@ class checkpoint():
     def save(self):
         # 画图和保存PSNR日志
         self.plot_AllTrainPsnr()
-        torch.save(self.psnrlog, self.get_path('TrainPsnr_log.pt'))
+        torch.save(self.psnrlog, self.get_path('TrainMetric_log.pt'))
         torch.save(self.SumEpoch, self.get_path('SumEpoch.pt'))
 
 
@@ -219,7 +219,7 @@ class checkpoint():
 
 
     def plot_trainPsnr(self, comprateTmp, snrTmp):
-        tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
         epoch = len(self.psnrlog[tmpS])
 
@@ -242,29 +242,28 @@ class checkpoint():
 
 
     def plot_AllTrainPsnr(self):
-        fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(20,20))
-        for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
-            for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
-                tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-                epoch = len(self.psnrlog[tmpS])
-                X = np.linspace(1, epoch, epoch)
-
-                label = 'CompRatio={},SNR={}'.format(comprateTmp, snrTmp)
-                axs[snr_idx,comprate_idx].set_title(label)
-
-                axs[snr_idx,comprate_idx].plot(X, self.psnrlog[tmpS],'r-',label=label,)
-                axs[snr_idx,comprate_idx].legend()
-                axs[snr_idx,comprate_idx].set_xlabel('Epochs')
-                axs[snr_idx,comprate_idx].set_ylabel('PSNR')
-                #axs[snr_idx,comprate_idx].grid(True)
-                #axs[snr_idx,comprate_idx].tick_params(direction='in')
-                axs[snr_idx,comprate_idx].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
-        fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
-        plt.tight_layout()#  使得图像的四周边缘空白最小化
-        out_fig = plt.gcf()
-        out_fig.savefig(self.get_path('PsnrEpoch_Plot.pdf'))
-        plt.show()
-        plt.close(fig)
+        for idx, met in  enumerate(self.args.metrics):
+            fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(20,20))
+            for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
+                for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
+                    tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+                    epoch = len(self.psnrlog[tmpS])
+                    X = np.linspace(1, epoch, epoch)
+    
+                    label = 'CompRatio={},SNR={},Metric={}'.format(comprateTmp, snrTmp,met)
+                    axs[snr_idx,comprate_idx].set_title(label)
+    
+                    axs[snr_idx,comprate_idx].plot(X, self.psnrlog[tmpS][:,idx],'r-',label=label,)
+                    axs[snr_idx,comprate_idx].legend()
+                    axs[snr_idx,comprate_idx].set_xlabel('Epochs')
+                    axs[snr_idx,comprate_idx].set_ylabel(f"{met}")
+                    axs[snr_idx,comprate_idx].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
+            fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
+            plt.tight_layout()#  使得图像的四周边缘空白最小化
+            out_fig = plt.gcf()
+            out_fig.savefig(self.get_path(f"{met}_Epoch_Plot.pdf"))
+            plt.show()
+            plt.close(fig)
 
 
 
@@ -336,6 +335,24 @@ def quantize(img, rgb_range):
     pixel_range = 255 / rgb_range
     return img.mul(pixel_range).clamp(0, 255).round().div(pixel_range)
 
+
+
+def calc_metric(sr, hr, scale, rgb_range, metrics, cal_type='y'):
+
+    metric = []
+
+    for met in metrics:
+        if met == 'Psnr':
+            psnr = calc_psnr(sr, hr, scale, rgb_range, cal_type='y')
+        elif met == 'MSE':
+            mse = calc_mse(sr, hr, scale)
+        else:
+            m = 0
+    metric.append(psnr)
+    metric.append(mse)
+    return torch.tensor(metric)
+
+
 def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
     if hr.nelement() == 1: return 0
 
@@ -352,8 +369,7 @@ def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
         valid = diff[..., scale:-scale, scale:-scale]
     mse = valid.pow(2).mean()
 
-    return -10 * math.log10(mse)
-
+    return   -10 * math.log10(mse)
 
 def calc_mse(sr, hr, scale):
     if hr.nelement() == 1: return 0
@@ -365,7 +381,6 @@ def calc_mse(sr, hr, scale):
     else:
         valid = diff[..., scale:-scale, scale:-scale]
     mse = valid.pow(2).mean()
-
     return mse
 
 

@@ -41,7 +41,7 @@ class SummWriter(SummaryWriter):
     # 在一张图画出loss
     def WrTrLossOne(self, compratio, snr,  trainloss, epoch):
         for idx, los in enumerate(self.loss):
-            self.add_scalars(f"train/{los['type']}_Loss/", {f"CompreRatio={compratio},SNR={snr}": trainloss[idx]}, epoch)
+            self.add_scalars(f"train/Loss/{los['type']}_Loss", {f"CompreRatio={compratio},SNR={snr}": trainloss[idx]}, epoch)
 
     # 在不同图画出loss
     def WrTrainLoss(self,  compratio, snr, trainloss, epoch):
@@ -49,11 +49,11 @@ class SummWriter(SummaryWriter):
             self.add_scalar(f"train/Loss/{los['type']}_Loss/CompreRatio={compratio},SNR={snr}" , trainloss[idx], epoch)
 
     # 在不同图画出Psnr
-    def WrTrainPsnr(self, compratio, snr, trainPsnr, epoch):
+    def WrTrainMetric(self, compratio, snr, trainPsnr, epoch):
         self.add_scalar(f"train/PSNR/CompreRatio={compratio},SNR={snr}" , trainPsnr, epoch)
 
     # 在一张图画出Psnr
-    def WrTrPsnrOne(self, compratio, snr,  trainPsnr, epoch):
+    def WrTrMetricOne(self, compratio, snr,  trainPsnr, epoch):
         #for idx, los in enumerate(self.loss):
         self.add_scalars(f"train/PSNR/", {f"CompreRatio={compratio},SNR={snr}": trainPsnr}, epoch)
 
