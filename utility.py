@@ -39,12 +39,12 @@ color =  ColoPrint()
 
 
 def printArgs(args):
-    print("########################################################################")
-    print("################################  args  ################################")
-    print("########################################################################")
+    print("############################################################################################")
+    print("################################  args  ####################################################")
+    print("############################################################################################")
     for k, v in args.__dict__.items():
-        print(f"{k: <40}: {str(v): <40}  {str(type(v)): <20}")
-    print("################################  end  ################################")
+        print(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
+    print("################################  end  #####################################################")
 
 
 
@@ -97,9 +97,15 @@ class checkpoint():
             f.write('#==========================================================\n')
             f.write(now + '\n')
             f.write('#==========================================================\n\n')
-            for arg in vars(args):
-                f.write('{}: {}\n'.format(arg, getattr(args, arg)))
+
+            f.write("############################################################################################\n")
+            f.write("################################  args  ####################################################\n")
+            f.write("############################################################################################\n")
+
+            for k, v in args.__dict__.items():
+                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
             f.write('\n')
+            f.write("################################ args end  #################################################\n")
 
         self.psnrlog = {}
 
@@ -109,9 +115,9 @@ class checkpoint():
             self.LastSumEpoch = sepoch
             if self.mark == True:
                 self.startEpoch = epoch
-                print('\n从epoch={}继续训练...\n'.format(len(self.psnrlog['psnrlog:CompRatio=0.17,SNR=6'])))
+                print(f'\n从epoch={epoch}继续训练...\n' )
             else:
-                print('\nepoch验证不通过, 重新开始训练...\n')
+                print(f'\nepoch验证不通过, 重新开始训练...\n')
 
         if os.path.isfile(self.get_path('SumEpoch.pt')):
             self.SumEpoch = torch.load(self.get_path('SumEpoch.pt'))
@@ -188,6 +194,7 @@ class checkpoint():
         # 画图和保存Loss日志
         trainer.loss.save(self.dir)
         trainer.loss.plot_loss(self.dir)
+        trainer.loss.plot_AllLoss(self.dir)
 
     def saveOptim(self, trainer):
         # 保存优化器参数
@@ -196,7 +203,7 @@ class checkpoint():
     def save(self):
         # 画图和保存PSNR日志
         self.plot_AllTrainPsnr()
-        torch.save(self.psnrlog, self.get_path('trainPsnr_log.pt'))
+        torch.save(self.psnrlog, self.get_path('TrainPsnr_log.pt'))
         torch.save(self.SumEpoch, self.get_path('SumEpoch.pt'))
 
 
@@ -330,6 +337,25 @@ def quantize(img, rgb_range):
     return img.mul(pixel_range).clamp(0, 255).round().div(pixel_range)
 
 def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
+    if hr.nelement() == 1: return 0
+
+    diff = (sr - hr) / rgb_range
+
+    if cal_type=='y':
+        gray_coeffs = [65.738, 129.057, 25.064]
+        convert = diff.new_tensor(gray_coeffs).view(1, 3, 1, 1) / 256
+        diff = diff.mul(convert).sum(dim=1)
+
+    if scale == 1:
+        valid = diff
+    else:
+        valid = diff[..., scale:-scale, scale:-scale]
+    mse = valid.pow(2).mean()
+
+    return -10 * math.log10(mse)
+
+
+def calc_mse(sr, hr, scale, rgb_range, cal_type='y'):
     if hr.nelement() == 1: return 0
 
     diff = (sr - hr) / rgb_range

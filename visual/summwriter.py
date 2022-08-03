@@ -65,28 +65,28 @@ class SummWriter(SummaryWriter):
 
 
 
-wr = SummWriter(args)
+# wr = SummWriter(args)
 
-x = range(300,400)
+# x = range(300,400)
 
-AllEpoch = 0
-for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
-    for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-        for epch_idx in range(200):
-            AllEpoch += 1
-            for batch_idx  in range(10):
-                pass
-            wr.WrTLoss( torch.tensor(np.random.randint(100,size=(3,))+epch_idx), AllEpoch )
+# AllEpoch = 0
+# for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
+#     for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+#         for epch_idx in range(200):
+#             AllEpoch += 1
+#             for batch_idx  in range(10):
+#                 pass
+#             wr.WrTLoss( torch.tensor(np.random.randint(100,size=(3,))+epch_idx), AllEpoch )
 
-            #
-            wr.WrTrLossOne(compressrate, snr, torch.tensor(np.random.randint(100,size=(3,))+epch_idx), epch_idx)
-            wr.WrTrPsnrOne(compressrate, snr, torch.tensor(np.random.randint(100)+epch_idx), epch_idx)
+#             #
+#             wr.WrTrLossOne(compressrate, snr, torch.tensor(np.random.randint(100,size=(3,))+epch_idx), epch_idx)
+#             wr.WrTrPsnrOne(compressrate, snr, torch.tensor(np.random.randint(100)+epch_idx), epch_idx)
 
-            #
-            wr.WrTrainLoss(compressrate, snr, torch.tensor(np.random.randint(100,size=(3,))+epch_idx), epch_idx)
-            wr.WrTrainPsnr(compressrate, snr, torch.tensor(2.11+epch_idx), epch_idx)
+#             #
+#             wr.WrTrainLoss(compressrate, snr, torch.tensor(np.random.randint(100,size=(3,))+epch_idx), epch_idx)
+#             wr.WrTrainPsnr(compressrate, snr, torch.tensor(2.11+epch_idx), epch_idx)
 
-wr.close()
+# wr.close()
 
 
 #================================================================================================================

@@ -27,7 +27,7 @@ import torch.nn.parallel as P
 from torch import nn, Tensor
 from einops import rearrange
 import copy
-
+import datetime
 
 
 
@@ -491,8 +491,15 @@ class Ipt(nn.Module):
 
         #  /cache/results/ipt/model
         self.load(ckp.get_path('model'), resume=args.resume, cpu=args.cpu)
-        print(self.model, file=ckp.log_file)
 
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print('#=====================================================================================', file=ckp.log_file)
+        print(now, file=ckp.log_file)
+        print('#=====================================================================================\n', file=ckp.log_file)
+
+
+        print(self.model, file=ckp.log_file)
+        print('\n\n', file=ckp.log_file)
         print(color.fuchsia(f"\n#================================ Ipt 准备完毕 =======================================\n"))
 
 
@@ -545,28 +552,11 @@ class Ipt(nn.Module):
         kwargs = {}
         if cpu:
             kwargs = {'map_location': lambda storage, loc: storage}
-
-        if resume == -1:
-            load_from = torch.load(
-                os.path.join(apath, 'model_latest.pt'), **kwargs)
-        elif resume == 0:
-            if pre_train == 'download':
-                print("resume == 0\n")
-                #print("pre_train................\n")
-                print('Download the model')
-                dir_model = os.path.join('..', 'models')
-                os.makedirs(dir_model, exist_ok=True)
-                load_from = torch.utils.model_zoo.load_url(
-                    self.model.url,
-                    model_dir=dir_model,
-                    **kwargs
-                )
+        if os.path.isfile(os.path.join(apath, 'model_latest.pt')):
+            load_from = torch.load(os.path.join(apath, 'model_latest.pt'), **kwargs)
+            print(f"在Ipt中加载最近一次模型\n")
         else:
-            load_from = torch.load(
-                os.path.join(apath, 'model_{}.pt'.format(resume)),
-                **kwargs
-            )
-        #print(f"load_from = {load_from}\n")
+            print(f"Ipt中没有最近一次模型\n")
         if load_from:
             self.model.load_state_dict(load_from, strict=False)
 

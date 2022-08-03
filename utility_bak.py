@@ -29,6 +29,24 @@ from torch.utils.tensorboard import SummaryWriter
 
 # 本项目自己编写的库
 from option import args
+import sys,os
+sys.path.append("..")
+from  ColorPrint import ColoPrint
+color =  ColoPrint()
+
+
+
+
+
+def printArgs(args):
+    print("############################################################################################")
+    print("################################  args  ####################################################")
+    print("############################################################################################")
+    for k, v in args.__dict__.items():
+        print(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
+    print("################################  end  #####################################################")
+
+
 
 # Timer
 class timer():
@@ -38,22 +56,20 @@ class timer():
 
     def tic(self):  # time.time()函数返回自纪元以来经过的秒数。
         self.t0 = time.time()
+        self.ts = self.t0
 
-    def toc(self, restart=False):
-        diff = time.time() - self.t0
-        if restart: self.t0 = time.time()
+    # 返回从ts开始历经的秒数。
+    def toc(self):
+        diff = time.time() - self.ts
+        self.ts = time.time()
         return diff
 
+    # 从计时开始到现在的时间.
     def hold(self):
-        self.acc += self.toc()
+        self.acc = time.time() - self.t0
+        return self.acc
 
-    def release(self):
-        ret = self.acc
-        self.acc = 0
-        return ret
 
-    def reset(self):
-        self.acc = 0
 
 
 # 功能：
@@ -81,9 +97,15 @@ class checkpoint():
             f.write('#==========================================================\n')
             f.write(now + '\n')
             f.write('#==========================================================\n\n')
-            for arg in vars(args):
-                f.write('{}: {}\n'.format(arg, getattr(args, arg)))
+
+            f.write("############################################################################################\n")
+            f.write("################################  args  ####################################################\n")
+            f.write("############################################################################################\n")
+
+            for k, v in args.__dict__.items():
+                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
             f.write('\n')
+            f.write("################################ args end  #################################################\n")
 
         self.psnrlog = {}
 
@@ -93,15 +115,17 @@ class checkpoint():
             self.LastSumEpoch = sepoch
             if self.mark == True:
                 self.startEpoch = epoch
-                print('\n从epoch={}继续训练...\n'.format(len(self.psnrlog['psnrlog:CompRatio=0.17,SNR=6'])))
+                print(f'\n从epoch={epoch}继续训练...\n' )
             else:
-                print('\nepoch验证不通过, 重新开始训练...\n')
+                print(f'\nepoch验证不通过, 重新开始训练...\n')
 
         if os.path.isfile(self.get_path('SumEpoch.pt')):
             self.SumEpoch = torch.load(self.get_path('SumEpoch.pt'))
 
         if args.reset:
             os.system('rm -rf ' + self.dir)
+
+        print(color.fuchsia(f"\n#================================ checkpoint 准备完毕 =======================================\n"))
 
     # 更新全局的Epoch
     def UpdateEpoch(self):
@@ -116,8 +140,10 @@ class checkpoint():
             lens.append(len(self.psnrlog[key]))
             sumepoch +=  len(self.psnrlog[key])
         set1 = set(lens)
-        if len(set1) == 1 and lens[0]>=1:
-            print(f"所有的压缩率和信噪比组合都训练了等长的Epoch...\n")
+        if lens == []:
+            print(f"Epoch == 0, 重新训练.....\n")
+        elif len(set1) == 1 and lens[0]>=1:
+            #print(f"所有的压缩率和信噪比组合都训练了等长的Epoch...\n")
             self.mark = True
             return lens[0], sumepoch
         else:
@@ -168,6 +194,7 @@ class checkpoint():
         # 画图和保存Loss日志
         trainer.loss.save(self.dir)
         trainer.loss.plot_loss(self.dir)
+        trainer.loss.plot_AllLoss(self.dir)
 
     def saveOptim(self, trainer):
         # 保存优化器参数
@@ -176,7 +203,7 @@ class checkpoint():
     def save(self):
         # 画图和保存PSNR日志
         self.plot_AllTrainPsnr()
-        torch.save(self.psnrlog, self.get_path('trainPsnr_log.pt'))
+        torch.save(self.psnrlog, self.get_path('TrainPsnr_log.pt'))
         torch.save(self.SumEpoch, self.get_path('SumEpoch.pt'))
 
 
@@ -275,34 +302,33 @@ class checkpoint():
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
 
 
-ckp = checkpoint(args)
-# 依次遍历压缩率
-for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
-    # 依次遍历信噪比
-    for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-        #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
+# ckp = checkpoint(args)
+# # 依次遍历压缩率
+# for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
+#     # 依次遍历信噪比
+#     for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+#         #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
 
-        epoch = 0
+#         epoch = 0
 
-        ckp.InitPsnrLog(compressrate, snr)
-        # 遍历epoch
-        for epoch_idx in  range(10):
-            ckp.UpdateEpoch()
-            epoch += 1
-            #初始化特定信噪比和压缩率下的存储字典
-            ckp.AddPsnrLog(compressrate, snr)
+#         ckp.InitPsnrLog(compressrate, snr)
+#         # 遍历epoch
+#         for epoch_idx in  range(10):
+#             ckp.UpdateEpoch()
+#             epoch += 1
+#             #初始化特定信噪比和压缩率下的存储字典
+#             ckp.AddPsnrLog(compressrate, snr)
 
-            # 遍历训练数据集
-            for i in range(20):
-                # pass
-                ckp.UpdatePsnrLog(compressrate, snr, epoch_idx+i)
-            ckp.meanPsnrLog(compressrate, snr, 20)
+#             # 遍历训练数据集
+#             for i in range(20):
+#                 # pass
+#                 ckp.UpdatePsnrLog(compressrate, snr, epoch_idx+i)
+#             ckp.meanPsnrLog(compressrate, snr, 20)
 
-#ckp.plot_trainPsnr(0.4, 18)
-ckp.plot_AllTrainPsnr()
+# #ckp.plot_trainPsnr(0.4, 18)
+# ckp.plot_AllTrainPsnr()
 
-
-ckp.save()
+# ckp.save()
 
 
 #  功能：将img每个像素点的至夹在[0,255]之间
