@@ -153,7 +153,7 @@ args.scale = list(map(lambda x: int(x), args.scale.split('+')))
 args.data_train = args.data_train.split('+')
 args.data_test = args.data_test.split('+')  #  ['DIV2K']
 
-args.metric = args.metric.split('+') 
+args.metric = args.metric.split(',') 
 
 
 args.CompressRateTrain = list(map(lambda x: float(x), args.CompressRateTrain.split(',')))

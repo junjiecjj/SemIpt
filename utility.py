@@ -162,7 +162,7 @@ class checkpoint():
     def AddPsnrLog(self, comprateTmp, snrTmp):
         tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
-        self.psnrlog[tmpS] = torch.cat([ self.psnrlog[tmpS], torch.zeros(1, 1)])
+        self.psnrlog[tmpS] = torch.cat([ self.psnrlog[tmpS], torch.zeros(1, len(self.args.metric))])
 
     def UpdatePsnrLog(self, comprateTmp, snrTmp, psnr):
         tmpS = "psnrlog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
@@ -355,15 +355,10 @@ def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
     return -10 * math.log10(mse)
 
 
-def calc_mse(sr, hr, scale, rgb_range, cal_type='y'):
+def calc_mse(sr, hr, scale):
     if hr.nelement() == 1: return 0
 
-    diff = (sr - hr) / rgb_range
-
-    if cal_type=='y':
-        gray_coeffs = [65.738, 129.057, 25.064]
-        convert = diff.new_tensor(gray_coeffs).view(1, 3, 1, 1) / 256
-        diff = diff.mul(convert).sum(dim=1)
+    diff = (sr - hr)
 
     if scale == 1:
         valid = diff
@@ -371,7 +366,7 @@ def calc_mse(sr, hr, scale, rgb_range, cal_type='y'):
         valid = diff[..., scale:-scale, scale:-scale]
     mse = valid.pow(2).mean()
 
-    return -10 * math.log10(mse)
+    return mse
 
 
 class net(nn.Module):
