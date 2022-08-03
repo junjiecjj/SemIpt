@@ -162,7 +162,7 @@ class checkpoint():
     def AddPsnrLog(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
-        self.psnrlog[tmpS] = torch.cat([ self.psnrlog[tmpS], torch.zeros(1, len(self.args.metric))])
+        self.psnrlog[tmpS] = torch.cat([ self.psnrlog[tmpS], torch.zeros(1, len(self.args.metrics))])
 
     def UpdateMetricLog(self, comprateTmp, snrTmp, metric):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
@@ -249,10 +249,10 @@ class checkpoint():
                     tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
                     epoch = len(self.psnrlog[tmpS])
                     X = np.linspace(1, epoch, epoch)
-    
+
                     label = 'CompRatio={},SNR={},Metric={}'.format(comprateTmp, snrTmp,met)
                     axs[snr_idx,comprate_idx].set_title(label)
-    
+
                     axs[snr_idx,comprate_idx].plot(X, self.psnrlog[tmpS][:,idx],'r-',label=label,)
                     axs[snr_idx,comprate_idx].legend()
                     axs[snr_idx,comprate_idx].set_xlabel('Epochs')
