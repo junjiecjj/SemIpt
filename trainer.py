@@ -63,7 +63,7 @@ class Trainer():
         print(color.fuchsia(f"\n#================================ 开始训练 =======================================\n"))
         torch.set_grad_enabled(True)
         ind1_scale = self.args.scale.index(1)
-
+        self.model.train()
         tm = utility.timer()
 
         self.loader_train.dataset.set_scale(ind1_scale)
@@ -88,8 +88,6 @@ class Trainer():
 
                     # 动态增加特定信噪比和压缩率下的Psnr日志
                     self.ckp.AddMetricLog(compressrate, snr)
-
-                    print(f"训练数据集的batch数 = {len(self.loader_train)}\n")
 
                     # 遍历训练数据集
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
@@ -149,11 +147,11 @@ class Trainer():
         print(color.fuchsia(f"\n#================================ 训练完毕 =======================================\n"))
 
     def test(self):
-        pass
+        torch.set_grad_enabled(False)
 
 
-    def test11(self):
-        pass
+
+
 
 
     def test1(self):  # 测试

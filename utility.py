@@ -184,6 +184,26 @@ class checkpoint():
             os.makedirs(os.path.join(self.testResDir,'results-{}'.format(d)), exist_ok=True)
 
 
+        open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
+        self.log_file = open(self.get_path('trainLog.txt'), open_type)
+
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        with open(self.get_path('argsConfig.txt'), open_type) as f:
+            f.write('#==========================================================\n')
+            f.write(now + '\n')
+            f.write('#==========================================================\n\n')
+
+            f.write("############################################################################################\n")
+            f.write("################################  args  ####################################################\n")
+            f.write("############################################################################################\n")
+
+            for k, v in args.__dict__.items():
+                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
+            f.write('\n')
+            f.write("################################ args end  #################################################\n")
+
+
+
     def get_path(self, *subdir):
         return os.path.join(self.dir, *subdir)
 
