@@ -76,7 +76,7 @@ class Trainer():
                 print(color.fuchsia( f" 开始在压缩率索引为:{comprate_idx}, 压缩率为:{compressrate}， 信噪比索引为:{snr_idx}, 信噪比为:{snr} 下训练\n"))
                 print(f"开始在压缩率索引为:{comprate_idx}, 压缩率为:{compressrate}， 信噪比索引为:{snr_idx}, 信噪比为:{snr} 下训练", file=self.ckp.log_file)
                 # 初始化 特定信噪比和压缩率下 的Psnr日志
-                self.ckp.InitPsnrLog(compressrate, snr)
+                self.ckp.InitMetricLog(compressrate, snr)
 
                 # 遍历epoch
                 for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+self.args.epochs):
@@ -87,7 +87,7 @@ class Trainer():
                     self.loss.start_log()
 
                     # 动态增加特定信噪比和压缩率下的Psnr日志
-                    self.ckp.AddPsnrLog(compressrate, snr)
+                    self.ckp.AddMetricLog(compressrate, snr)
 
                     print(f"训练数据集的batch数 = {len(self.loader_train)}\n")
 

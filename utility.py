@@ -107,10 +107,10 @@ class checkpoint():
             f.write('\n')
             f.write("################################ args end  #################################################\n")
 
-        self.psnrlog = {}
+        self.metricLog = {}
 
         if os.path.isfile(self.get_path('TrainMetric_log.pt')):
-            self.psnrlog = torch.load(self.get_path('TrainMetric_log.pt'))
+            self.metricLog = torch.load(self.get_path('TrainMetric_log.pt'))
             epoch, sepoch = self.checkSameLen()
             self.LastSumEpoch = sepoch
             if self.mark == True:
@@ -136,9 +136,9 @@ class checkpoint():
     def checkSameLen(self):
         lens = []
         sumepoch = 0
-        for key in list(self.psnrlog.keys()):
-            lens.append(len(self.psnrlog[key]))
-            sumepoch +=  len(self.psnrlog[key])
+        for key in list(self.metricLog.keys()):
+            lens.append(len(self.metricLog[key]))
+            sumepoch +=  len(self.metricLog[key])
         set1 = set(lens)
         if lens == []:
             print(f"Epoch == 0, 重新训练.....\n")
@@ -152,27 +152,27 @@ class checkpoint():
             return 0, sumepoch
 
 # <<< 训练过程的PSNR等指标的动态记录
-    def InitPsnrLog(self, comprateTmp, snrTmp):
+    def InitMetricLog(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-        if tmpS not in self.psnrlog.keys():
-            self.psnrlog[tmpS] = torch.Tensor()
+        if tmpS not in self.metricLog.keys():
+            self.metricLog[tmpS] = torch.Tensor()
         else:
             pass
 
-    def AddPsnrLog(self, comprateTmp, snrTmp):
+    def AddMetricLog(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
-        self.psnrlog[tmpS] = torch.cat([ self.psnrlog[tmpS], torch.zeros(1, len(self.args.metrics))])
+        self.metricLog[tmpS] = torch.cat([ self.metricLog[tmpS], torch.zeros(1, len(self.args.metrics))])
 
     def UpdateMetricLog(self, comprateTmp, snrTmp, metric):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-        self.psnrlog[tmpS][-1] += metric
+        self.metricLog[tmpS][-1] += metric
 
     def MeanMetricLog(self, comprateTmp, snrTmp, n_batch):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-        self.psnrlog[tmpS][-1] /= n_batch
+        self.metricLog[tmpS][-1] /= n_batch
 
-        return self.psnrlog[tmpS][-1]
+        return self.metricLog[tmpS][-1]
 # 训练过程的PSNR等指标的动态记录 >>>
 
     def InittestDir(self):
@@ -203,7 +203,7 @@ class checkpoint():
     def save(self):
         # 画图和保存PSNR日志
         self.plot_AllTrainPsnr()
-        torch.save(self.psnrlog, self.get_path('TrainMetric_log.pt'))
+        torch.save(self.metricLog, self.get_path('TrainMetric_log.pt'))
         torch.save(self.SumEpoch, self.get_path('SumEpoch.pt'))
 
 
@@ -221,14 +221,14 @@ class checkpoint():
     def plot_trainPsnr(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
-        epoch = len(self.psnrlog[tmpS])
+        epoch = len(self.metricLog[tmpS])
 
         axis = np.linspace(1, epoch, epoch)
 
         label = 'CompRatio={},SNR={}'.format(comprateTmp, snrTmp)
         fig = plt.figure()
         plt.title(label)
-        plt.plot(axis, self.psnrlog[tmpS])
+        plt.plot(axis, self.metricLog[tmpS])
         plt.legend()
         plt.xlabel('Epochs')
         plt.ylabel('PSNR')
@@ -247,13 +247,13 @@ class checkpoint():
             for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
                 for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
                     tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-                    epoch = len(self.psnrlog[tmpS])
+                    epoch = len(self.metricLog[tmpS])
                     X = np.linspace(1, epoch, epoch)
 
                     label = 'CompRatio={},SNR={},Metric={}'.format(comprateTmp, snrTmp,met)
                     axs[snr_idx,comprate_idx].set_title(label)
 
-                    axs[snr_idx,comprate_idx].plot(X, self.psnrlog[tmpS][:,idx],'r-',label=label,)
+                    axs[snr_idx,comprate_idx].plot(X, self.metricLog[tmpS][:,idx],'r-',label=label,)
                     axs[snr_idx,comprate_idx].legend()
                     axs[snr_idx,comprate_idx].set_xlabel('Epochs')
                     axs[snr_idx,comprate_idx].set_ylabel(f"{met}")
@@ -310,7 +310,7 @@ class checkpoint():
 
 #         epoch = 0
 
-#         ckp.InitPsnrLog(compressrate, snr)
+#         ckp.InitMetricLog(compressrate, snr)
 #         # 遍历epoch
 #         for epoch_idx in  range(10):
 #             ckp.UpdateEpoch()
