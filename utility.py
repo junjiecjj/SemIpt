@@ -151,6 +151,7 @@ class checkpoint():
             self.mark = False
             return 0, sumepoch
 
+
 # <<< 训练过程的PSNR等指标的动态记录
     def InitMetricLog(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
