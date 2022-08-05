@@ -36,6 +36,7 @@ class MyConcatDataset(ConcatDataset):
 
 class DataGenerator(object):
     def __init__(self, args):
+        print(color.fuchsia(f"\n#================================ DataLoader 开始准备 =======================================\n"))
         self.loader_train = None
         if args.wanttrain:
             datasets = []
@@ -52,7 +53,7 @@ class DataGenerator(object):
                 # MyConcatDataset(datasets),
                 trainset,
                 batch_size=args.batch_size,  # 16
-                shuffle=False,
+                shuffle=True,
                 pin_memory=not args.cpu,
                 num_workers=  args.n_threads,
             )

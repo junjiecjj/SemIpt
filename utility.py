@@ -36,8 +36,6 @@ color =  ColoPrint()
 
 
 
-
-
 def printArgs(args):
     print("############################################################################################")
     print("################################  args  ####################################################")
@@ -173,7 +171,8 @@ class checkpoint():
         open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
         self.log_file = open(self.get_path('trainLog.txt'), open_type)
 
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        now = self.now
         with open(self.get_path('argsConfig.txt'), open_type) as f:
             f.write('#==========================================================\n')
             f.write(now + '\n')
@@ -257,35 +256,6 @@ class checkpoint():
 # 训练过程的PSNR等指标的动态记录 >>>
 
 
-
-    def InittestDir(self, now = 'TestResult'):
-        # now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        self.testResDir = os.path.join(self.dir, now)
-        os.makedirs(self.testResDir)
-        for d in self.args.data_test:
-            os.makedirs(os.path.join(self.testResDir,'results-{}'.format(d)), exist_ok=True)
-
-
-        open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
-        self.log_file = open(self.get_path('trainLog.txt'), open_type)
-
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        with open(self.get_path('argsConfig.txt'), open_type) as f:
-            f.write('#==========================================================\n')
-            f.write(now + '\n')
-            f.write('#==========================================================\n\n')
-
-            f.write("############################################################################################\n")
-            f.write("####################################  args  ################################################\n")
-            f.write("############################################################################################\n")
-
-            for k, v in args.__dict__.items():
-                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
-            f.write('\n')
-            f.write("################################ args end  #################################################\n")
-
-
-
     def get_path(self, *subdir):
         return os.path.join(self.dir, *subdir)
 
@@ -312,12 +282,15 @@ class checkpoint():
 
 
     # 写日志
-    def write_log(self, log, refresh=False):
+    def write_log(self, log, train=False ,refresh=False):
         print(log)
         self.log_file.write(log + '\n')  # write() argument must be str, not dict
         if refresh:
             self.log_file.close()
-            self.log_file = open(self.get_path('trainLog.txt'), 'a')
+            if train== True:
+                self.log_file = open(self.get_path('trainLog.txt'), 'a')
+            else:
+                self.log_file = open(self.get_path('testLog.txt'), 'a')
 
     # 关闭训练日志
     def done(self):
@@ -371,6 +344,60 @@ class checkpoint():
             plt.close(fig)
 
 # <<< 训练结果画图
+
+
+    def InittestDir(self, now = 'TestResult'):
+        # now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        self.testRudir = os.path.join(self.dir, now)
+        os.makedirs(self.testRudir)
+        for d in self.args.data_test:
+            os.makedirs(os.path.join(self.testRudir,'results-{}'.format(d)), exist_ok=True)
+
+        open_type = 'a' if os.path.exists(self.get_testpath('testLog.txt')) else 'w'
+        self.log_file = open(self.get_testpath('testLog.txt'), open_type)
+
+        with open(self.get_testpath('argsTest.txt'), open_type) as f:
+            f.write('#==========================================================\n')
+            f.write(self.now + '\n')
+            f.write('#==========================================================\n\n')
+
+            f.write("############################################################################################\n")
+            f.write("####################################  Test args  ###########################################\n")
+            f.write("############################################################################################\n")
+
+            for k, v in args.__dict__.items():
+                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
+            f.write('\n')
+            f.write("################################ args end  #################################################\n")
+
+    def get_testpath(self, *subdir):
+        return os.path.join(self.testRudir, *subdir)
+
+
+# <<< 测试过程的PSNR等指标的动态记录
+    def InitTestMetricLog(self, comprateTmp, dataset):
+        tmpS = "TestLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
+        if tmpS not in self.metricLog.keys():
+            self.metricLog[tmpS] = torch.Tensor()
+        else:
+            pass
+
+    def AddTestMetricLog(self, comprateTmp, snrTmp):
+        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+
+        self.metricLog[tmpS] = torch.cat([ self.metricLog[tmpS], torch.zeros(1, len(self.args.metrics))])
+
+    def UpdateTestMetricLog(self, comprateTmp, snrTmp, metric):
+        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        self.metricLog[tmpS][-1] += metric
+
+    def MeanTestMetricLog(self, comprateTmp, snrTmp, n_batch):
+        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+        self.metricLog[tmpS][-1] /= n_batch
+        return self.metricLog[tmpS][-1]
+# 训练过程的PSNR等指标的动态记录 >>>
+
+
 
     def begin_queue(self):
         self.queue = Queue()

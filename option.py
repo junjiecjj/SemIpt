@@ -62,7 +62,7 @@ parser.add_argument('--no_augment', action='store_true',  help='do not use data 
 parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33 ',  help='Compress rate for test')
 parser.add_argument('--SNRtrain',  type=str, default='2, 10',  help='SNR for train')
 
-parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
+#parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
 parser.add_argument('--SNRtest',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
 
 

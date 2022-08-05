@@ -495,14 +495,16 @@ class Ipt(nn.Module):
         #  /cache/results/ipt/model
         #self.load(ckp.get_path('model'), cpu=args.cpu)
 
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print('#=====================================================================================', file=ckp.log_file)
-        print(now, file=ckp.log_file)
-        print('#=====================================================================================\n', file=ckp.log_file)
+        ckp.write_log(f"#=====================================================================================", train=True)
+        ckp.write_log(ckp.now, train=True)
+        ckp.write_log(f"#=====================================================================================\n", train=True)
+        #print('#=====================================================================================', file=ckp.log_file)
+        #print(ckp.now, file=ckp.log_file)
+        #print('#=====================================================================================\n', file=ckp.log_file)
+        ckp.write_log(self.model,train=True)
 
-
-        print(self.model, file=ckp.log_file)
-        print('\n\n', file=ckp.log_file)
+        #print(self.model, file=ckp.log_file)
+        #print('\n\n', file=ckp.log_file)
         print(color.fuchsia(f"\n#================================ Ipt 准备完毕 =======================================\n"))
 
 

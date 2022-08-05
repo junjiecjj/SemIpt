@@ -11,7 +11,7 @@ Created on 2022/07/07
 from option import args
 # 数据集
 import data
-from data import    data_generator
+from data import  data_generator
 
 # 损失函数
 from loss.Loss import LOSS
@@ -35,15 +35,12 @@ warnings.filterwarnings('ignore')
 import os
 os.system('pip install einops')
 
-# 设置随机数种子
-torch.manual_seed(args.seed)
+
 
 
 
 # 加载所有参数的类
 checkpoint = utility.checkpoint(args)
-
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
@@ -80,11 +77,11 @@ if checkpoint.ok:
     # 训练
     if  args.wanttrain:
         print(f"I want train \n")
-        tr.train()
+        #tr.train()
 
     # 测试
     if  args.wanttest:
-        #tr.test1()
+        tr.test()
         #print(f"I want test \n")
         pass
     checkpoint.done()
