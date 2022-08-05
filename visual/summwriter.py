@@ -32,7 +32,7 @@ class SummWriter(SummaryWriter):
         if len(self.loss) > 1:
             self.loss.append({'type': 'Total'})
 
-
+# <<< 训练结果可视化
     # 将不同压缩率和信噪比下的loss画成连续的loss
     def WrTLoss(self, trainloss, epoch):
         for idx, los in enumerate(self.loss):
@@ -53,17 +53,29 @@ class SummWriter(SummaryWriter):
         for idx, met in enumerate(args.metrics):
             self.add_scalars(f"train/Metric/{met}", {f"CompreRatio={compratio},SNR={snr}": metrics[idx]}, epoch)
 
-
     # 在不同图画出Psnr,MSE等
     def WrTrainMetric(self, compratio, snr, metrics, epoch):
         for idx, met in enumerate(args.metrics):
             self.add_scalar(f"train/Metric/{met}_Metric/CompreRatio={compratio},SNR={snr}" , metrics[idx], epoch)
 
-    def WrTestMetric(self, dasename, compratio, snr, metrics, epoch):
+# 训练结果可视化>>>
+
+
+
+# <<< 测试结果可视化
+    # 不同图可视化
+    def WrTestMetric(self, dasename, compratio, snr, metrics):
         for idx, met in enumerate(args.metrics):
-            self.add_scalar(f"Test/{dasename}/{met}_Metric/CompreRatio={compratio},SNR={snr}" , metrics[idx], epoch)
+            self.add_scalar(f"Test/{dasename}/CompreRatio={compratio}/{met}_Metric" , metrics[idx], snr)
+
+    # 一张图可视化
+    def WrTestOne(self, dasename, compratio, snr, metrics):
+        for idx, met in enumerate(args.metrics):
+            self.add_scalar(f"Test/{dasename}", {f"CompreRatio={compratio},{met}_Metric" : metrics[idx]}, snr)
 
 
+
+# 测试结果可视化>>>
 
 
 
