@@ -37,7 +37,7 @@ os.system('pip install einops')
 
 
 # 设置随机数种子
-torch.manual_seed(self.args.seed)
+torch.manual_seed( args.seed)
 
 
 # 加载所有参数的类
@@ -78,13 +78,16 @@ if checkpoint.ok:
     # 训练
     if  args.wanttrain:
         print(f"I want train \n")
-        #tr.train()
+        tr.train()
 
     # 测试
     if  args.wanttest:
-        tr.test()
+        #tr.test()
         #print(f"I want test \n")
         pass
+
+    wr.WrClose()
+
     checkpoint.done()
 
 

@@ -172,10 +172,10 @@ class checkpoint():
         self.log_file = open(self.get_path('trainLog.txt'), open_type)
 
         self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        now = self.now
+
         with open(self.get_path('argsConfig.txt'), open_type) as f:
             f.write('#==========================================================\n')
-            f.write(now + '\n')
+            f.write(self.now + '\n')
             f.write('#==========================================================\n\n')
 
             f.write("############################################################################################\n")
@@ -282,8 +282,8 @@ class checkpoint():
 
 
     # 写日志
-    def write_log(self, log, train=False ,refresh=False):
-        print(log)
+    def write_log(self, log, train=False ,refresh=True):
+        # print(log)
         self.log_file.write(log + '\n')  # write() argument must be str, not dict
         if refresh:
             self.log_file.close()

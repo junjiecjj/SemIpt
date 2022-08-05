@@ -15,7 +15,7 @@ import utility
 import torch
 from torch.autograd import Variable
 from tqdm import tqdm
-
+import datetime
 
 # 本项目自己编写的库
 
@@ -63,7 +63,8 @@ class Trainer():
 
 
     def train(self):
-        print(color.fuchsia(f"\n#================================ 开始训练 =======================================\n"))
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
         torch.set_grad_enabled(True)
         #ind1_scale = self.args.scale.index(1)
         self.model.train()
@@ -147,10 +148,12 @@ class Trainer():
         # 在训练完所有压缩率和信噪比后，保存PSNR等指标日志
         # 保存checkpoint日志
         self.ckp.save()
-        self.ckp.write_log(f"#================================ 本次训练完毕,用时:{tm.hold()} =======================================",train=True)
+        self.ckp.write_log(f"#================================ 本次训练完毕,用时:{tm.hold()/60.0}分钟 =======================================",train=True)
         # 关闭日志
         self.ckp.done()
-        print(color.fuchsia(f"\n#================================ 训练完毕 =======================================\n"))
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#================================ 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 =======================================\n"))
+
 
     def test(self):
         print(color.fuchsia(f"\n#================================ 开始测试 =======================================\n"))
@@ -165,36 +168,53 @@ class Trainer():
 
         tm = utility.timer()
 
+        print(f"共有{len(self.loader_test)}个数据集\n")
+        self.ckp.write_log(f"共有{len(self.loader_test)}个数据集")
+
         # 依次遍历测试数据集
         for idx_data, ds in enumerate(self.loader_test):
 
             # 得到测试数据集名字
             DtSetName = ds.dataset.name
-            print(f"数据集={DtSetName}, 数据集长度={len(ds)}\n")
+            print(f"数据集={DtSetName}, 长度={len(ds)}\n")
+            self.ckp.write_log(f"开始在数据集{DtSetName}上测试")
 
             # 依次遍历压缩率
             for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33]
 
-                print(f"开始在 {DtSetName}, 压缩率为:{compressrate} 下测试\n")
+                print(f"\t开始在 数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试\n")
+                # 写日志
+                self.ckp.write_log(f"\t开始在 数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试")
 
+                # 初始化测试指标日志
                 self.ckp.InitTestMetric(compressrate, DtSetName)
 
                 # 依次遍历信噪比
                 for snr_idx, snr in enumerate(self.args.SNRtest):   # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
 
-                    print(f"\t数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}\n")
+                    print(f"\t\t数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}\n")
+                    # 写日志
+                    self.ckp.write_log(f"\t\t数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}")
+
+                    # 测试指标日志申请空间
                     self.ckp.AddTestMetric(compressrate, snr, DtSetName)
 
 
-                    for lr, hr, filename in tqdm(ds, ncols=80):
+                    for batch_idx, (lr, hr, filename) in  enumerate(ds):
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
-                        # 计算bach内的psnr和MSE
+                        # 计算bach内(测试时一个batch只有一张图片)的psnr和MSE
                         with torch.no_grad():
                             metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
+                            print(f"")
+                        # 更新具体SNR下一张图片的PSNR和MSE等
                         self.ckp.UpdateTestMetric(compressrate, DtSetName,metric)
-                    metri = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
-                    print(f"")
 
+                        print(f"数据集:DtSetName {idx_data+1}/{len(self.loader_test)}, 压缩率:compressrate {comprate_idx+1}/{len(self.args.CompressRateTrain)},信噪比:snr {snr_idx+1}/{len(self.args.SNRtest)}, Batch:{batch_idx+1}/{len(ds)},时间:{tm.toc()}/{tm.hold()}")
+
+                    # 计算某个数据集下的平均指标
+                    metrics = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
+
+        print(color.fuchsia(f"\n#================================ 完成测试, 用时:{tm.hold()/60.0}分钟 =======================================\n"))
 
 
 

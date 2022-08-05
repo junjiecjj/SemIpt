@@ -48,16 +48,23 @@ class SummWriter(SummaryWriter):
         for idx, los in enumerate(self.loss):
             self.add_scalar(f"train/Loss/{los['type']}_Loss/CompreRatio={compratio},SNR={snr}" , trainloss[idx], epoch)
 
-    # 在一张图画出Psnr
-    def WrTrMetricOne(self, compratio, snr,  trainPsnr, epoch):
+    # 在一张图画出Psnr,MSE等
+    def WrTrMetricOne(self, compratio, snr,  metrics, epoch):
         for idx, met in enumerate(args.metrics):
-            self.add_scalars(f"train/Metric/{met}", {f"CompreRatio={compratio},SNR={snr}": trainPsnr[idx]}, epoch)
+            self.add_scalars(f"train/Metric/{met}", {f"CompreRatio={compratio},SNR={snr}": metrics[idx]}, epoch)
 
 
-    # 在不同图画出Psnr
-    def WrTrainMetric(self, compratio, snr, trainPsnr, epoch):
+    # 在不同图画出Psnr,MSE等
+    def WrTrainMetric(self, compratio, snr, metrics, epoch):
         for idx, met in enumerate(args.metrics):
-            self.add_scalar(f"train/Metric/{met}_Metric/CompreRatio={compratio},SNR={snr}" , trainPsnr[idx], epoch)
+            self.add_scalar(f"train/Metric/{met}_Metric/CompreRatio={compratio},SNR={snr}" , metrics[idx], epoch)
+
+    def WrTestMetric(self, dasename, compratio, snr, metrics, epoch):
+        for idx, met in enumerate(args.metrics):
+            self.add_scalar(f"Test/{dasename}/{met}_Metric/CompreRatio={compratio},SNR={snr}" , metrics[idx], epoch)
+
+
+
 
 
     def WrModel(self, model, images ):

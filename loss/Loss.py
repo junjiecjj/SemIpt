@@ -61,6 +61,7 @@ class LOSS(nn.modules.loss._Loss):
 
 
     def forward(self, sr, hr):
+        # print(f"我正在计算loss\n")
         losses = []
         for i, l in enumerate(self.loss):
             if l['function'] is not None:
