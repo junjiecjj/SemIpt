@@ -382,11 +382,12 @@ class checkpoint():
         else:
             pass
 
-    def AddTestMetric(self, comprateTmp, dataset):
+    def AddTestMetric(self, comprateTmp, snrTmp, dataset):
         tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(comprateTmp, dataset)
 
         # 第一列为snr, 后面各列为各个指标
-        self.TeMetricLog[tmpS] = torch.cat([self.metricLog[tmpS], torch.zeros(1, len(self.args.metrics)+1 )])
+        self.TeMetricLog[tmpS] = torch.cat([self.metricLog[tmpS], torch.zeros(1, len(self.args.metrics)+1 )],dim=0)
+        self.TeMetricLog[tmpS][-1,0]=snrTmp
 
     def UpdateTestMetric(self, comprateTmp, dataset, metric):
         tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(comprateTmp, dataset)

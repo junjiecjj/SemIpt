@@ -147,14 +147,14 @@ class Trainer():
         # 在训练完所有压缩率和信噪比后，保存PSNR等指标日志
         # 保存checkpoint日志
         self.ckp.save()
-        print(f"#================================ 本次训练完毕,用时:{tm.hold} =======================================",file=self.ckp.log_file )
+        self.ckp.write_log(f"#================================ 本次训练完毕,用时:{tm.hold()} =======================================",train=True)
         # 关闭日志
         self.ckp.done()
         print(color.fuchsia(f"\n#================================ 训练完毕 =======================================\n"))
 
     def test(self):
         # 设置随机数种子
-        torch.manual_seed(self.args.seed)
+        #torch.manual_seed(self.args.seed)
         torch.set_grad_enabled(False)
         self.ckp.InittestDir(now=self.ckp.now)
 
@@ -176,14 +176,15 @@ class Trainer():
 
                 # 依次遍历信噪比
                 for snr_idx, snr in enumerate(self.args.SNRtest):   # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-                    self.ckp.AddTestMetric(compressrate, DtSetName)
-                    self.ckp.TeMetricLog[-1,0] = snr
+                    self.ckp.AddTestMetric(compressrate, snr, DtSetName)
+
 
                     for lr, hr, filename in tqdm(ds, ncols=80):
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                                                 # 计算bach内的psnr和MSE
                         with torch.no_grad():
                             metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
+                        self.ckp.UpdateTestMetric(compressrate, DtSetName,metric)
 
 
 
