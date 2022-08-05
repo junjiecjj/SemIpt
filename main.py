@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Created on 2022/07/07
@@ -35,6 +34,8 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 os.system('pip install einops')
+
+# 设置随机数种子
 torch.manual_seed(args.seed)
 
 
@@ -58,11 +59,14 @@ if checkpoint.ok:
     elif args.modelUse == 'DeepSC':
         _model = ModelSet[args.modelUse](args)
 
-    # # 加载最初的预训练模型
-    # if args.pretrain != "":# 用预训练模型
-    #     print(f"加载最原始的预训练模型\n")
-    #     state_dict = torch.load(args.pretrain, map_location=torch.device('cpu'))
-    #     _model.model.load_state_dict(state_dict, strict=False)
+    # 加载最初的预训练模型
+    if args.pretrain != "":# 用预训练模型
+        print(f"加载最原始的预训练模型\n")
+        state_dict = torch.load(args.pretrain, map_location=torch.device('cpu'))
+        _model.model.load_state_dict(state_dict, strict=False)
+
+    # 加载最近保存一次的的训练模型
+    _model.load(checkpoint.get_path('model'), cpu=args.cpu)
 
     # 损失函数类
     los = LOSS(args, checkpoint)

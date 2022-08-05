@@ -116,6 +116,13 @@ class SummWriter(SummaryWriter):
 # writer.close()
 
 
+#会发现刚刚的log文件夹里面有文件了。在命令行输入如下，载入刚刚做图的文件（那个./log要写完整的路径）
+#  tensorboard --logdir=/home/jack/公共的/Python/PytorchTutor/Pytorch/model
+# 在浏览器输入以下任意一个网址，即可查看结果：（训练过程中可以实时更新显示）
+#  http://0.0.0.0:6006/
+#  http://localhost:6006/
+#  http://127.0.0.1:6006/
+
 
 
 

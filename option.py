@@ -52,7 +52,7 @@ parser.add_argument('--useBIN',  action='store_false', help='是否使用bin图�
 parser.add_argument('--data_range', type=str, default='1-48', help='train/test data range')
 parser.add_argument('--ext', type=str, default='sep', help='dataset file extension')
 # parser.add_argument('--scale', type=str, default='2+3+4+5+6+1', help='super resolution scale')
-parser.add_argument('--scale', type=str, default='2+3+4+1', help='super resolution scale') # cjj
+parser.add_argument('--scale', type=str, default='1', help='super resolution scale') # cjj
 
 parser.add_argument('--patch_size', type=int, default=48, help='output patch size')
 parser.add_argument('--rgb_range', type=int, default=255, help='maximum value of RGB')
@@ -60,7 +60,7 @@ parser.add_argument('--n_colors', type=int, default=3, help='number of color cha
 parser.add_argument('--no_augment', action='store_true',  help='do not use data augmentation')
 
 parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33 ',  help='Compress rate for test')
-parser.add_argument('--SNRtrain',  type=str, default='-6, -2, 0,  10, 18',  help='SNR for train')
+parser.add_argument('--SNRtrain',  type=str, default='2, 10',  help='SNR for train')
 
 parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
 parser.add_argument('--SNRtest',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
@@ -119,7 +119,6 @@ parser.add_argument('--skip_threshold', type=float, default='1e8', help='skippin
 parser.add_argument('--metrics', type=str, default='Psnr, MSE', help='loss function configuration')
 
 # Log specifications
-# parser.add_argument('--save', type=str, default='/cache/results/ipt/', help='file name to save')
 parser.add_argument('--save', type=str, default='/home/jack/IPT-Pretrain/results/',  help='file name to save')  #cjj
 parser.add_argument('--load', type=str, default='/home/jack/IPT-Pretrain/results/', help='file name to load')
 parser.add_argument('--resume', type=int,  default=0, help='resume from specific checkpoint')
@@ -153,7 +152,7 @@ args.scale = list(map(lambda x: int(x), args.scale.split('+')))
 args.data_train = args.data_train.split('+')
 args.data_test = args.data_test.split('+')  #  ['DIV2K']
 
-args.metrics = list(map(lambda x: x.strip(" "), args.metrics.split(','))) 
+args.metrics = list(map(lambda x: x.strip(" "), args.metrics.split(',')))
 
 
 args.CompressRateTrain = list(map(lambda x: float(x), args.CompressRateTrain.split(',')))

@@ -180,9 +180,6 @@ class VisionTransformer(nn.Module):
         encoder_layer = TransformerEncoderLayer(embedding_dim, num_heads, hidden_dim, dropout_rate, self.no_norm)
         self.encoder = TransformerEncoder(encoder_layer, num_layers)
 
-        # embedding_dim=576, num_heads=12, hidden_dim=2304, dropout_rate=0, self.no_norm=false
-        decoder_layer = TransformerDecoderLayer(embedding_dim, num_heads, hidden_dim, dropout_rate, self.no_norm)
-        self.decoder = TransformerDecoder(decoder_layer, num_layers)
 
         H_hat = int(1+int(self.img_dim+2*args.cpPad-args.cpKerSize)//args.cpStride)
         n = args.n_colors*img_dim**2
@@ -197,6 +194,12 @@ class VisionTransformer(nn.Module):
         self.decompress = nn.ModuleList([
         common.convTrans2d_prelu(common.calculate_channel(comprate,F=H_hat, n=n), num_channels, args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
         ])
+
+        # embedding_dim=576, num_heads=12, hidden_dim=2304, dropout_rate=0, self.no_norm=false
+        decoder_layer = TransformerDecoderLayer(embedding_dim, num_heads, hidden_dim, dropout_rate, self.no_norm)
+        self.decoder = TransformerDecoder(decoder_layer, num_layers)
+
+
 
 
         if not self.no_pos:
@@ -490,7 +493,7 @@ class Ipt(nn.Module):
             self.model.half()
 
         #  /cache/results/ipt/model
-        self.load(ckp.get_path('model'), resume=args.resume, cpu=args.cpu)
+        #self.load(ckp.get_path('model'), cpu=args.cpu)
 
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         print('#=====================================================================================', file=ckp.log_file)
@@ -546,8 +549,14 @@ class Ipt(nn.Module):
         for s in save_dirs:
             torch.save(self.model.state_dict(), s)
 
+    def print_parameters(self, ckp):
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                print(name,':',param.size())
+                print(f"{name: <25}: {param.size():<20}", file=ckp.log_file)
+
     #  apath=/cache/results/ipt/model, resume = 0,
-    def load(self, apath, pre_train='', resume=-1, cpu=False):
+    def load(self, apath, cpu=False):
         load_from = None
         kwargs = {}
         if cpu:

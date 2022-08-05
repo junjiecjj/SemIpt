@@ -46,13 +46,14 @@ def printArgs(args):
         print(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
     print("################################  end  #####################################################")
 
-
-
 # Timer
-class timer():
-    def __init__(self):
+class timer(object):
+    def __init__(self,name='epoch'):
         self.acc = 0
+        self.name = name
+        self.timer = 0
         self.tic()
+
 
     def tic(self):  # time.time()函数返回自纪元以来经过的秒数。
         self.t0 = time.time()
@@ -62,15 +63,95 @@ class timer():
     def toc(self):
         diff = time.time() - self.ts
         self.ts = time.time()
+        self.timer  += diff
         return diff
+
+    def reset(self):
+        self.ts = time.time()
+        self.timer = 0
+
 
     # 从计时开始到现在的时间.
     def hold(self):
-        self.acc = time.time() - self.t0
-        return self.acc
+        return time.time() - self.t0
+
+# https://developer.51cto.com/article/712616.html
+from dataclasses import dataclass, field
+import time
+from typing import Callable, ClassVar, Dict, Optional
+class TimerError(Exception):
+    """A custom exception used to report errors in use of Timer class"""
+
+@dataclass
+class Timer(object):
+    timers: ClassVar[Dict[str, float]] = {}
+    name: Optional[str] = None
+    text: str = "Elapsed time: {:0.4f} seconds"
+    logger: Optional[Callable[[str], None]] = print
+    _start_time: Optional[float] = field(default=None, init=False, repr=False)
+
+    def __post_init__(self) -> None:
+        """Add timer to dict of timers after initialization"""
+        if self.name is not None:
+            self.timers.setdefault(self.name, 0)
+
+    def start(self) -> None:
+        """Start a new timer"""
+        if self._start_time is not None:
+            raise TimerError(f"Timer is running. Use .stop() to stop it")
+
+        self._start_time = time.perf_counter()
+
+    def stop(self) -> float:
+        """Stop the timer, and report the elapsed time"""
+        if self._start_time is None:
+            raise TimerError(f"Timer is not running. Use .start() to start it")
+
+        # Calculate elapsed time
+        elapsed_time = time.perf_counter() - self._start_time
+        self._start_time = None
+
+        # Report elapsed time
+        if self.logger:
+            self.logger(self.text.format(elapsed_time))
+        if self.name:
+            self.timers[self.name] += elapsed_time
+
+        return elapsed_time
 
 
+# https://python3-cookbook.readthedocs.io/zh_CN/latest/c13/p13_making_stopwatch_timer.html
+class Timer1:
+    def __init__(self, func=time.perf_counter):
+        self.elapsed = 0.0
+        self._func = func
+        self._start = None
 
+    def start(self):
+        if self._start is not None:
+            raise RuntimeError('Already started')
+        self._start = self._func()
+
+    def stop(self):
+        if self._start is None:
+            raise RuntimeError('Not started')
+        end = self._func()
+        self.elapsed += end - self._start
+        self._start = None
+
+    def reset(self):
+        self.elapsed = 0.0
+
+    @property
+    def running(self):
+        return self._start is not None
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *args):
+        self.stop()
 
 # 功能：
 #
@@ -172,12 +253,13 @@ class checkpoint():
     def MeanMetricLog(self, comprateTmp, snrTmp, n_batch):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
         self.metricLog[tmpS][-1] /= n_batch
-
         return self.metricLog[tmpS][-1]
 # 训练过程的PSNR等指标的动态记录 >>>
 
-    def InittestDir(self):
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+
+
+    def InittestDir(self, now = 'TestResult'):
+        # now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         self.testResDir = os.path.join(self.dir, now)
         os.makedirs(self.testResDir)
         for d in self.args.data_test:
@@ -194,7 +276,7 @@ class checkpoint():
             f.write('#==========================================================\n\n')
 
             f.write("############################################################################################\n")
-            f.write("################################  args  ####################################################\n")
+            f.write("####################################  args  ################################################\n")
             f.write("############################################################################################\n")
 
             for k, v in args.__dict__.items():
@@ -211,23 +293,25 @@ class checkpoint():
         trainer.model.save(self.get_path('model'), compratio, snr, epoch, is_best=is_best)
 
 
+    def saveOptim(self, trainer):
+        # 保存优化器参数
+        trainer.optimizer.save(self.dir)
+
+
     def saveLoss(self, trainer):
         # 画图和保存Loss日志
         trainer.loss.save(self.dir)
         trainer.loss.plot_loss(self.dir)
         trainer.loss.plot_AllLoss(self.dir)
 
-    def saveOptim(self, trainer):
-        # 保存优化器参数
-        trainer.optimizer.save(self.dir)
-
+    # 画图和保存PSNR等日志
     def save(self):
-        # 画图和保存PSNR日志
-        self.plot_AllTrainPsnr()
+        self.plot_AllTrainMetric()
         torch.save(self.metricLog, self.get_path('TrainMetric_log.pt'))
         torch.save(self.SumEpoch, self.get_path('SumEpoch.pt'))
 
 
+    # 写日志
     def write_log(self, log, refresh=False):
         print(log)
         self.log_file.write(log + '\n')  # write() argument must be str, not dict
@@ -235,10 +319,11 @@ class checkpoint():
             self.log_file.close()
             self.log_file = open(self.get_path('trainLog.txt'), 'a')
 
+    # 关闭训练日志
     def done(self):
         self.log_file.close()
 
-
+# >>> 训练结果画图
     def plot_trainPsnr(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
@@ -261,8 +346,7 @@ class checkpoint():
         plt.close(fig)
 
 
-
-    def plot_AllTrainPsnr(self):
+    def plot_AllTrainMetric(self):
         for idx, met in  enumerate(self.args.metrics):
             fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(20,20))
             for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
@@ -286,7 +370,7 @@ class checkpoint():
             plt.show()
             plt.close(fig)
 
-
+# <<< 训练结果画图
 
     def begin_queue(self):
         self.queue = Queue()
@@ -415,7 +499,7 @@ class net(nn.Module):
 
 def make_optimizer(args, net):
     '''
-        make optimizer and scheduler together
+    make optimizer and scheduler together
     '''
     # optimizer
     #  filter() 函数用于过滤序列，过滤掉不符合条件的元素，返回一个迭代器对象，如果要转换为列表，可以使用 list() 来转换。

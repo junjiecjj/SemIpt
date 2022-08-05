@@ -5,6 +5,8 @@ Created on 2022/07/07
 
 @author: Junjie Chen
 
+如果类B的某个成员self.fa是类A的实例a, 则如果B中更改了a的某个属性, 则a的那个属性也会变.
+
 """
 
 
@@ -34,10 +36,10 @@ class Trainer():
         self.loss = my_loss
         self.optimizer = utility.make_optimizer(args, self.model)
 
-        self.wr.WrModel(self.model.model,torch.randn(16, 3, 48, 48))
+        self.wr.WrModel(self.model.model, torch.randn(16, 3, 48, 48))
         if self.args.load != '':
             if self.ckp.mark == True:
-                self.optimizer.load(ckp.dir, epoch=ckp.startEpoch)
+                self.optimizer.load(self.ckp.dir)
 
         self.error_last = 1e8
 
@@ -62,19 +64,20 @@ class Trainer():
     def train(self):
         print(color.fuchsia(f"\n#================================ 开始训练 =======================================\n"))
         torch.set_grad_enabled(True)
-        ind1_scale = self.args.scale.index(1)
+        #ind1_scale = self.args.scale.index(1)
         self.model.train()
+        self.model.model.train()
         tm = utility.timer()
 
-        self.loader_train.dataset.set_scale(ind1_scale)
+        #self.loader_train.dataset.set_scale(ind1_scale)
         #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
         accumEpoch = 0
         # 依次遍历压缩率
         for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33, 0.4]
             # 依次遍历信噪比
             for snr_idx, snr in enumerate(self.args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-                print(color.fuchsia( f" 开始在压缩率索引为:{comprate_idx}, 压缩率为:{compressrate}， 信噪比索引为:{snr_idx}, 信噪比为:{snr} 下训练\n"))
-                print(f"开始在压缩率索引为:{comprate_idx}, 压缩率为:{compressrate}， 信噪比索引为:{snr_idx}, 信噪比为:{snr} 下训练", file=self.ckp.log_file)
+                print(color.fuchsia( f" 开始在压缩率索引为:{comprate_idx}, 压缩率为:{compressrate}, 信噪比索引为:{snr_idx}, 信噪比为:{snr} 下训练\n"))
+                print(f"开始在压缩率索引为:{comprate_idx}, 压缩率为:{compressrate}, 信噪比索引为:{snr_idx}, 信噪比为:{snr} 下训练", file=self.ckp.log_file)
                 # 初始化 特定信噪比和压缩率下 的Psnr日志
                 self.ckp.InitMetricLog(compressrate, snr)
 
@@ -86,48 +89,50 @@ class Trainer():
                     # 初始化loss日志
                     self.loss.start_log()
 
-                    # 动态增加特定信噪比和压缩率下的Psnr日志
+                    # 动态增加特定信噪比和压缩率下的Psnr等评价指标日志
                     self.ckp.AddMetricLog(compressrate, snr)
 
                     # 遍历训练数据集
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
 
-                        #print(f"\nepoch_idx = {epoch_idx}, batch_idx = {batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
-                        #print(f"lr.shape = {lr.shape}, hr.shape = {hr.shape} \n")
-                        print(f"\n Epoch {epoch_idx}/{self.ckp.startEpoch+self.args.epochs}, Iter {batch_idx}/{len(self.loader_train)}, Time {tm.toc()}/{tm.hold()} \n")
                         lr, hr = self.prepare(lr, hr)
-
-                        self.optimizer.zero_grad()
-                        sr = self.model(lr, idx_scale=ind1_scale, snr=snr, compr_idx=comprate_idx)
+                        sr = self.model(lr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
 
                         # 计算batch内的loss
                         lss = self.loss(sr, hr)
                         #lss = Variable(lss, requires_grad = True)
+
+                        self.optimizer.zero_grad() # 必须在反向传播前先清零。
                         lss.backward()
                         self.optimizer.step()
 
-                        # 计算bach内的psnr
-                        metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
+                        # 计算bach内的psnr和MSE
+                        with torch.no_grad():
+                            metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
 
                         # 更新 bach内的psnr
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
-                        print(f"\t\t训练完一个 batch: lr.shape = {lr.shape}, hr.shape = {hr.shape}, sr.shape = {sr.shape}, loss = {lss}, metric = {metric}\n")
-                        print(f"\t\t训练完一个 batch: loss = {lss}, psnr = {metric}\n", file=self.ckp.log_file)
+                        print(f"\t\t训练完一个 batch: loss = {lss}, metric = {metric} \n")
+                        print(f"\t\t训练完一个 batch: loss = {lss}, metric = {metric} \n", file=self.ckp.log_file)
+                        print(f"\n Epoch {epoch_idx}/{self.ckp.startEpoch+self.args.epochs}, Iter {batch_idx}/{len(self.loader_train)}, Time {tm.toc()}/{tm.hold()} \n")
+                    # 学习率递减
+                    self.optimizer.schedule()
+
                     # 计算并更新epoch的PSNR和LOSS
                     epochMetric = self.ckp.MeanMetricLog(compressrate, snr, len(self.loader_train))
                     epochLos = self.loss.end_log(len(self.loader_train))
-                    print(f"\t训练完一个 Epoch: epochPsnr = {epochMetric}, epochLos = {epochLos} \n")
-                    print(f"\t训练完一个 Epoch: epochPsnr = {epochMetric}, epochLos = {epochLos}", file=self.ckp.log_file)
+                    print(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer}/{tm.hold()} \n")
+                    print(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer}/{tm.hold()}", file=self.ckp.log_file)
+
                     # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
                     self.wr.WrTLoss(epochLos, int(self.ckp.LastSumEpoch+accumEpoch))
                     self.wr.WrTrainLoss(compressrate, snr, epochLos, epoch_idx)
 
                     self.wr.WrTrMetricOne(compressrate, snr, epochMetric, epoch_idx)
                     self.wr.WrTrainMetric(compressrate, snr, epochMetric, epoch_idx)
+                    tm.reset()
 
-                    # 学习率递减
-                    self.optimizer.schedule()
                 # 在每个 压缩率+信噪比 组合下都重置一次优化器
                 self.optimizer.reset_state()
 
@@ -141,15 +146,13 @@ class Trainer():
         # 在训练完所有压缩率和信噪比后，保存PSNR等指标日志
         # 保存checkpoint日志
         self.ckp.save()
-        print(f"#================================ 本次训练完毕 =======================================",file=self.ckp.log_file )
+        print(f"#================================ 本次训练完毕,用时:{tm.hold()} =======================================",file=self.ckp.log_file )
         # 关闭日志
         self.ckp.done()
         print(color.fuchsia(f"\n#================================ 训练完毕 =======================================\n"))
 
     def test(self):
         torch.set_grad_enabled(False)
-
-
 
 
 

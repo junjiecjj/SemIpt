@@ -145,6 +145,7 @@ class LOSS(nn.modules.loss._Loss):
         torch.save(self.state_dict(), os.path.join(apath, 'TrainLossState.pt'))
         torch.save(self.losslog, os.path.join(apath, 'TrainLossLog.pt'))
 
+
     def load(self, apath, cpu=False):
         if cpu:
             kwargs = {'map_location': lambda storage, loc: storage}

@@ -52,7 +52,7 @@ class DataGenerator(object):
                 # MyConcatDataset(datasets),
                 trainset,
                 batch_size=args.batch_size,  # 16
-                shuffle=True,
+                shuffle=False,
                 pin_memory=not args.cpu,
                 num_workers=  args.n_threads,
             )
