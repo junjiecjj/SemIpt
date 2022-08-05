@@ -159,9 +159,9 @@ class checkpoint():
         self.ok = True
         self.n_processes = 8
         self.mark = False
-        self.startEpoch = 0
-        self.LastSumEpoch = 0
-        self.SumEpoch = 0
+        self.startEpoch = 0   # 日志里各个压缩率和信噪比训练的epoch
+        self.LastSumEpoch = 0 #日志里所有的压缩率和信噪比下训练的epoch之和
+        self.SumEpoch = 0     # 本次训练的累计epoch
 
         self.dir = args.save
         print(f"self.dir = {self.dir} \n")
@@ -262,14 +262,14 @@ class checkpoint():
     def saveModel(self, trainer,  compratio, snr, epoch, is_best=False):
         trainer.model.save(self.get_path('model'), compratio, snr, epoch, is_best=is_best)
 
-
+    # 保存优化器参数
     def saveOptim(self, trainer):
-        # 保存优化器参数
+
         trainer.optimizer.save(self.dir)
 
-
+    # 画图和保存Loss日志
     def saveLoss(self, trainer):
-        # 画图和保存Loss日志
+
         trainer.loss.save(self.dir)
         trainer.loss.plot_loss(self.dir)
         trainer.loss.plot_AllLoss(self.dir)
@@ -292,7 +292,7 @@ class checkpoint():
             else:
                 self.log_file = open(self.get_path('testLog.txt'), 'a')
 
-    # 关闭训练日志
+    # 关闭日志
     def done(self):
         self.log_file.close()
 
@@ -374,29 +374,29 @@ class checkpoint():
         return os.path.join(self.testRudir, *subdir)
 
 
-# <<< 测试过程的PSNR等指标的动态记录
-    def InitTestMetricLog(self, comprateTmp, dataset):
-        tmpS = "TestLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
+# <<< 测试过程不同数据集上的的PSNR等指标随压缩率、信噪比的动态记录
+    def InitTestMetric(self, comprateTmp, dataset):
+        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
         if tmpS not in self.metricLog.keys():
-            self.metricLog[tmpS] = torch.Tensor()
+            self.TeMetricLog[tmpS] = torch.Tensor()
         else:
             pass
 
-    def AddTestMetricLog(self, comprateTmp, snrTmp):
-        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+    def AddTestMetric(self, comprateTmp, dataset):
+        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(comprateTmp, dataset)
 
-        self.metricLog[tmpS] = torch.cat([ self.metricLog[tmpS], torch.zeros(1, len(self.args.metrics))])
+        # 第一列为snr, 后面各列为各个指标
+        self.TeMetricLog[tmpS] = torch.cat([self.metricLog[tmpS], torch.zeros(1, len(self.args.metrics)+1 )])
 
-    def UpdateTestMetricLog(self, comprateTmp, snrTmp, metric):
-        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-        self.metricLog[tmpS][-1] += metric
+    def UpdateTestMetric(self, comprateTmp, dataset, metric):
+        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(comprateTmp, dataset)
+        self.TeMetricLog[tmpS][-1,1:] += metric
 
-    def MeanTestMetricLog(self, comprateTmp, snrTmp, n_batch):
-        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-        self.metricLog[tmpS][-1] /= n_batch
-        return self.metricLog[tmpS][-1]
+    def MeanTestMetric(self, comprateTmp, dataset, n_images):
+        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(comprateTmp, dataset)
+        self.TeMetricLog[tmpS][-1,1:] /= n_images
+        return self.TeMetricLog[tmpS][-1,1:]
 # 训练过程的PSNR等指标的动态记录 >>>
-
 
 
     def begin_queue(self):

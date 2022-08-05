@@ -97,7 +97,7 @@ class Trainer():
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
 
                         lr, hr = self.prepare(lr, hr)
-                        sr = self.model(lr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
+                        sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
 
                         # 计算batch内的loss
@@ -165,16 +165,25 @@ class Trainer():
         tm = utility.timer()
 
         # 依次遍历测试数据集
-        for idx_data, d in enumerate(self.loader_test):
-            dataname = d.dataset.name
+        for idx_data, ds in enumerate(self.loader_test):
+
+            # 得到测试数据集名字
+            DtSetName = ds.dataset.name
 
             # 依次遍历压缩率
             for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33]
-
+                self.ckp.InitTestMetric(compressrate, DtSetName)
 
                 # 依次遍历信噪比
-                for snr_idx, snr in enumerate(self.args.SNRtest): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+                for snr_idx, snr in enumerate(self.args.SNRtest):   # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+                    self.ckp.AddTestMetric(compressrate, DtSetName)
+                    self.ckp.TeMetricLog[-1,0] = snr
 
+                    for lr, hr, filename in tqdm(ds, ncols=80):
+                        sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
+                                                # 计算bach内的psnr和MSE
+                        with torch.no_grad():
+                            metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
 
 
 

@@ -36,7 +36,8 @@ import os
 os.system('pip install einops')
 
 
-
+# 设置随机数种子
+torch.manual_seed(self.args.seed)
 
 
 # 加载所有参数的类
