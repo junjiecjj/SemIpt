@@ -285,7 +285,8 @@ class SRData(data.Dataset):
             norain, rain, filename = self._load_rain_test(idx)
             pair = common.set_channel(*[norain, rain], n_channels = self.args.n_colors)
             pair_t = common.np2Tensor(*pair, rgb_range = self.args.rgb_range)
-            return pair_t[0], pair_t[1], filename
+            # 先返回rain，再返回norain
+            return pair_t[1], pair_t[0], filename
         if self.train == False and self.name in ['CBSD68'] and self.args.denoise: # 不进入此处
             hr,lr, filename = self._load_cbsd68_test(idx)
             pair = self.get_patch_hr(hr)

@@ -153,12 +153,13 @@ class Trainer():
         print(color.fuchsia(f"\n#================================ 训练完毕 =======================================\n"))
 
     def test(self):
+        print(color.fuchsia(f"\n#================================ 开始测试 =======================================\n"))
         # 设置随机数种子
         #torch.manual_seed(self.args.seed)
         torch.set_grad_enabled(False)
         self.ckp.InittestDir(now=self.ckp.now)
 
-        #ind1_scale = self.args.scale.index(1)
+        # ind1_scale = self.args.scale.index(1)
         self.model.eval()
         self.model.model.eval()
 
@@ -169,22 +170,30 @@ class Trainer():
 
             # 得到测试数据集名字
             DtSetName = ds.dataset.name
+            print(f"数据集={DtSetName}, 数据集长度={len(ds)}\n")
 
             # 依次遍历压缩率
             for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33]
+
+                print(f"开始在 {DtSetName}, 压缩率为:{compressrate} 下测试\n")
+
                 self.ckp.InitTestMetric(compressrate, DtSetName)
 
                 # 依次遍历信噪比
                 for snr_idx, snr in enumerate(self.args.SNRtest):   # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+
+                    print(f"\t数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}\n")
                     self.ckp.AddTestMetric(compressrate, snr, DtSetName)
 
 
                     for lr, hr, filename in tqdm(ds, ncols=80):
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
-                                                # 计算bach内的psnr和MSE
+                        # 计算bach内的psnr和MSE
                         with torch.no_grad():
                             metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
                         self.ckp.UpdateTestMetric(compressrate, DtSetName,metric)
+                    metri = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
+                    print(f"")
 
 
 
