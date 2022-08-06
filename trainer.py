@@ -96,7 +96,7 @@ class Trainer():
 
                     # 遍历训练数据集
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
-
+                        print(f"{batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
                         lr, hr = self.prepare(lr, hr)
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
