@@ -43,7 +43,7 @@ parser.add_argument('--SummaryWriteDir', type=str, default='/home/jack/IPT-Pretr
 parser.add_argument('--data_train', type=str, default='DIV2K', help='train dataset name')
 
 # 测试集数据名称
-parser.add_argument('--data_test',type=str,  default='Set5+Set14+Rain100L+CBSD68', help='test dataset name')
+parser.add_argument('--data_test',type=str,  default='Set2+Set3', help='test dataset name')
 # parser.add_argument('--data_test', type=str, default='Set5+Set14+B100+Urban100+DIV2K', help='test dataset name')  # cjj
 
 parser.add_argument('--useBIN',  action='store_false', help='是否使用bin图像')
@@ -113,7 +113,7 @@ parser.add_argument('--weight_decay', type=float, default=0, help='weight decay'
 parser.add_argument('--gclip', type=float, default=0, help='gradient clipping threshold (0 = no clipping)')
 
 # Loss specifications
-parser.add_argument('--loss', type=str, default='1*MSE+1*L1', help='loss function configuration')
+parser.add_argument('--loss', type=str, default='1*MSE', help='loss function configuration')
 parser.add_argument('--skip_threshold', type=float, default='1e8', help='skipping batch that has large error')
 
 parser.add_argument('--metrics', type=str, default='Psnr, MSE', help='loss function configuration')
@@ -157,6 +157,7 @@ args.metrics = list(map(lambda x: x.strip(" "), args.metrics.split(',')))
 
 args.CompressRateTrain = list(map(lambda x: float(x), args.CompressRateTrain.split(',')))
 args.SNRtrain = list(map(lambda x: int(x), args.SNRtrain.split(',')))
+args.SNRtest = list(map(lambda x: int(x), args.SNRtest.split(',')))
 
 if args.epochs == 0:
     args.epochs = 1e8

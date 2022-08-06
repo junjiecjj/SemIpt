@@ -66,12 +66,12 @@ class SummWriter(SummaryWriter):
     # 不同图可视化
     def WrTestMetric(self, dasename, compratio, snr, metrics):
         for idx, met in enumerate(args.metrics):
-            self.add_scalar(f"Test/{dasename}/CompreRatio={compratio}/{met}_Metric" , metrics[idx], snr)
+            self.add_scalar(f"Test/{dasename}/{met}Metric_snr/CompreRatio={compratio}" , metrics[idx], snr)
 
     # 一张图可视化
     def WrTestOne(self, dasename, compratio, snr, metrics):
         for idx, met in enumerate(args.metrics):
-            self.add_scalar(f"Test/{dasename}", {f"CompreRatio={compratio},{met}_Metric" : metrics[idx]}, snr)
+            self.add_scalar(f"Test/{dasename}/{met}Metric_snr", {f"CompreRatio={compratio}" : metrics[idx]}, snr)
 
 
 

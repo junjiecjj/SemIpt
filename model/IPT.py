@@ -253,21 +253,21 @@ class VisionTransformer(nn.Module):
             #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
             #print(f"In IPT VisionTransformer forward snr = {snr} ")
 
-            x = torch.nn.functional.fold(x.permute(1,2,0),int(self.img_dim),self.patch_dim,stride=self.patch_dim)
+            #x = torch.nn.functional.fold(x.permute(1,2,0),int(self.img_dim),self.patch_dim,stride=self.patch_dim)
             #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 64, 48, 48])
 
 
-            x = self.compress[compr_idx](x)
+            #x = self.compress[compr_idx](x)
             #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, query_idx = {query_idx} snr = {snr}, compr_idx = {compr_idx}\n"))  # x.shape = torch.Size([1, 9, 11, 11])
 
             # print(f"\n In IPT VisionTransformer forward Compress rare = {CompRate}\n")
-            x = common.awgn(x, snr)
+            #x = common.awgn(x, snr)
 
-            x = self.decompress[compr_idx](x)
+            #x = self.decompress[compr_idx](x)
             #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 64, 48, 48])
 
 
-            x = torch.nn.functional.unfold(x,self.patch_dim,stride=self.patch_dim).transpose(1,2).transpose(0,1).contiguous()
+            #x = torch.nn.functional.unfold(x,self.patch_dim,stride=self.patch_dim).transpose(1,2).transpose(0,1).contiguous()
             #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #   x.shape = torch.Size([256, 1, 576])
 
             x = self.decoder(x, x, query_pos=query_embed)
@@ -525,7 +525,7 @@ class Ipt(nn.Module):
             self.model.set_comprate(compr_idx)
 
         if self.training:
-            #print("\nI'm in self.training.............\n")
+            print("\n正在使用测试forward.............\n")
             if self.n_GPUs > 1:
                 return P.data_parallel(self.model, x, range(self.n_GPUs))
             else:

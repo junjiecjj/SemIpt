@@ -86,7 +86,7 @@ class LOSS(nn.modules.loss._Loss):
         #  losslog.shape = [1,len(loss)],[2,len(loss)],[2,len(loss)]...,[epoch,len(loss)]
         self.losslog = torch.cat((self.losslog, torch.zeros(1, len(self.loss))))
 
-    def end_log(self, n_batches):
+    def mean_log(self, n_batches):
         self.losslog[-1].div_(n_batches)
         return self.losslog[-1]
 

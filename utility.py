@@ -290,7 +290,7 @@ class checkpoint():
             if train== True:
                 self.log_file = open(self.get_path('trainLog.txt'), 'a')
             else:
-                self.log_file = open(self.get_path('testLog.txt'), 'a')
+                self.log_file = open(self.get_testpath('testLog.txt'), 'a')
 
     # 关闭日志
     def done(self):
@@ -347,6 +347,7 @@ class checkpoint():
 
 
     def InittestDir(self, now = 'TestResult'):
+        self.TeMetricLog = {}
         # now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         self.testRudir = os.path.join(self.dir, now)
         os.makedirs(self.testRudir)
@@ -377,24 +378,24 @@ class checkpoint():
 # <<< 测试过程不同数据集上的的PSNR等指标随压缩率、信噪比的动态记录
     def InitTestMetric(self, comprateTmp, dataset):
         tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
-        if tmpS not in self.metricLog.keys():
+        if tmpS not in self.TeMetricLog.keys():
             self.TeMetricLog[tmpS] = torch.Tensor()
         else:
             pass
 
     def AddTestMetric(self, comprateTmp, snrTmp, dataset):
-        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(comprateTmp, dataset)
+        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
 
         # 第一列为snr, 后面各列为各个指标
-        self.TeMetricLog[tmpS] = torch.cat([self.metricLog[tmpS], torch.zeros(1, len(self.args.metrics)+1 )],dim=0)
+        self.TeMetricLog[tmpS] = torch.cat([self.TeMetricLog[tmpS], torch.zeros(1, len(self.args.metrics)+1 )],dim=0)
         self.TeMetricLog[tmpS][-1,0]=snrTmp
 
     def UpdateTestMetric(self, comprateTmp, dataset, metric):
-        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(comprateTmp, dataset)
+        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
         self.TeMetricLog[tmpS][-1,1:] += metric
 
     def MeanTestMetric(self, comprateTmp, dataset, n_images):
-        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(comprateTmp, dataset)
+        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
         self.TeMetricLog[tmpS][-1,1:] /= n_images
         return self.TeMetricLog[tmpS][-1,1:]
 # 训练过程的PSNR等指标的动态记录 >>>
@@ -432,6 +433,14 @@ class checkpoint():
                 normalized = v[0].mul(255 / self.args.rgb_range)
                 tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
+
+    def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
+        filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
+        print(f"filename = {filename}\n")
+        normalized = data[0].mul(255 / self.args.rgb_range)
+        tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
+        print(f"tensor_cpu.shape = {tensor_cpu.shape}\n")
+        imageio.imwrite(filename, tensor_cpu.numpy())
 
 
 # ckp = checkpoint(args)
@@ -532,8 +541,8 @@ def make_optimizer(args, net):
     # optimizer
     #  filter() 函数用于过滤序列，过滤掉不符合条件的元素，返回一个迭代器对象，如果要转换为列表，可以使用 list() 来转换。
     # 该接收两个参数，第一个为函数，第二个为序列，序列的每个元素作为参数传递给函数进行判断，然后返回 True 或 False，最后将返回 True 的元素放到新列表中。
-    trainable = filter(lambda x: x.requires_grad, net.parameters())
-
+    #trainable = filter(lambda x: x.requires_grad, net.parameters())
+    trainable = net.parameters()
     #  lr = 1e-4, weight_decay = 0
     kwargs_optimizer = {'lr': args.lr, 'weight_decay': args.weight_decay}
 

@@ -10,13 +10,13 @@ Created on 2022/07/07
 """
 
 
-import sys
+import sys,os
 import utility
 import torch
 from torch.autograd import Variable
 from tqdm import tqdm
 import datetime
-
+import torch.nn as nn
 # 本项目自己编写的库
 
 from ColorPrint  import ColoPrint
@@ -36,7 +36,7 @@ class Trainer():
         self.loss = my_loss
         self.optimizer = utility.make_optimizer(args, self.model)
 
-        self.wr.WrModel(self.model.model, torch.randn(16, 3, 48, 48))
+        #self.wr.WrModel(self.model.model, torch.randn(16, 3, 48, 48))
         if self.args.load != '':
             if self.ckp.mark == True:
                 self.optimizer.load(self.ckp.dir)
@@ -63,12 +63,14 @@ class Trainer():
 
 
     def train(self):
+        #lossFn = nn.MSELoss()
+        #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
         torch.set_grad_enabled(True)
         #ind1_scale = self.args.scale.index(1)
         self.model.train()
-        self.model.model.train()
+
         tm = utility.timer()
 
         #self.loader_train.dataset.set_scale(ind1_scale)
@@ -88,12 +90,13 @@ class Trainer():
                     accumEpoch += 1
                     self.ckp.UpdateEpoch()
 
-                    # 初始化loss日志
+                    #初始化loss日志
                     self.loss.start_log()
 
                     # 动态增加特定信噪比和压缩率下的Psnr等评价指标日志
                     self.ckp.AddMetricLog(compressrate, snr)
 
+                    loss = 0
                     # 遍历训练数据集
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
                         print(f"{batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
@@ -101,13 +104,17 @@ class Trainer():
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
 
+                        hr.div_(self.args.rgb_range)
+                        sr.div_(self.args.rgb_range)
                         # 计算batch内的loss
                         lss = self.loss(sr, hr)
+
                         #lss = Variable(lss, requires_grad = True)
 
                         self.optimizer.zero_grad() # 必须在反向传播前先清零。
                         lss.backward()
                         self.optimizer.step()
+                        #optimizer.step()
 
                         # 计算bach内的psnr和MSE
                         with torch.no_grad():
@@ -123,7 +130,7 @@ class Trainer():
 
                     # 计算并更新epoch的PSNR和LOSS
                     epochMetric = self.ckp.MeanMetricLog(compressrate, snr, len(self.loader_train))
-                    epochLos = self.loss.end_log(len(self.loader_train))
+                    epochLos = self.loss.mean_log(len(self.loader_train))
                     print(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer}/{tm.hold()} \n")
                     self.ckp.write_log(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer}/{tm.hold()}", train=True)
 
@@ -139,14 +146,13 @@ class Trainer():
                 self.optimizer.reset_state()
 
                 # 在训练完每个压缩率和信噪比下的所有Epoch后,保存一次模型
-                self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
+                #self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
 
         # 在训练完所有压缩率和信噪比后，保存损失日志
         self.ckp.saveLoss(self)
         # 在训练完所有压缩率和信噪比后，保存优化器
         self.ckp.saveOptim(self)
         # 在训练完所有压缩率和信噪比后，保存PSNR等指标日志
-        # 保存checkpoint日志
         self.ckp.save()
         self.ckp.write_log(f"#================================ 本次训练完毕,用时:{tm.hold()/60.0}分钟 =======================================",train=True)
         # 关闭日志
@@ -162,11 +168,14 @@ class Trainer():
         torch.set_grad_enabled(False)
         self.ckp.InittestDir(now=self.ckp.now)
 
-        # ind1_scale = self.args.scale.index(1)
+
         self.model.eval()
         self.model.model.eval()
 
         tm = utility.timer()
+        if self.args.save_results:
+            self.ckp.begin_queue()
+
 
         print(f"共有{len(self.loader_test)}个数据集\n")
         self.ckp.write_log(f"共有{len(self.loader_test)}个数据集")
@@ -199,20 +208,32 @@ class Trainer():
                     # 测试指标日志申请空间
                     self.ckp.AddTestMetric(compressrate, snr, DtSetName)
 
-
                     for batch_idx, (lr, hr, filename) in  enumerate(ds):
+
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
+
+                        # 保存图片
+                        self.ckp.SaveTestFig( DtSetName, compressrate, snr, filename[0], sr)
+
                         # 计算bach内(测试时一个batch只有一张图片)的psnr和MSE
                         with torch.no_grad():
                             metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
                             print(f"")
                         # 更新具体SNR下一张图片的PSNR和MSE等
                         self.ckp.UpdateTestMetric(compressrate, DtSetName,metric)
+                        #print(f"数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr},图片:{filename},指标:{}")
 
-                        print(f"数据集:DtSetName {idx_data+1}/{len(self.loader_test)}, 压缩率:compressrate {comprate_idx+1}/{len(self.args.CompressRateTrain)},信噪比:snr {snr_idx+1}/{len(self.args.SNRtest)}, Batch:{batch_idx+1}/{len(ds)},时间:{tm.toc()}/{tm.hold()}")
+
+
+                        print(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.toc()}/{tm.hold()}")
+
+                        self.ckp.write_log(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.toc()}/{tm.hold()}")
 
                     # 计算某个数据集下的平均指标
                     metrics = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
+                    self.wr.WrTestMetric(DtSetName, compressrate, snr, metrics)
+                    self.wr.WrTestOne(DtSetName, compressrate, snr, metrics)
+
 
         print(color.fuchsia(f"\n#================================ 完成测试, 用时:{tm.hold()/60.0}分钟 =======================================\n"))
 
