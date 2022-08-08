@@ -101,17 +101,27 @@ class LOSS(nn.modules.loss._Loss):
     # 在同一个画布中画出所有Loss的结果
     def plot_AllLoss(self, apath):
         fig, axs = plt.subplots(len(self.loss),1, figsize=(12,8))
+        
         for i, l in enumerate(self.loss):
             epoch = len(self.losslog[:, i])
             X = np.linspace(1, epoch, epoch)
             label = '{} Loss'.format(l['type'])
-            axs[i].set_title(label)
-            axs[i].plot(X, self.losslog[:, i].numpy(), label=label)
-            axs[i].set_xlabel('Epochs')
-            axs[i].set_ylabel(label)
-            axs[i].grid(True)
-            axs[i].legend()
-            axs[i].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
+            if len(self.loss) == 1:
+                axs.set_title(label)
+                axs.plot(X, self.losslog[:, i].numpy(), label=label)
+                axs.set_xlabel('Epochs')
+                axs.set_ylabel(label)
+                axs.grid(True)
+                axs.legend()
+                axs.tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)  
+            else:
+                axs[i].set_title(label)
+                axs[i].plot(X, self.losslog[:, i].numpy(), label=label)
+                axs[i].set_xlabel('Epochs')
+                axs[i].set_ylabel(label)
+                axs[i].grid(True)
+                axs[i].legend()
+                axs[i].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
         fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
         plt.tight_layout()#  使得图像的四周边缘空白最小化
         out_fig = plt.gcf()

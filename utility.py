@@ -269,7 +269,6 @@ class checkpoint():
 
     # 画图和保存Loss日志
     def saveLoss(self, trainer):
-
         trainer.loss.save(self.dir)
         trainer.loss.plot_loss(self.dir)
         trainer.loss.plot_AllLoss(self.dir)
@@ -279,7 +278,6 @@ class checkpoint():
         self.plot_AllTrainMetric()
         torch.save(self.metricLog, self.get_path('TrainMetric_log.pt'))
         torch.save(self.SumEpoch, self.get_path('SumEpoch.pt'))
-
 
     # 写日志
     def write_log(self, log, train=False ,refresh=True):
@@ -346,6 +344,8 @@ class checkpoint():
 # <<< 训练结果画图
 
 
+# >>> 测试相关函数
+    # 初始化测试结果目录
     def InittestDir(self, now = 'TestResult'):
         self.TeMetricLog = {}
         # now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
@@ -400,6 +400,27 @@ class checkpoint():
         return self.TeMetricLog[tmpS][-1,1:]
 # 训练过程的PSNR等指标的动态记录 >>>
 
+    def SaveTestLog(self):
+        self.plot_AllTestMetric()
+        torch.save(self.TeMetricLog, self.get_testpath('TestMetric_log.pt'))
+
+
+
+    def plot_AllTestMetric(self):
+        for dtset in self.args.data_test:
+            fig, axs=plt.subplots(len(self.args.CompressRateTrain),len(self.args.metrics),figsize=(20,20))
+            for i in range(len(self.args.CompressRateTrain)):
+
+    def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
+        filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
+        print(f"filename = {filename}\n")
+        normalized = data[0].mul(255 / self.args.rgb_range)
+        tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
+        print(f"tensor_cpu.shape = {tensor_cpu.shape}\n")
+        imageio.imwrite(filename, tensor_cpu.numpy())
+
+
+# <<< 测试相关函数
 
     def begin_queue(self):
         self.queue = Queue()
@@ -433,15 +454,6 @@ class checkpoint():
                 normalized = v[0].mul(255 / self.args.rgb_range)
                 tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
-
-    def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
-        filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
-        print(f"filename = {filename}\n")
-        normalized = data[0].mul(255 / self.args.rgb_range)
-        tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
-        print(f"tensor_cpu.shape = {tensor_cpu.shape}\n")
-        imageio.imwrite(filename, tensor_cpu.numpy())
-
 
 # ckp = checkpoint(args)
 # # 依次遍历压缩率

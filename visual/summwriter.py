@@ -66,18 +66,17 @@ class SummWriter(SummaryWriter):
     # 不同图可视化
     def WrTestMetric(self, dasename, compratio, snr, metrics):
         for idx, met in enumerate(args.metrics):
-            self.add_scalar(f"Test/{dasename}/{met}Metric_snr/CompreRatio={compratio}" , metrics[idx], snr)
+            self.add_scalar(f"Test/{dasename}/Y({met})X(snr)/CompreRatio={compratio}" , metrics[idx], snr)
 
     # 一张图可视化
     def WrTestOne(self, dasename, compratio, snr, metrics):
         for idx, met in enumerate(args.metrics):
-            self.add_scalar(f"Test/{dasename}/{met}Metric_snr", {f"CompreRatio={compratio}" : metrics[idx]}, snr)
+            #print(f"{dasename} {met} {compratio} {metrics} {metrics[idx]}")
+            self.add_scalars(f"Test/{dasename}/Y{met}X(snr)", {f"CompreRatio={compratio}" : metrics[idx]}, snr)
 
 
 
 # 测试结果可视化>>>
-
-
 
     def WrModel(self, model, images ):
         self.add_graph(model, images)
@@ -110,6 +109,15 @@ class SummWriter(SummaryWriter):
 
 # wr.close()
 
+
+wr = SummWriter(args)
+
+for idx_data, ds in enumerate(args.data_test):
+    for comprate_idx, compressrate in enumerate(args.CompressRateTrain):
+        for snr_idx, snr in enumerate( args.SNRtest):
+            metrics = torch.tensor([snr_idx,snr_idx+idx_data])
+            wr.WrTestMetric(ds, compressrate, snr, metrics)
+            wr.WrTestOne(ds, compressrate, snr, metrics)
 
 #================================================================================================================
 

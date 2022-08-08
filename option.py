@@ -37,7 +37,7 @@ parser.add_argument('--seed', type=int, default=1, help='random seed')
 # 数据根目录
 parser.add_argument('--dir_data', type=str, default='/home/jack/IPT-Pretrain/Data/', help='dataset directory')  # cjj
 parser.add_argument('--dir_demo', type=str, default='../test', help='demo image directory')
-parser.add_argument('--SummaryWriteDir', type=str, default='/home/jack/IPT-Pretrain/results/summary', help='demo image directory')
+parser.add_argument('--SummaryWriteDir', type=str, default='/home/jack/IPT-Pretrain/results/TensorBoard', help='demo image directory')
 
 # 训练数据名称
 parser.add_argument('--data_train', type=str, default='DIV2K', help='train dataset name')
@@ -102,7 +102,7 @@ parser.add_argument('--dcpPad', type=int,  default=1, help='压缩层的padding'
 
 
 # Optimization specifications
-parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
+parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
 parser.add_argument('--decay', type=str, default='20-40-60-80-100-120',  help='learning rate decay type')
 parser.add_argument('--gamma',  type=float, default=0.5, help='learning rate decay factor for step decay')
 parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSprop'), help='optimizer to use (SGD | ADAM | RMSprop)')
@@ -113,7 +113,7 @@ parser.add_argument('--weight_decay', type=float, default=0, help='weight decay'
 parser.add_argument('--gclip', type=float, default=0, help='gradient clipping threshold (0 = no clipping)')
 
 # Loss specifications
-parser.add_argument('--loss', type=str, default='1*MSE', help='loss function configuration')
+parser.add_argument('--loss', type=str, default='1*MSE+0.7*L1', help='loss function configuration')
 parser.add_argument('--skip_threshold', type=float, default='1e8', help='skipping batch that has large error')
 
 parser.add_argument('--metrics', type=str, default='Psnr, MSE', help='loss function configuration')

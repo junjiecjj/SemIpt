@@ -213,7 +213,7 @@ class Trainer():
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
 
                         # 保存图片
-                        self.ckp.SaveTestFig( DtSetName, compressrate, snr, filename[0], sr)
+                        self.ckp.SaveTestFig(DtSetName, compressrate, snr, filename[0], sr)
 
                         # 计算bach内(测试时一个batch只有一张图片)的psnr和MSE
                         with torch.no_grad():
