@@ -104,8 +104,8 @@ class Trainer():
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
 
-                        hr.div_(self.args.rgb_range)
-                        sr.div_(self.args.rgb_range)
+                        hr = hr.div_(self.args.rgb_range*1.0)
+                        sr = sr.div_(self.args.rgb_range*1.0)
                         # 计算batch内的loss
                         lss = self.loss(sr, hr)
 

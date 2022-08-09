@@ -6,7 +6,7 @@ Created on 2022/07/07
 @author: Junjie Chen
 
 """
-import os
+import os,sys
 import math
 import time
 import datetime
@@ -28,8 +28,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 # 本项目自己编写的库
-from option import args
-import sys,os
+
 sys.path.append("..")
 from  ColorPrint import ColoPrint
 color =  ColoPrint()
@@ -566,7 +565,7 @@ def calc_metric(sr, hr, scale, rgb_range, metrics, cal_type='y'):
     metric = []
 
     for met in metrics:
-        if met == 'Psnr':
+        if met == 'PSNR':
             psnr = calc_psnr(sr, hr, scale, rgb_range, cal_type='y')
         elif met == 'MSE':
             mse = calc_mse(sr, hr, scale)

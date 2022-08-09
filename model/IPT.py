@@ -525,10 +525,10 @@ class Ipt(nn.Module):
             self.model.set_comprate(compr_idx)
 
         if self.training:
-            print("\n正在使用测试forward.............\n")
             if self.n_GPUs > 1:
                 return P.data_parallel(self.model, x, range(self.n_GPUs))
             else:
+                print("\n正在使用Ipt训练的forward.............\n")
                 return self.model(x)
         else:
             #print("\nI'm not in self.training.............\n")
