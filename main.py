@@ -78,12 +78,12 @@ if ckp.ok:
     # 训练
     if  args.wanttrain:
         print(f"I want to train \n")
-        #tr.train()
+        tr.train()
 
     # 测试
     if  args.wanttest:
-        tr.test()
-        #print(f"I want to test \n")
+        # tr.test()
+        # print(f"I want to test \n")
         pass
 
     wr.WrClose()

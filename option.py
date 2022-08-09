@@ -49,7 +49,7 @@ parser.add_argument('--data_test',type=str,  default='Set2+Set3', help='test dat
 parser.add_argument('--useBIN',  action='store_false', help='是否使用bin图像')
 
 #parser.add_argument('--data_range', type=str, default='1-800/801-810', help='train/test data range')
-parser.add_argument('--data_range', type=str, default='1-48', help='train/test data range')
+parser.add_argument('--data_range', type=str, default='1-64', help='train/test data range')
 parser.add_argument('--ext', type=str, default='sep', help='dataset file extension')
 # parser.add_argument('--scale', type=str, default='2+3+4+5+6+1', help='super resolution scale')
 parser.add_argument('--scale', type=str, default='1', help='super resolution scale') # cjj
@@ -116,7 +116,7 @@ parser.add_argument('--gclip', type=float, default=0, help='gradient clipping th
 parser.add_argument('--loss', type=str, default='1*MSE+0.7*L1', help='loss function configuration')
 parser.add_argument('--skip_threshold', type=float, default='1e8', help='skipping batch that has large error')
 
-parser.add_argument('--metrics', type=str, default='Psnr, MSE', help='loss function configuration')
+parser.add_argument('--metrics', type=str, default='PSNR, MSE', help='loss function configuration')
 
 # Log specifications
 parser.add_argument('--save', type=str, default='/home/jack/IPT-Pretrain/results/',  help='file name to save')  #cjj

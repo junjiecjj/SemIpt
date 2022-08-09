@@ -45,7 +45,7 @@ class Trainer():
 
 
     def prepare(self, *args):
-        device = torch.device('cpu' if self.args.cpu else 'cuda')
+        #device = torch.device('cpu' if self.args.cpu else 'cuda')
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         def _prepare(tensor):
             if self.args.precision == 'half': tensor = tensor.half()
@@ -168,14 +168,12 @@ class Trainer():
         torch.set_grad_enabled(False)
         self.ckp.InittestDir(now=self.ckp.now)
 
-
         self.model.eval()
         self.model.model.eval()
 
         tm = utility.timer()
         if self.args.save_results:
             self.ckp.begin_queue()
-
 
         print(f"共有{len(self.loader_test)}个数据集\n")
         self.ckp.write_log(f"共有{len(self.loader_test)}个数据集")
@@ -223,17 +221,13 @@ class Trainer():
                         self.ckp.UpdateTestMetric(compressrate, DtSetName,metric)
                         #print(f"数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr},图片:{filename},指标:{}")
 
-
-
                         print(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.toc()}/{tm.hold()}")
-
                         self.ckp.write_log(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.toc()}/{tm.hold()}")
 
                     # 计算某个数据集下的平均指标
                     metrics = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
                     self.wr.WrTestMetric(DtSetName, compressrate, snr, metrics)
                     self.wr.WrTestOne(DtSetName, compressrate, snr, metrics)
-
 
         print(color.fuchsia(f"\n#================================ 完成测试, 用时:{tm.hold()/60.0}分钟 =======================================\n"))
 

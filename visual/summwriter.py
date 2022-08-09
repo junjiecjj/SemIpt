@@ -110,14 +110,14 @@ class SummWriter(SummaryWriter):
 # wr.close()
 
 
-wr = SummWriter(args)
+# wr = SummWriter(args)
 
-for idx_data, ds in enumerate(args.data_test):
-    for comprate_idx, compressrate in enumerate(args.CompressRateTrain):
-        for snr_idx, snr in enumerate( args.SNRtest):
-            metrics = torch.tensor([snr_idx,snr_idx+idx_data])
-            wr.WrTestMetric(ds, compressrate, snr, metrics)
-            wr.WrTestOne(ds, compressrate, snr, metrics)
+# for idx_data, ds in enumerate(args.data_test):
+#     for comprate_idx, compressrate in enumerate(args.CompressRateTrain):
+#         for snr_idx, snr in enumerate( args.SNRtest):
+#             metrics = torch.tensor([snr_idx,snr_idx+idx_data])
+#             wr.WrTestMetric(ds, compressrate, snr, metrics)
+#             wr.WrTestOne(ds, compressrate, snr, metrics)
 
 #================================================================================================================
 

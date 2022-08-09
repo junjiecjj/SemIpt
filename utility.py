@@ -34,6 +34,25 @@ sys.path.append("..")
 from  ColorPrint import ColoPrint
 color =  ColoPrint()
 
+from matplotlib.font_manager import FontProperties
+from matplotlib.pyplot import MultipleLocator
+fontpath = "/usr/share/fonts/truetype/windows/"
+font = FontProperties(fname=fontpath+"SimSun.ttc", size = 22)#fname =  "/usr/share/fonts/truetype/arphic/SimSun.ttf",
+font1 = FontProperties(fname=fontpath+"SimSun.ttc", size = 18)
+font2 = FontProperties(fname=fontpath+"SimSun.ttc", size = 24)
+font3 = FontProperties(fname=fontpath+"SimSun.ttc", size = 30)
+
+fontpath1 = "/usr/share/fonts/truetype/msttcorefonts/"
+fonte = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+fonte1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 24)
+
+
+fontt  = {'family':'Times New Roman','style':'normal','size':17}
+fonttX  = {'family':'Times New Roman','style':'normal','size':22}
+fonttY  = {'family':'Times New Roman','style':'normal','size':22}
+fonttitle = {'style':'normal','size':17 }
+fontt2 = {'style':'normal','size':19,'weight':'bold'}
+fontt3  = {'style':'normal','size':16,}
 
 
 def printArgs(args):
@@ -350,7 +369,7 @@ class checkpoint():
         self.TeMetricLog = {}
         # now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         self.testRudir = os.path.join(self.dir, now)
-        os.makedirs(self.testRudir)
+        os.makedirs(self.testRudir,exist_ok=True)
         for d in self.args.data_test:
             os.makedirs(os.path.join(self.testRudir,'results-{}'.format(d)), exist_ok=True)
 
@@ -407,9 +426,44 @@ class checkpoint():
 
 
     def plot_AllTestMetric(self):
-        for dtset in self.args.data_test:
+        for dsIdx,dtset in enumerate(self.args.data_test):
             fig, axs=plt.subplots(len(self.args.CompressRateTrain),len(self.args.metrics),figsize=(20,20))
-            for i in range(len(self.args.CompressRateTrain)):
+            for crIdx, compratio in enumerate(self.args.CompressRateTrain):
+                for metIdx, met in enumerate(self.args.metrics):
+                    label = f"CompressRate={compratio}"
+                    tmps = "TestMetricLog:Dataset={},CompRatio={}".format(dtset,compratio)
+                    data = self.TeMetricLog[tmps]
+                    axs[crIdx,metIdx].set_title(label,loc = 'left',fontdict=fonttitle)
+                    axs[crIdx,metIdx].plot(data[:,0], data[:,metIdx+1],'r-',label=label,)
+                    axs[crIdx,metIdx].set_xlabel('SNR',fontdict=fonttX)
+                    axs[crIdx,metIdx].set_ylabel(f"{met}",fontdict=fonttY)
+                    fonte = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 16)
+                    axs[crIdx,metIdx].legend(borderaxespad=0,edgecolor='black',prop=fonte,)
+                    axs[crIdx,metIdx].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+                    axs[crIdx,metIdx].spines['left'].set_linewidth(2);####设置左边坐标轴的粗细
+                    axs[crIdx,metIdx].spines['right'].set_linewidth(2);###设置右边坐标轴的粗细
+                    axs[crIdx,metIdx].spines['top'].set_linewidth(2);####设置上部坐标轴的粗细
+
+                    fontt2 = {'family':'Times New Roman','style':'normal','size':16}
+                    legend1 = axs[crIdx,metIdx].legend(loc='best',borderaxespad=0,edgecolor='black',prop=fontt2,)
+                    frame1 = legend1.get_frame()
+                    frame1.set_alpha(1)
+                    frame1.set_facecolor('none') # 设置图例legend背景透明
+
+                    axs[crIdx,metIdx].tick_params(labelsize=16,width=3)
+                    labels = axs[crIdx,metIdx].get_xticklabels() + axs[crIdx,metIdx].get_yticklabels()
+                    [label.set_fontname('Times New Roman') for label in labels]
+                    [label.set_fontsize(20) for label in labels] #刻度值字号
+
+            fig.subplots_adjust(hspace=0.25)#调节两个子图间的距离
+            font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+            plt.suptitle(f"{self.args.metrics[0]}, {self.args.metrics[1]} metric of {dtset}",x=0.5,y=0.93,fontproperties=font4,)
+            #plt.tight_layout()#  使得图像的四周边缘空白最小化
+
+            out_fig = plt.gcf()
+            out_fig.savefig(self.get_testpath(f"{dtset}TestMetrics_Plot.pdf"), bbox_inches = 'tight',pad_inches = 0.2)
+            plt.show()
+            plt.close(fig)
 
     def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
         filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
@@ -482,6 +536,22 @@ class checkpoint():
 # ckp.plot_AllTrainPsnr()
 
 # ckp.save()
+
+# ckp = checkpoint(args)
+# ckp.InittestDir('aaaa')
+# for idx_data, ds in enumerate(args.data_test):
+#     for comprate_idx, compressrate in enumerate(args.CompressRateTrain):
+#         ckp.InitTestMetric(compressrate, ds)
+#         for snr_idx, snr in enumerate( args.SNRtest):
+#             ckp.AddTestMetric(compressrate, snr, ds)
+#             for i in range(20):
+#                 metric = torch.tensor([comprate_idx,comprate_idx+snr_idx])
+#                 ckp.UpdateTestMetric(compressrate, ds,metric)
+#                 ckp.MeanTestMetric(compressrate, ds,2)
+
+# ckp.SaveTestLog()
+
+
 
 
 #  功能：将img每个像素点的至夹在[0,255]之间
