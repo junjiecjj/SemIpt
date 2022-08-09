@@ -17,8 +17,11 @@ from torch.autograd import Variable
 from tqdm import tqdm
 import datetime
 import torch.nn as nn
-# 本项目自己编写的库
+import imageio
 
+
+
+# 本项目自己编写的库
 from ColorPrint  import ColoPrint
 color = ColoPrint()
 # print(color.fuchsia("Color Print Test Pass"))
@@ -65,11 +68,16 @@ class Trainer():
     def train(self):
         #lossFn = nn.MSELoss()
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
+
+        print(f"#======================================== 训练过程 =============================================",  file=self.ckp.log_file)
+
+        self.model.train()
         torch.set_grad_enabled(True)
         #ind1_scale = self.args.scale.index(1)
-        self.model.train()
+
 
         tm = utility.timer()
 
@@ -87,8 +95,10 @@ class Trainer():
 
                 # 遍历epoch
                 for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+self.args.epochs):
+
                     accumEpoch += 1
                     self.ckp.UpdateEpoch()
+                    #print(f"ckp.SumEpoch = {self.ckp.SumEpoch.requires_grad}\n")
 
                     #初始化loss日志
                     self.loss.start_log()
@@ -99,17 +109,22 @@ class Trainer():
                     loss = 0
                     # 遍历训练数据集
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
-                        print(f"{batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
+                        #print(f"{batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
+                        # lr.shape = torch.Size([32, 3, 48, 48]), hr.shape = torch.Size([32, 3, 48, 48]), filename = ('0052', '0031',
                         lr, hr = self.prepare(lr, hr)
+                        #print(f"lr.dtype = {lr.dtype}, hr.dtype = {hr.dtype}") #lr.dtype = torch.float32, hr.dtype = torch.float32
+                        #hr = hr.to(device)
+                        #lr = lr.to(device)
+                        print(f"lr.requires_grad = {lr.requires_grad}, hr.requires_grad = {hr.requires_grad} \n")
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
-                        sr = utility.quantize(sr, self.args.rgb_range)
 
-                        hr = hr.div_(self.args.rgb_range*1.0)
-                        sr = sr.div_(self.args.rgb_range*1.0)
                         # 计算batch内的loss
                         lss = self.loss(sr, hr)
-
-                        #lss = Variable(lss, requires_grad = True)
+                        #print(f"lss = {lss}")
+                        # lss.requires_grad_(True)
+                        # lss = Variable(lss, requires_grad = True)
+                        #print(f"lss.grad_fn = {lss.grad_fn}\n")
+                        #print(f"lss.requires_grad = {lss.requires_grad}\n") #lss.requires_grad = True
 
                         self.optimizer.zero_grad() # 必须在反向传播前先清零。
                         lss.backward()
@@ -117,26 +132,41 @@ class Trainer():
                         #optimizer.step()
 
                         # 计算bach内的psnr和MSE
-                        with torch.no_grad():
-                            metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
+                        # with torch.no_grad():
+                        metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
+                        # print(f"metric.requires_grad = {metric.requires_grad} {metric.dtype}")
 
                         # 更新 bach内的psnr
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
 
                         self.ckp.write_log(f"\t\t训练完一个 batch: loss = {lss}, metric = {metric} \n", train=True)
                         print(f"\t\tEpoch {epoch_idx}/{self.ckp.startEpoch+self.args.epochs}, Iter {batch_idx}/{len(self.loader_train)}, Time {tm.toc()}/{tm.hold()}, 训练完一个 batch: loss = {lss}, metric = {metric}\n")
+                        if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs) and batch_idx==len(self.loader_train)-1:
+                            with torch.no_grad():
+                                for a, b, name in zip(hr, sr,filename):
+                                    filename1 = '/home/jack/公共的/Python/PytorchTutor/lulaoshi/LeNet/image/origin/{}_hr.png'.format(name)
+                                    data1 = a.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
+                                    imageio.imwrite(filename1, data1)
+                                    filename2 = '/home/jack/公共的/Python/PytorchTutor/lulaoshi/LeNet/image/net/{}_lr.png'.format(name)
+                                    data2 = b.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
+                                    imageio.imwrite(filename2, data2)
+
                     # 学习率递减
                     self.optimizer.schedule()
 
-                    # 计算并更新epoch的PSNR和LOSS
+                    # 计算并更新epoch的PSNR和MSE等metric
                     epochMetric = self.ckp.MeanMetricLog(compressrate, snr, len(self.loader_train))
+                    # 计算并更新epoch的loss
                     epochLos = self.loss.mean_log(len(self.loader_train))
-                    print(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer}/{tm.hold()} \n")
-                    self.ckp.write_log(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer}/{tm.hold()}", train=True)
+
+                    #print(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f} \n")
+                    self.ckp.write_log(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f}", train=True)
 
                     # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
                     self.wr.WrTLoss(epochLos, int(self.ckp.LastSumEpoch+accumEpoch))
                     self.wr.WrTrainLoss(compressrate, snr, epochLos, epoch_idx)
+                    
+                    self.wr.WrLr(compressrate, snr, self.optimizer.get_lr(), epoch_idx)
 
                     self.wr.WrTrMetricOne(compressrate, snr, epochMetric, epoch_idx)
                     self.wr.WrTrainMetric(compressrate, snr, epochMetric, epoch_idx)
@@ -157,9 +187,10 @@ class Trainer():
         self.ckp.write_log(f"#================================ 本次训练完毕,用时:{tm.hold()/60.0}分钟 =======================================",train=True)
         # 关闭日志
         self.ckp.done()
+        print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#================================ 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 =======================================\n"))
-
+        print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 ==============================\n"))
+        return
 
     def test(self):
         print(color.fuchsia(f"\n#================================ 开始测试 =======================================\n"))
@@ -172,8 +203,8 @@ class Trainer():
         self.model.model.eval()
 
         tm = utility.timer()
-        if self.args.save_results:
-            self.ckp.begin_queue()
+        #if self.args.save_results:
+        #   self.ckp.begin_queue()
 
         print(f"共有{len(self.loader_test)}个数据集\n")
         self.ckp.write_log(f"共有{len(self.loader_test)}个数据集")
@@ -209,7 +240,7 @@ class Trainer():
                     for batch_idx, (lr, hr, filename) in  enumerate(ds):
 
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
-
+                        sr = utility.quantize(sr, self.args.rgb_range)
                         # 保存图片
                         self.ckp.SaveTestFig(DtSetName, compressrate, snr, filename[0], sr)
 
@@ -228,9 +259,11 @@ class Trainer():
                     metrics = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
                     self.wr.WrTestMetric(DtSetName, compressrate, snr, metrics)
                     self.wr.WrTestOne(DtSetName, compressrate, snr, metrics)
-
+        self.ckp.write_log(f"===================================  测试结束 =======================================================")
+        print(f"====================== 关闭测试日志  {self.ckp.log_file.name} ===================================")
+        self.ckp.done()
         print(color.fuchsia(f"\n#================================ 完成测试, 用时:{tm.hold()/60.0}分钟 =======================================\n"))
-
+        return
 
 
     def test1(self):  # 测试

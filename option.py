@@ -16,7 +16,7 @@ parser.add_argument('--debug', action='store_true', help='Enables debug mode')
 parser.add_argument('--template', default='.', help='You can set various templates in option.py')
 
 # model  specifications
-parser.add_argument('--modelUse', default='ipt', help='You can set various templates in option.py')
+parser.add_argument('--modelUse', default='DeepSC', help='You can set various templates in option.py')
 # parser.add_argument('--model', default='ipt', help='model name')
 
 parser.add_argument('--shift_mean', default=True, help='subtract pixel mean from the input')
@@ -40,7 +40,7 @@ parser.add_argument('--dir_demo', type=str, default='../test', help='demo image 
 parser.add_argument('--SummaryWriteDir', type=str, default='/home/jack/IPT-Pretrain/results/TensorBoard', help='demo image directory')
 
 # 训练数据名称
-parser.add_argument('--data_train', type=str, default='DIV2K', help='train dataset name')
+parser.add_argument('--data_train', type=str, default='DIV2K_cut', help='train dataset name')
 
 # 测试集数据名称
 parser.add_argument('--data_test',type=str,  default='Set2+Set3', help='test dataset name')
@@ -72,7 +72,7 @@ parser.add_argument('--wanttest',  action='store_false', help='set this option t
 parser.add_argument('--wanttrain', action='store_false', help='set this option to train the model')
 parser.add_argument('--reset', action='store_true', help='reset the training')
 parser.add_argument('--test_every', type=int, default=1000, help='do test per every N batches')
-parser.add_argument('--epochs', type=int, default=100,  help='number of epochs to train')
+parser.add_argument('--epochs', type=int, default=80,  help='number of epochs to train')
 parser.add_argument('--batch_size', type=int, default=16, help='input batch size for training')
 parser.add_argument('--test_batch_size', type=int,  default=1,help='input batch size for training')
 parser.add_argument('--crop_batch_size', type=int, default=64, help='input batch size for training')
@@ -102,9 +102,9 @@ parser.add_argument('--dcpPad', type=int,  default=1, help='压缩层的padding'
 
 
 # Optimization specifications
-parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
-parser.add_argument('--decay', type=str, default='20-40-60-80-100-120',  help='learning rate decay type')
-parser.add_argument('--gamma',  type=float, default=0.5, help='learning rate decay factor for step decay')
+parser.add_argument('--lr', type=float, default=0.0003, help='learning rate')
+parser.add_argument('--decay', type=str, default='20-80-120',  help='learning rate decay type')
+parser.add_argument('--gamma',  type=float, default=0.6, help='learning rate decay factor for step decay')
 parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSprop'), help='optimizer to use (SGD | ADAM | RMSprop)')
 parser.add_argument('--momentum', type=float, default=0.9, help='SGD momentum')
 parser.add_argument('--betas',  type=tuple, default=(0.9, 0.999), help='ADAM beta')
@@ -113,7 +113,7 @@ parser.add_argument('--weight_decay', type=float, default=0, help='weight decay'
 parser.add_argument('--gclip', type=float, default=0, help='gradient clipping threshold (0 = no clipping)')
 
 # Loss specifications
-parser.add_argument('--loss', type=str, default='1*MSE+0.7*L1', help='loss function configuration')
+parser.add_argument('--loss', type=str, default='1*MSE', help='loss function configuration')
 parser.add_argument('--skip_threshold', type=float, default='1e8', help='skipping batch that has large error')
 
 parser.add_argument('--metrics', type=str, default='PSNR, MSE', help='loss function configuration')

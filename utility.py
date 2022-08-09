@@ -191,19 +191,7 @@ class checkpoint():
 
         self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
 
-        with open(self.get_path('argsConfig.txt'), open_type) as f:
-            f.write('#==========================================================\n')
-            f.write(self.now + '\n')
-            f.write('#==========================================================\n\n')
-
-            f.write("############################################################################################\n")
-            f.write("################################  args  ####################################################\n")
-            f.write("############################################################################################\n")
-
-            for k, v in args.__dict__.items():
-                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
-            f.write('\n')
-            f.write("################################ args end  #################################################\n")
+        self.writeArgsLog()
 
         self.metricLog = {}
 
@@ -228,7 +216,24 @@ class checkpoint():
     # 更新全局的Epoch
     def UpdateEpoch(self):
         self.SumEpoch += 1
+        return
 
+    def writeArgsLog(self, open_type='a'):
+        with open(self.get_path('argsConfig.txt'), open_type) as f:
+            f.write('#==========================================================\n')
+            f.write(self.now + '\n')
+            f.write('#==========================================================\n\n')
+
+            f.write("############################################################################################\n")
+            f.write("################################  args  ####################################################\n")
+            f.write("############################################################################################\n")
+
+            for k, v in self.args.__dict__.items():
+                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
+            f.write('\n')
+            f.write("################################ args end  #################################################\n")
+
+        return
 
     # 因为多个不同压缩率的不同层是融合在一个模型里的，所以需要检查在每个压缩率和信噪比下训练的epoch是否相等
     def checkSameLen(self):
@@ -257,15 +262,18 @@ class checkpoint():
             self.metricLog[tmpS] = torch.Tensor()
         else:
             pass
+        return
 
     def AddMetricLog(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
         self.metricLog[tmpS] = torch.cat([ self.metricLog[tmpS], torch.zeros(1, len(self.args.metrics))])
+        return
 
     def UpdateMetricLog(self, comprateTmp, snrTmp, metric):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
         self.metricLog[tmpS][-1] += metric
+        return
 
     def MeanMetricLog(self, comprateTmp, snrTmp, n_batch):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
@@ -279,23 +287,26 @@ class checkpoint():
 
     def saveModel(self, trainer,  compratio, snr, epoch, is_best=False):
         trainer.model.save(self.get_path('model'), compratio, snr, epoch, is_best=is_best)
+        return
 
     # 保存优化器参数
     def saveOptim(self, trainer):
-
         trainer.optimizer.save(self.dir)
+        return
 
     # 画图和保存Loss日志
     def saveLoss(self, trainer):
         trainer.loss.save(self.dir)
         trainer.loss.plot_loss(self.dir)
         trainer.loss.plot_AllLoss(self.dir)
+        return
 
     # 画图和保存PSNR等日志
     def save(self):
         self.plot_AllTrainMetric()
         torch.save(self.metricLog, self.get_path('TrainMetric_log.pt'))
         torch.save(self.SumEpoch, self.get_path('SumEpoch.pt'))
+        return
 
     # 写日志
     def write_log(self, log, train=False ,refresh=True):
@@ -307,10 +318,12 @@ class checkpoint():
                 self.log_file = open(self.get_path('trainLog.txt'), 'a')
             else:
                 self.log_file = open(self.get_testpath('testLog.txt'), 'a')
+        return
 
     # 关闭日志
     def done(self):
         self.log_file.close()
+        return
 
 # >>> 训练结果画图
     def plot_trainPsnr(self, comprateTmp, snrTmp):
@@ -333,6 +346,7 @@ class checkpoint():
         out_fig.savefig(self.get_path('train,epoch-psnr,CompRatio={},SNR={}.pdf'.format(comprateTmp, snrTmp)))
         plt.show()
         plt.close(fig)
+        return
 
 
     def plot_AllTrainMetric(self):
@@ -358,6 +372,7 @@ class checkpoint():
             out_fig.savefig(self.get_path(f"{met}_Epoch_Plot.pdf"))
             plt.show()
             plt.close(fig)
+        return
 
 # <<< 训练结果画图
 
@@ -374,6 +389,7 @@ class checkpoint():
 
         open_type = 'a' if os.path.exists(self.get_testpath('testLog.txt')) else 'w'
         self.log_file = open(self.get_testpath('testLog.txt'), open_type)
+        print(f"====================== 打开测试日志 {self.log_file.name} ===================================")
 
         with open(self.get_testpath('argsTest.txt'), open_type) as f:
             f.write('#==========================================================\n')
@@ -384,10 +400,12 @@ class checkpoint():
             f.write("####################################  Test args  ###########################################\n")
             f.write("############################################################################################\n")
 
-            for k, v in args.__dict__.items():
+            for k, v in self.args.__dict__.items():
                 f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
             f.write('\n')
             f.write("################################ args end  #################################################\n")
+
+        return
 
     def get_testpath(self, *subdir):
         return os.path.join(self.testRudir, *subdir)
@@ -400,6 +418,7 @@ class checkpoint():
             self.TeMetricLog[tmpS] = torch.Tensor()
         else:
             pass
+        return
 
     def AddTestMetric(self, comprateTmp, snrTmp, dataset):
         tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
@@ -407,6 +426,7 @@ class checkpoint():
         # 第一列为snr, 后面各列为各个指标
         self.TeMetricLog[tmpS] = torch.cat([self.TeMetricLog[tmpS], torch.zeros(1, len(self.args.metrics)+1 )],dim=0)
         self.TeMetricLog[tmpS][-1,0]=snrTmp
+        return
 
     def UpdateTestMetric(self, comprateTmp, dataset, metric):
         tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
@@ -421,7 +441,7 @@ class checkpoint():
     def SaveTestLog(self):
         self.plot_AllTestMetric()
         torch.save(self.TeMetricLog, self.get_testpath('TestMetric_log.pt'))
-
+        return
 
 
     def plot_AllTestMetric(self):
@@ -463,7 +483,7 @@ class checkpoint():
             out_fig.savefig(self.get_testpath(f"{dtset}TestMetrics_Plot.pdf"), bbox_inches = 'tight',pad_inches = 0.2)
             plt.show()
             plt.close(fig)
-
+        return
     def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
         filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
         print(f"filename = {filename}\n")
@@ -471,7 +491,7 @@ class checkpoint():
         tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
         print(f"tensor_cpu.shape = {tensor_cpu.shape}\n")
         imageio.imwrite(filename, tensor_cpu.numpy())
-
+        return
 
 # <<< 测试相关函数
 
@@ -489,7 +509,7 @@ class checkpoint():
 
         for p in self.process:
             p.start()
-
+        return
     def end_queue(self):
         for _ in range(self.n_processes):
             self.queue.put((None, None))
@@ -497,7 +517,7 @@ class checkpoint():
             time.sleep(1)
         for p in self.process:
             p.join()
-
+        return
     def save_results_byQueue(self, dataset, filename, save_list, scale):
         if self.args.save_results:
             filename = self.get_path('results-{}'.format(dataset.dataset.name),'{}_x{}_'.format(filename, scale))
@@ -507,7 +527,7 @@ class checkpoint():
                 normalized = v[0].mul(255 / self.args.rgb_range)
                 tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
-
+        return
 # ckp = checkpoint(args)
 # # 依次遍历压缩率
 # for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
@@ -591,7 +611,8 @@ def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
     else:
         valid = diff[..., scale:-scale, scale:-scale]
     mse = valid.pow(2).mean()
-
+    if mse <= 1e-10:
+        mse = 1e-10
     return   -10 * math.log10(mse)
 
 def calc_mse(sr, hr, scale):

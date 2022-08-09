@@ -75,7 +75,7 @@ class SRData(data.Dataset):
                 self.images_hr_bin, self.images_lr_bin = self._make_bin_img_magnify()
 
 
-        if self.name in ['DIV2K',]:
+        if self.name in ['DIV2K','DIV2K_cut']:
             #print(f"srdata.py  69   {self.name}\n")
             self._set_filesystem_div2k(args.dir_data)
             self.images_hr_png, self.images_lr_png = self._scan_div2k()
@@ -163,7 +163,7 @@ class SRData(data.Dataset):
         self.dir_hr = os.path.join(self.apath, 'original_png')  #  /home/jack/IPT-Pretrain/Data/DIV2K/LR_bicubic
         # if self.input_large: self.dir_lr += 'L'
         self.ext = ('.png', '.png')
-
+        return
 
     def _set_filesystem_benchmark(self, dir_data):
         #  dir_data = '/home/jack/IPT-Pretrain/Data/'
@@ -175,7 +175,7 @@ class SRData(data.Dataset):
             self.dir_lr = os.path.join(self.apath, 'LR_bicubic')     # /home/jack/IPT-Pretrain/Data/benchmark/Set5/LR_bicubic
 
         self.ext = ('', '.png')
-
+        return
 
 
     def _set_filesystem_div2k(self, dir_data):
@@ -195,7 +195,7 @@ class SRData(data.Dataset):
                 #print(f"data_range = {data_range}\n")  # data_range = ['801', '810']
 
         self.begin, self.end = list(map(lambda x: int(x), data_range))  # [801, 810]
-
+        return
 
     def _make_bin_img_magnify(self):
         path_bin =  os.path.join(self.apath, 'bin')
@@ -279,7 +279,8 @@ class SRData(data.Dataset):
                 print('Making a binary: {}'.format(f))
             with open(f, 'wb') as _f:
                 pickle.dump(imageio.imread(img), _f)
-
+        return
+    
     def __getitem__(self, idx):
         if self.train == False and self.name in ['Rain100L'] and self.args.derain:  # 不进入此处
             norain, rain, filename = self._load_rain_test(idx)
@@ -293,7 +294,7 @@ class SRData(data.Dataset):
             pair = common.set_channel(*[pair], n_channels=self.args.n_colors)
             pair_t = common.np2Tensor(*pair, rgb_range=self.args.rgb_range)
             return pair_t[0],pair_t[0], filename
-        if self.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K']:
+        if self.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K','DIV2K_cut']:
             # 默认，图像缩放任务
             lr, hr, filename = self._load_file(idx)
             pair = self.get_patch(lr, hr)
@@ -468,4 +469,4 @@ class SRData(data.Dataset):
             #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno},  idx_scale = {idx_scale} \n"))
         else:
             self.idx_scale = random.randint(0, len(self.scale) - 1)
-
+        return

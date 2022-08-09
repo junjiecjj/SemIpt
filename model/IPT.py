@@ -65,7 +65,7 @@ class ipt(nn.Module):
         hidden_dim=64*3*3*4,num_queries=1,dropout_rate=0,mlp=false,pos_every=false,no_pos=false,
         no_norm=false
         """
-        self.body = VisionTransformer(args = args, img_dim=args.patch_size, patch_dim=args.patch_dim,
+        self.body = VisionTransformer(img_dim=args.patch_size, patch_dim=args.patch_dim,
                                     num_channels=n_feats,
                                     embedding_dim=n_feats*args.patch_dim*args.patch_dim,
                                     num_heads=args.num_heads, num_layers=args.num_layers,
@@ -124,7 +124,6 @@ no_norm=false
 class VisionTransformer(nn.Module):
     def __init__(
         self,
-        args,
         img_dim,
         patch_dim,
         num_channels,
@@ -139,7 +138,6 @@ class VisionTransformer(nn.Module):
         mlp=False,
         pos_every=False,
         no_pos = False,
-        conv=common.default_conv,
     ):
         super(VisionTransformer, self).__init__()
 
@@ -160,7 +158,6 @@ class VisionTransformer(nn.Module):
         self.flatten_dim = patch_dim * patch_dim * num_channels  #   576
 
         self.out_dim = patch_dim * patch_dim * num_channels      #   576
-        n_feats = args.n_feats  # number of feature maps = 64
 
 
         self.no_pos = no_pos       # false
@@ -181,25 +178,23 @@ class VisionTransformer(nn.Module):
         self.encoder = TransformerEncoder(encoder_layer, num_layers)
 
 
-        H_hat = int(1+int(self.img_dim+2*args.cpPad-args.cpKerSize)//args.cpStride)
-        n = args.n_colors*img_dim**2
+        # H_hat = int(1+int(self.img_dim+2*args.cpPad-args.cpKerSize)//args.cpStride)
+        # n = args.n_colors*img_dim**2
 
 
 
-        self.compress = nn.ModuleList([
-        common.conv2d_prelu(n_feats, common.calculate_channel(comprate,F=H_hat, n=n), args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
-        ])
+        # self.compress = nn.ModuleList([
+        # common.conv2d_prelu(n_feats, common.calculate_channel(comprate,F=H_hat, n=n), args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
+        # ])
 
 
-        self.decompress = nn.ModuleList([
-        common.convTrans2d_prelu(common.calculate_channel(comprate,F=H_hat, n=n), num_channels, args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
-        ])
+        # self.decompress = nn.ModuleList([
+        # common.convTrans2d_prelu(common.calculate_channel(comprate,F=H_hat, n=n), num_channels, args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
+        # ])
 
-        # embedding_dim=576, num_heads=12, hidden_dim=2304, dropout_rate=0, self.no_norm=false
+        # # embedding_dim=576, num_heads=12, hidden_dim=2304, dropout_rate=0, self.no_norm=false
         decoder_layer = TransformerDecoderLayer(embedding_dim, num_heads, hidden_dim, dropout_rate, self.no_norm)
         self.decoder = TransformerDecoder(decoder_layer, num_layers)
-
-
 
 
         if not self.no_pos:
@@ -495,16 +490,19 @@ class Ipt(nn.Module):
         #  /cache/results/ipt/model
         #  self.load(ckp.get_path('model'), cpu=args.cpu)
 
-        ckp.write_log("#=====================================================================================", train=True)
-        ckp.write_log(ckp.now, train=True)
-        ckp.write_log("#=====================================================================================\n", train=True)
-        #print('#=====================================================================================', file=ckp.log_file)
-        #print(ckp.now, file=ckp.log_file)
-        #print('#=====================================================================================\n', file=ckp.log_file)
-        #ckp.write_log(self.model,train=True)
+        # ckp.write_log("#=====================================================================================", train=True)
+        # ckp.write_log(ckp.now, train=True)
+        # ckp.write_log("#=====================================================================================\n", train=True)
+        # #print('#=====================================================================================', file=ckp.log_file)
+        # #print(ckp.now, file=ckp.log_file)
+        # #print('#=====================================================================================\n', file=ckp.log_file)
+        # #ckp.write_log(self.model,train=True)
 
-        print(self.model, file=ckp.log_file)
-        #print('\n\n', file=ckp.log_file)
+        # print(self.model, file=ckp.log_file)
+        # #print('\n\n', file=ckp.log_file)
+        # ckp.write_log("#==========================================Parameters ===========================================\n", train=True)
+        self.print_parameters(ckp)
+
         print(color.fuchsia(f"\n#================================ Ipt 准备完毕 =======================================\n"))
 
 
@@ -552,10 +550,18 @@ class Ipt(nn.Module):
             torch.save(self.model.state_dict(), s)
 
     def print_parameters(self, ckp):
+
+        print(f"#=====================================================================================",  file=ckp.log_file)
+        print(ckp.now,  file=ckp.log_file)
+        print(f"#=====================================================================================",  file=ckp.log_file)
+        print(self.model, file=ckp.log_file)
+        print(f"#======================================== Parameters =============================================",  file=ckp.log_file)
         for name, param in self.model.named_parameters():
             if param.requires_grad:
-                print(name,':',param.size())
-                print(f"{name: <25}: {param.size():<20}", file=ckp.log_file)
+                print(f"{name}: {param.size()}, {param.requires_grad} ")
+                print(f"{name: <25}: size={param.size()}, requires_grad={param.requires_grad} ", file=ckp.log_file)
+
+        return
 
     #  apath=/cache/results/ipt/model, resume = 0,
     def load(self, apath, cpu=False):
@@ -563,6 +569,16 @@ class Ipt(nn.Module):
         kwargs = {}
         if cpu:
             kwargs = {'map_location': lambda storage, loc: storage}
+
+        if os.path.isfile(os.path.join(self.args.pretrain)):
+            load_from1 = torch.load(os.path.join(self.args.pretrain), **kwargs)
+            print(f"在Ipt中加载最原始的模型\n")
+        else:
+            print(f"Ipt中没有最原始的模型\n")
+        if load_from1:
+            self.model.load_state_dict(load_from1, strict=False)
+
+
         if os.path.isfile(os.path.join(apath, 'model_latest.pt')):
             load_from = torch.load(os.path.join(apath, 'model_latest.pt'), **kwargs)
             print(f"在Ipt中加载最近一次模型\n")
