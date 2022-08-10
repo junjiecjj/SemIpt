@@ -34,7 +34,7 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 os.system('pip install einops')
-
+from memory_profiler import profile
 
 #==============================================================================================================
 # 设置随机数种子
@@ -53,7 +53,7 @@ if ckp.ok:
     loader = data_generator.DataGenerator(args)
 
     # 初始化模型
-
+    
     _model = ModelSet[args.modelUse](args,ckp)
 
 
@@ -89,7 +89,7 @@ if ckp.ok:
     print(f"====================== 关闭Tensorboard可视化 ===================================")
     wr.WrClose()
     
-    print(f"====================== 关闭日志 ===================================")
+    #print(f"====================== 关闭日志 ===================================")
     ckp.done()
 
 

@@ -18,7 +18,7 @@ from tqdm import tqdm
 import datetime
 import torch.nn as nn
 import imageio
-
+from memory_profiler import profile
 
 
 # 本项目自己编写的库
@@ -64,7 +64,7 @@ class Trainer():
             epoch = self.optimizer.get_last_epoch() + 1
             return epoch >= self.args.epochs
 
-
+    @profile
     def train(self):
         #lossFn = nn.MSELoss()
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
@@ -115,7 +115,7 @@ class Trainer():
                         #print(f"lr.dtype = {lr.dtype}, hr.dtype = {hr.dtype}") #lr.dtype = torch.float32, hr.dtype = torch.float32
                         #hr = hr.to(device)
                         #lr = lr.to(device)
-                        print(f"lr.requires_grad = {lr.requires_grad}, hr.requires_grad = {hr.requires_grad} \n")
+                        #print(f"lr.requires_grad = {lr.requires_grad}, hr.requires_grad = {hr.requires_grad} \n")
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
 
                         # 计算batch内的loss
@@ -140,7 +140,7 @@ class Trainer():
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
 
                         self.ckp.write_log(f"\t\t训练完一个 batch: loss = {lss}, metric = {metric} \n", train=True)
-                        print(f"\t\tEpoch {epoch_idx}/{self.ckp.startEpoch+self.args.epochs}, Iter {batch_idx}/{len(self.loader_train)}, Time {tm.toc()}/{tm.hold()}, 训练完一个 batch: loss = {lss}, metric = {metric}\n")
+                        #print(f"\t\tEpoch {epoch_idx}/{self.ckp.startEpoch+self.args.epochs}, Iter {batch_idx}/{len(self.loader_train)}, Time {tm.toc()}/{tm.hold()}, 训练完一个 batch: loss = {lss}, metric = {metric}\n")
                         if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs) and batch_idx==len(self.loader_train)-1:
                             with torch.no_grad():
                                 for a, b, name in zip(hr, sr,filename):
@@ -160,7 +160,7 @@ class Trainer():
                     epochLos = self.loss.mean_log(len(self.loader_train))
 
                     #print(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f} \n")
-                    self.ckp.write_log(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f}", train=True)
+                    #self.ckp.write_log(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f}", train=True)
 
                     # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
                     self.wr.WrTLoss(epochLos, int(self.ckp.LastSumEpoch+accumEpoch))
@@ -196,15 +196,17 @@ class Trainer():
         print(color.fuchsia(f"\n#================================ 开始测试 =======================================\n"))
         # 设置随机数种子
         #torch.manual_seed(self.args.seed)
-        torch.set_grad_enabled(False)
         self.ckp.InittestDir(now=self.ckp.now)
+        tm = utility.timer()
+        #if self.args.save_results:
+        #   self.ckp.begin_queue()
+        
+        torch.set_grad_enabled(False)
+        
 
         self.model.eval()
         self.model.model.eval()
 
-        tm = utility.timer()
-        #if self.args.save_results:
-        #   self.ckp.begin_queue()
 
         print(f"共有{len(self.loader_test)}个数据集\n")
         self.ckp.write_log(f"共有{len(self.loader_test)}个数据集")
