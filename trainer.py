@@ -18,8 +18,10 @@ from tqdm import tqdm
 import datetime
 import torch.nn as nn
 import imageio
-from memory_profiler import profile
 
+#内存分析工具
+from memory_profiler import profile
+import objgraph
 
 # 本项目自己编写的库
 from ColorPrint  import ColoPrint
@@ -66,6 +68,7 @@ class Trainer():
 
     @profile
     def train(self):
+        #import pdb; pdb.set_trace()
         #lossFn = nn.MSELoss()
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -73,7 +76,7 @@ class Trainer():
         print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
 
         print(f"#======================================== 训练过程 =============================================",  file=self.ckp.log_file)
-
+        
         self.model.train()
         torch.set_grad_enabled(True)
         #ind1_scale = self.args.scale.index(1)
@@ -129,7 +132,6 @@ class Trainer():
                         self.optimizer.zero_grad() # 必须在反向传播前先清零。
                         lss.backward()
                         self.optimizer.step()
-                        #optimizer.step()
 
                         # 计算bach内的psnr和MSE
                         # with torch.no_grad():
@@ -165,7 +167,7 @@ class Trainer():
                     # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
                     self.wr.WrTLoss(epochLos, int(self.ckp.LastSumEpoch+accumEpoch))
                     self.wr.WrTrainLoss(compressrate, snr, epochLos, epoch_idx)
-                    
+
                     self.wr.WrLr(compressrate, snr, self.optimizer.get_lr(), epoch_idx)
 
                     self.wr.WrTrMetricOne(compressrate, snr, epochMetric, epoch_idx)
@@ -183,9 +185,68 @@ class Trainer():
         # 在训练完所有压缩率和信噪比后，保存优化器
         self.ckp.saveOptim(self)
         # 在训练完所有压缩率和信噪比后，保存PSNR等指标日志
+        
         self.ckp.save()
         self.ckp.write_log(f"#================================ 本次训练完毕,用时:{tm.hold()/60.0}分钟 =======================================",train=True)
         # 关闭日志
+        self.ckp.done()
+        print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 ==============================\n"))
+        return
+
+
+    @profile
+    def trainForDebug(self):
+        import pdb; pdb.set_trace()
+        #lossFn = nn.MSELoss()
+        #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
+
+        print(f"#======================================== 训练过程 =============================================",  file=self.ckp.log_file)
+        
+        self.model.train()
+        torch.set_grad_enabled(True)
+        #ind1_scale = self.args.scale.index(1)
+
+
+        tm = utility.timer()
+
+        #self.loader_train.dataset.set_scale(ind1_scale)
+        #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
+        accumEpoch = 0
+
+        # 遍历epoch
+        for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+1):
+            #初始化loss日志
+            self.loss.start_log()
+            accumEpoch += 1
+            self.ckp.UpdateEpoch()
+            #print(f"ckp.SumEpoch = {self.ckp.SumEpoch.requires_grad}\n")
+
+            loss = 0
+            # 遍历训练数据集
+            for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
+
+                lr, hr = self.prepare(lr, hr)
+
+                sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
+
+                # 计算batch内的loss
+                lss = self.loss(sr, hr)
+
+                self.optimizer.zero_grad() # 必须在反向传播前先清零。
+                lss.backward()
+                self.optimizer.step()
+
+                # 计算bach内的psnr和MSE
+                # with torch.no_grad():
+                metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
+                # print(f"metric.requires_grad = {metric.requires_grad} {metric.dtype}")
+
+
         self.ckp.done()
         print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
@@ -200,9 +261,9 @@ class Trainer():
         tm = utility.timer()
         #if self.args.save_results:
         #   self.ckp.begin_queue()
-        
+
         torch.set_grad_enabled(False)
-        
+
 
         self.model.eval()
         self.model.model.eval()

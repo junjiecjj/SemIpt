@@ -558,7 +558,7 @@ class Ipt(nn.Module):
         print(f"#======================================== Parameters =============================================",  file=ckp.log_file)
         for name, param in self.model.named_parameters():
             if param.requires_grad:
-                print(f"{name}: {param.size()}, {param.requires_grad} ")
+                #print(f"{name}: {param.size()}, {param.requires_grad} ")
                 print(f"{name: <25}: size={param.size()}, requires_grad={param.requires_grad} ", file=ckp.log_file)
 
         return

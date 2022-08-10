@@ -25,6 +25,10 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lrs
 import collections
 from torch.utils.tensorboard import SummaryWriter
+#内存分析工具
+from memory_profiler import profile
+import objgraph
+import gc
 
 
 # 本项目自己编写的库
@@ -180,8 +184,9 @@ class checkpoint():
         self.startEpoch = 0   # 日志里各个压缩率和信噪比训练的epoch
         self.LastSumEpoch = 0 #日志里所有的压缩率和信噪比下训练的epoch之和
         self.SumEpoch = 0     # 本次训练的累计epoch
+        
 
-        self.dir = args.save
+        self.dir = os.path.join(args.save, f"TrainLog_{args.modelUse}")
         print(f"self.dir = {self.dir} \n")
         os.makedirs(self.dir, exist_ok=True)
         os.makedirs(os.path.join(args.save, 'model'), exist_ok=True)
@@ -263,7 +268,8 @@ class checkpoint():
         else:
             pass
         return
-
+    
+    #@profile
     def AddMetricLog(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
 
@@ -302,6 +308,7 @@ class checkpoint():
         return
 
     # 画图和保存PSNR等日志
+    #@profile
     def save(self):
         self.plot_AllTrainMetric()
         torch.save(self.metricLog, self.get_path('TrainMetric_log.pt'))
@@ -348,7 +355,7 @@ class checkpoint():
         plt.close(fig)
         return
 
-
+    #@profile
     def plot_AllTrainMetric(self):
         for idx, met in  enumerate(self.args.metrics):
             fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(20,20))
@@ -372,6 +379,7 @@ class checkpoint():
             out_fig.savefig(self.get_path(f"{met}_Epoch_Plot.pdf"))
             plt.show()
             plt.close(fig)
+            gc.collect()
         return
 
 # <<< 训练结果画图
@@ -528,33 +536,36 @@ class checkpoint():
                 tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
         return
-# ckp = checkpoint(args)
-# # 依次遍历压缩率
-# for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
-#     # 依次遍历信噪比
-#     for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-#         #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
 
-#         epoch = 0
 
-#         ckp.InitMetricLog(compressrate, snr)
-#         # 遍历epoch
-#         for epoch_idx in  range(10):
-#             ckp.UpdateEpoch()
-#             epoch += 1
-#             #初始化特定信噪比和压缩率下的存储字典
-#             ckp.AddPsnrLog(compressrate, snr)
+from option import args
 
-#             # 遍历训练数据集
-#             for i in range(20):
-#                 # pass
-#                 ckp.UpdatePsnrLog(compressrate, snr, epoch_idx+i)
-#             ckp.meanPsnrLog(compressrate, snr, 20)
+ckp = checkpoint(args)
+# 依次遍历压缩率
+for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
+    # 依次遍历信噪比
+    for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+        #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
 
-# #ckp.plot_trainPsnr(0.4, 18)
-# ckp.plot_AllTrainPsnr()
+        epoch = 0
 
-# ckp.save()
+        ckp.InitMetricLog(compressrate, snr)
+        # 遍历epoch
+        for epoch_idx in  range(100):
+            ckp.UpdateEpoch()
+            epoch += 1
+            #初始化特定信噪比和压缩率下的存储字典
+            ckp.AddMetricLog(compressrate, snr)
+
+            # 遍历训练数据集
+            for i in range(20):
+                # pass
+                ckp.UpdateMetricLog(compressrate, snr, epoch_idx+i)
+            ckp.MeanMetricLog(compressrate, snr, 20)
+
+#ckp.plot_trainPsnr(0.4, 18)
+
+ckp.save()
 
 # ckp = checkpoint(args)
 # ckp.InittestDir('aaaa')
