@@ -16,7 +16,7 @@ parser.add_argument('--debug', action='store_true', help='Enables debug mode')
 parser.add_argument('--template', default='.', help='You can set various templates in option.py')
 
 # model  specifications
-parser.add_argument('--modelUse', default='ipt', help='You can set various templates in option.py')
+parser.add_argument('--modelUse', default='IPT', help='You can set various templates in option.py')
 # parser.add_argument('--model', default='ipt', help='model name')
 
 parser.add_argument('--shift_mean', default=True, help='subtract pixel mean from the input')

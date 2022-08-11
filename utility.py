@@ -191,7 +191,7 @@ class checkpoint():
         os.makedirs(self.dir, exist_ok=True)
 
         # 模型参数保存的目录
-        self.modeldir = os.path.join(args.save, 'model')
+        self.modeldir = os.path.join(args.save, f"model_{args.modelUse}")
         os.makedirs(self.modeldir, exist_ok=True)
 
         open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'

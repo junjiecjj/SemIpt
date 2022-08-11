@@ -17,7 +17,7 @@ from .DeepSC  import DeepSc
 
 ModelSet = {
     "DeepSC": DeepSc,
-    "ipt"   : Ipt,
+    "IPT"   : Ipt,
 
 }
 

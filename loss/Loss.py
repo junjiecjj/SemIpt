@@ -72,7 +72,7 @@ class LOSS(nn.modules.loss._Loss):
                 loss = l['function'](sr, hr)
                 effective_loss = l['weight'] * loss
                 losses.append(effective_loss)
-                self.losslog[-1, i] += effective_loss.item()
+                self.losslog[-1, i] += effective_loss.item()  # tensor.item()  获取tensor的数值
             elif l['type'] == 'DIS':
                 self.losslog[-1, i] += self.loss[i - 1]['function'].loss
 
