@@ -352,17 +352,24 @@ class TransformerEncoderLayer(nn.Module):
 
     def with_pos_embed(self, tensor, pos):
         return tensor if pos is None else tensor + pos
-    
-    #@profile
+    @profile
     def forward(self, src, pos = None):
-
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src.shape = {src.shape}, pos = {pos}"))  # src.shape = torch.Size([256, 1, 576]), pos = None
         src2 = self.norm1(src)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
         q = k = self.with_pos_embed(src2, pos)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n q.shape = {q.shape}"))  # q.shape = torch.Size([256, 1, 576])
         src2 = self.self_attn(q, k, src2)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src2[0].shape = {src2[0].shape}, src2[1].shape = {src2[1].shape}"))
+        # src2[0].shape = torch.Size([256, 1, 576]), src2[1].shape = torch.Size([1, 256, 256])
         src = src + self.dropout1(src2[0])
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src.shape = {src.shape}"))  # src.shape = torch.Size([256, 1, 576])
         src2 = self.norm2(src)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
         src2 = self.linear2(self.dropout(self.activation(self.linear1(src2))))
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src2.shape = {src2.shape}"))  # src2.shape = torch.Size([256, 1, 576])
         src = src + self.dropout2(src2)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src.shape = {src.shape}"))  # src.shape = torch.Size([256, 1, 576])
         return src
 
 
@@ -405,23 +412,43 @@ class TransformerDecoderLayer(nn.Module):
 
     def with_pos_embed(self, tensor, pos):
         return tensor if pos is None else tensor + pos
-    
-    #@profile
+    @profile
     def forward(self, tgt, memory, pos = None, query_pos = None):
-
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #     \n tgt.shape = {tgt.shape}, memory.shape = {memory.shape}, query_pos.shape = {query_pos.shape}, "))
+        #  tgt.shape = torch.Size([256, 1, 576]), memory.shape = torch.Size([256, 1, 576]), query_pos.shape = torch.Size([256, 1, 576]),
         tgt2 = self.norm1(tgt)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n tgt2.shape = {tgt2.shape},")) # tgt2.shape = torch.Size([256, 1, 576]),
         q = k = self.with_pos_embed(tgt2, query_pos)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n q.shape = {q.shape},")) # q.shape = torch.Size([256, 1, 576]),
         tgt2 = self.self_attn(q, k, value=tgt2)[0]
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n tgt2.shape = {tgt2.shape},")) # tgt2.shape = torch.Size([256, 1, 576]),
         tgt = tgt + self.dropout1(tgt2)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n tgt.shape = {tgt.shape},")) # tgt.shape = torch.Size([256, 1, 576]),
         tgt2 = self.norm2(tgt)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n tgt.shape = {tgt.shape},")) # tgt.shape = torch.Size([256, 1, 576]),
         tgt2 = self.multihead_attn(query=self.with_pos_embed(tgt2, query_pos),
                                 key=self.with_pos_embed(memory, pos),
                                 value=memory)[0]
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n tgt2.shape = {tgt2.shape},")) #  tgt2.shape = torch.Size([256, 1, 576]),
         tgt = tgt + self.dropout2(tgt2)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n tgt.shape = {tgt.shape},")) # tgt.shape = torch.Size([256, 1, 576]),
         tgt2 = self.norm3(tgt)
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n tgt2.shape = {tgt2.shape},")) # tgt2.shape = torch.Size([256, 1, 576]),
         tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt2))))
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #      \n tgt2.shape = {tgt2.shape},")) # tgt2.shape = torch.Size([256, 1, 576]),
         tgt = tgt + self.dropout3(tgt2)
-
+        #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
+        #     \n tgt.shape = {tgt.shape},")) # tgt.shape = torch.Size([256, 1, 576]),
         return tgt
 
 
@@ -536,6 +563,7 @@ class Ipt(nn.Module):
             if param.requires_grad:
                 #print(f"{name}: {param.size()}, {param.requires_grad} ")
                 print(f"{name: <25}: size={param.size()}, requires_grad={param.requires_grad} ", file=ckp.log_file)
+
         return
 
     #  apath=/cache/results/ipt/model, resume = 0,

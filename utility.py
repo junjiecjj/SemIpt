@@ -184,12 +184,15 @@ class checkpoint():
         self.startEpoch = 0   # 日志里各个压缩率和信噪比训练的epoch
         self.LastSumEpoch = 0 #日志里所有的压缩率和信噪比下训练的epoch之和
         self.SumEpoch = 0     # 本次训练的累计epoch
-        
 
+        # 模型训练时PSNR、MSE和loss和优化器等等数据的保存以及画图目录
         self.dir = os.path.join(args.save, f"TrainLog_{args.modelUse}")
         print(f"self.dir = {self.dir} \n")
         os.makedirs(self.dir, exist_ok=True)
-        os.makedirs(os.path.join(args.save, 'model'), exist_ok=True)
+
+        # 模型参数保存的目录
+        self.modeldir = os.path.join(args.save, 'model')
+        os.makedirs(self.modeldir, exist_ok=True)
 
         open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
         self.log_file = open(self.get_path('trainLog.txt'), open_type)
@@ -268,7 +271,7 @@ class checkpoint():
         else:
             pass
         return
-    
+
     #@profile
     def AddMetricLog(self, comprateTmp, snrTmp):
         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
@@ -291,8 +294,9 @@ class checkpoint():
     def get_path(self, *subdir):
         return os.path.join(self.dir, *subdir)
 
+    # 保存模型参数
     def saveModel(self, trainer,  compratio, snr, epoch, is_best=False):
-        trainer.model.save(self.get_path('model'), compratio, snr, epoch, is_best=is_best)
+        trainer.model.save(self.modeldir, compratio, snr, epoch, is_best=is_best)
         return
 
     # 保存优化器参数

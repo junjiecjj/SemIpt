@@ -52,7 +52,7 @@ class DataGenerator(object):
             self.loader_train = dataloader.DataLoader(
                 # MyConcatDataset(datasets),
                 trainset,
-                batch_size = 32, # args.batch_size,  # 16
+                batch_size = 16, # args.batch_size,  # 16
                 shuffle=True,
                 pin_memory = not args.cpu,
                 num_workers=  args.n_threads,

@@ -76,7 +76,7 @@ class Trainer():
         print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
 
         print(f"#======================================== 训练过程 =============================================",  file=self.ckp.log_file)
-        
+
         self.model.train()
         torch.set_grad_enabled(True)
         #ind1_scale = self.args.scale.index(1)
@@ -142,7 +142,7 @@ class Trainer():
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
 
                         self.ckp.write_log(f"\t\t训练完一个 batch: loss = {lss}, metric = {metric} \n", train=True)
-                        #print(f"\t\tEpoch {epoch_idx}/{self.ckp.startEpoch+self.args.epochs}, Iter {batch_idx}/{len(self.loader_train)}, Time {tm.toc()}/{tm.hold()}, 训练完一个 batch: loss = {lss}, metric = {metric}\n")
+                        print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs}, Iter {batch_idx+1}/{len(self.loader_train)}, Time {tm.toc()}/{tm.hold()}, 训练完一个 batch: loss = {lss}, metric = {metric}\n")
                         if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs) and batch_idx==len(self.loader_train)-1:
                             with torch.no_grad():
                                 for a, b, name in zip(hr, sr,filename):
@@ -162,7 +162,7 @@ class Trainer():
                     epochLos = self.loss.mean_log(len(self.loader_train))
 
                     #print(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f} \n")
-                    #self.ckp.write_log(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f}", train=True)
+                    self.ckp.write_log(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f}", train=True)
 
                     # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
                     self.wr.WrTLoss(epochLos, int(self.ckp.LastSumEpoch+accumEpoch))
@@ -178,14 +178,14 @@ class Trainer():
                 self.optimizer.reset_state()
 
                 # 在训练完每个压缩率和信噪比下的所有Epoch后,保存一次模型
-                #self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
+                self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
 
         # 在训练完所有压缩率和信噪比后，保存损失日志
         self.ckp.saveLoss(self)
         # 在训练完所有压缩率和信噪比后，保存优化器
         self.ckp.saveOptim(self)
         # 在训练完所有压缩率和信噪比后，保存PSNR等指标日志
-        
+
         self.ckp.save()
         self.ckp.write_log(f"#================================ 本次训练完毕,用时:{tm.hold()/60.0}分钟 =======================================",train=True)
         # 关闭日志
@@ -195,8 +195,7 @@ class Trainer():
         print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 ==============================\n"))
         return
 
-
-    @profile
+    #@profile
     def trainForDebug(self):
         #import pdb; pdb.set_trace()
         #lossFn = nn.MSELoss()
@@ -206,7 +205,7 @@ class Trainer():
         print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
 
         print(f"#======================================== 训练过程 =============================================",  file=self.ckp.log_file)
-        
+
         self.model.train()
         torch.set_grad_enabled(True)
         #ind1_scale = self.args.scale.index(1)
@@ -217,6 +216,8 @@ class Trainer():
         #self.loader_train.dataset.set_scale(ind1_scale)
         #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
         accumEpoch = 0
+
+        print(f"测试集的Batch数量={len(self.loader_train)}")
 
         # 遍历epoch
         for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+1):
@@ -242,7 +243,7 @@ class Trainer():
                         torch.cuda.empty_cache()
                     else:
                         raise exception
-            
+
                 # 计算batch内的loss
                 lss = self.loss(sr, hr)
 
