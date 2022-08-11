@@ -28,7 +28,9 @@ from torch import nn, Tensor
 from einops import rearrange
 import copy
 import datetime
-
+#内存分析工具
+from memory_profiler import profile
+import objgraph
 
 
 def make_model(args, parent=False):
@@ -82,7 +84,7 @@ class ipt(nn.Module):
         ])
         print(color.fuchsia(f"\n#================================ ipt 准备完毕 =======================================\n"))
 
-
+    # @profile
     def forward(self, x):
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
         #     \n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 3, 48, 48])
@@ -211,7 +213,7 @@ class VisionTransformer(nn.Module):
             for m in self.modules():
                 if isinstance(m, nn.Linear):
                     nn.init.normal_(m.weight, std = 1/m.weight.size(1))
-
+    @profile
     def forward(self, x, query_idx, snr, compr_idx, con=False):
         #print(f"1  con = {con}\n")
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
@@ -350,7 +352,7 @@ class TransformerEncoderLayer(nn.Module):
 
     def with_pos_embed(self, tensor, pos):
         return tensor if pos is None else tensor + pos
-
+    #@profile
     def forward(self, src, pos = None):
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n src.shape = {src.shape}, pos = {pos}"))  # src.shape = torch.Size([256, 1, 576]), pos = None
         src2 = self.norm1(src)
@@ -410,7 +412,7 @@ class TransformerDecoderLayer(nn.Module):
 
     def with_pos_embed(self, tensor, pos):
         return tensor if pos is None else tensor + pos
-
+    #@profile
     def forward(self, tgt, memory, pos = None, query_pos = None):
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
         #     \n tgt.shape = {tgt.shape}, memory.shape = {memory.shape}, query_pos.shape = {query_pos.shape}, "))
@@ -466,6 +468,7 @@ def _get_activation_fn(activation):
 
 
 class Ipt(nn.Module):
+    #@profile
     def __init__(self, args, ckp):
         super(Ipt, self).__init__()
         print('Making global Ipt model...')
@@ -505,7 +508,7 @@ class Ipt(nn.Module):
 
         print(color.fuchsia(f"\n#================================ Ipt 准备完毕 =======================================\n"))
 
-
+    #@profile
     def forward(self, x, idx_scale=0, snr=10, compr_idx=0):
         self.idx_scale = idx_scale
         # print(color.higbluefg_whitebg( f"File={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, idx_scale = {idx_scale}"))

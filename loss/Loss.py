@@ -19,6 +19,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+#内存分析工具
+from memory_profiler import profile
+import objgraph
+
 
 
 class LOSS(nn.modules.loss._Loss):
@@ -59,7 +63,7 @@ class LOSS(nn.modules.loss._Loss):
 
         print(color.fuchsia(f"\n#================================ LOSS 准备完毕 =======================================\n"))
 
-
+    #@profile
     def forward(self, sr, hr):
         # print(f"我正在计算loss\n")
         losses = []

@@ -7,6 +7,10 @@ import numpy as np
 import skimage.color as sc
 
 import torch
+#内存分析工具
+from memory_profiler import profile
+import objgraph
+
 
 # 此函数的功能是在训练的时候在一张图片中随机取[48,48,3]的batch用来训练。
 def get_patch(*args, patch_size=96, scale=2, multi=False, input_large=False):

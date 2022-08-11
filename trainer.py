@@ -66,7 +66,7 @@ class Trainer():
             epoch = self.optimizer.get_last_epoch() + 1
             return epoch >= self.args.epochs
 
-    @profile
+    #@profile
     def train(self):
         #import pdb; pdb.set_trace()
         #lossFn = nn.MSELoss()
@@ -198,7 +198,7 @@ class Trainer():
 
     @profile
     def trainForDebug(self):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         #lossFn = nn.MSELoss()
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -232,8 +232,17 @@ class Trainer():
 
                 lr, hr = self.prepare(lr, hr)
 
-                sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
-
+                #sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
+                try:
+                    sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
+                except RuntimeError as exception:
+                    if "out of memory" in str(exception):
+                        print('WARNING: out of memory')
+                    if hasattr(torch.cuda, 'empty_cache'):
+                        torch.cuda.empty_cache()
+                    else:
+                        raise exception
+            
                 # 计算batch内的loss
                 lss = self.loss(sr, hr)
 

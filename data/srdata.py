@@ -24,9 +24,12 @@ import imageio
 import torch
 import torch.utils.data as data
 import torchvision.transforms as tfs
+#内存分析工具
+from memory_profiler import profile
+import objgraph
+
 
 #  本项目自己编写的库
-
 sys.path.append("/home/jack/公共的/Pretrained-IPT-cjj/")
 sys.path.append("..")
 from  ColorPrint import ColoPrint
@@ -281,6 +284,7 @@ class SRData(data.Dataset):
                 pickle.dump(imageio.imread(img), _f)
         return
     
+    #@profile
     def __getitem__(self, idx):
         if self.train == False and self.name in ['Rain100L'] and self.args.derain:  # 不进入此处
             norain, rain, filename = self._load_rain_test(idx)

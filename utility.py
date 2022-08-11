@@ -538,34 +538,35 @@ class checkpoint():
         return
 
 
-from option import args
+# from option import args
 
-ckp = checkpoint(args)
-# 依次遍历压缩率
-for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
-    # 依次遍历信噪比
-    for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
-        #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
+# ckp = checkpoint(args)
+# # 依次遍历压缩率
+# for comprate_idx, compressrate in enumerate(args.CompressRateTrain):  #[0.17, 0.33, 0.4]
+#     # 依次遍历信噪比
+#     for snr_idx, snr in enumerate(args.SNRtrain): # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
+#         #print(f"\nNow， Train on comprate_idx = {comprate_idx}, compressrate = {compressrate}， snr_idx = {snr_idx}, snr = {snr}, \n")
 
-        epoch = 0
+#         epoch = 0
 
-        ckp.InitMetricLog(compressrate, snr)
-        # 遍历epoch
-        for epoch_idx in  range(100):
-            ckp.UpdateEpoch()
-            epoch += 1
-            #初始化特定信噪比和压缩率下的存储字典
-            ckp.AddMetricLog(compressrate, snr)
+#         ckp.InitMetricLog(compressrate, snr)
+#         # 遍历epoch
+#         for epoch_idx in  range(100):
+#             ckp.UpdateEpoch()
+#             epoch += 1
+#             #初始化特定信噪比和压缩率下的存储字典
+#             ckp.AddMetricLog(compressrate, snr)
 
-            # 遍历训练数据集
-            for i in range(20):
-                # pass
-                ckp.UpdateMetricLog(compressrate, snr, epoch_idx+i)
-            ckp.MeanMetricLog(compressrate, snr, 20)
+#             # 遍历训练数据集
+#             for i in range(20):
+#                 # pass
+#                 ckp.UpdateMetricLog(compressrate, snr, epoch_idx+i)
+#             ckp.MeanMetricLog(compressrate, snr, 20)
 
-#ckp.plot_trainPsnr(0.4, 18)
+# #ckp.plot_trainPsnr(0.4, 18)
+# ckp.save()
 
-ckp.save()
+
 
 # ckp = checkpoint(args)
 # ckp.InittestDir('aaaa')
