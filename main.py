@@ -68,7 +68,9 @@ def main():
 
         #加载最近保存一次的的训练模型
         _model.load(ckp.modeldir, cpu=args.cpu)
-
+        
+        # _model.save('/home/jack/IPT-Pretrain/results/model/', 10,10,1)
+        # torch.save(_model.model.state_dict(), '/home/jack/IPT-Pretrain/results/model/hhh.pt')
         # 损失函数类
         los = LOSS(args, ckp)
 
@@ -81,7 +83,7 @@ def main():
         # 训练
         if  args.wanttrain:
             print(f"I want to train \n")
-            tr.train()
+            #tr.train()
 
         # 测试
         if  args.wanttest:

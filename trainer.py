@@ -142,7 +142,7 @@ class Trainer():
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
 
                         self.ckp.write_log(f"\t\t训练完一个 batch: loss = {lss}, metric = {metric} \n", train=True)
-                        print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs}, Iter {batch_idx+1}/{len(self.loader_train)}, Time {tm.toc()}/{tm.hold()}, 训练完一个 batch: loss = {lss}, metric = {metric}\n")
+                        print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Iter {batch_idx+1}/{len(self.loader_train)} | Time {tm.toc()}/{tm.hold()} | 训练完一个 batch: loss = {lss}, metric = {metric}\n")
                         if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs) and batch_idx==len(self.loader_train)-1:
                             with torch.no_grad():
                                 for a, b, name in zip(hr, sr,filename):
