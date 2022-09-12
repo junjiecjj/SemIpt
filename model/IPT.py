@@ -494,7 +494,6 @@ class Ipt(nn.Module):
         if hasattr(self.model, 'set_snr'):
             self.model.set_snr(snr)
 
-
         if hasattr(self.model, 'set_comprate'):
             self.model.set_comprate(compr_idx)
 
@@ -526,12 +525,11 @@ class Ipt(nn.Module):
             torch.save(self.model.state_dict(), s)
 
     def print_parameters(self, ckp):
-
         print(f"#=====================================================================================",  file=ckp.log_file)
         print(ckp.now,  file=ckp.log_file)
         print(f"#=====================================================================================",  file=ckp.log_file)
         print(self.model, file=ckp.log_file)
-        print(f"#======================================== Parameters =============================================",  file=ckp.log_file)
+        print(f"#====================== Parameters ==============================",  file=ckp.log_file)
         for name, param in self.model.named_parameters():
             if param.requires_grad:
                 #print(f"{name}: {param.size()}, {param.requires_grad} ")
@@ -552,7 +550,6 @@ class Ipt(nn.Module):
             print(f"Ipt中没有最原始的模型\n")
         if load_from1:
             self.model.load_state_dict(load_from1, strict=False)
-
 
         if os.path.isfile(os.path.join(apath, 'model_latest.pt')):
             load_from = torch.load(os.path.join(apath, 'model_latest.pt'), **kwargs)
@@ -851,7 +848,3 @@ class Ipt(nn.Module):
 
         y_w_cut[...,int(shave/2*scale):(h-h_cut)*scale-int(shave/2*scale),:] = y_w_cut_inter
         return y_w_cut
-
-
-
-

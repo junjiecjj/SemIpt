@@ -73,34 +73,10 @@ class DataGenerator(object):
                 self.loader_test.append(
                     dataloader.DataLoader(
                         testset,
-                        batch_size=  args.test_batch_size,  #  1
+                        batch_size = args.test_batch_size,  #  1
                         shuffle=False,
                         pin_memory=not args.cpu,
                         num_workers= args.n_threads,
                     )
                 )
         print(color.fuchsia(f"\n#================================ DataLoader 准备完毕 =======================================\n"))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

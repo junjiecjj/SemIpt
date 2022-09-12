@@ -24,7 +24,6 @@ from memory_profiler import profile
 import objgraph
 
 
-
 class LOSS(nn.modules.loss._Loss):
     def __init__(self, args, ckp):
         super(LOSS, self).__init__()
@@ -52,7 +51,7 @@ class LOSS(nn.modules.loss._Loss):
 
         self.losslog = torch.Tensor()
 
-        device = torch.device('cpu' if args.cpu else 'cuda')
+        device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
         self.loss_module.to(device)
         if args.precision == 'half': self.loss_module.half()
         if not args.cpu and args.n_GPUs > 1:
@@ -61,7 +60,7 @@ class LOSS(nn.modules.loss._Loss):
         # TODO
         if args.load != '': self.load(ckp.dir, cpu=args.cpu)
 
-        print(color.fuchsia(f"\n#================================ LOSS 准备完毕 =======================================\n"))
+        print(color.fuchsia(f"\n#============================ LOSS 准备完毕 ==============================\n"))
 
     #@profile
     def forward(self, sr, hr):
@@ -203,26 +202,3 @@ class LOSS(nn.modules.loss._Loss):
 
 
 # los.save(ckp.dir)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

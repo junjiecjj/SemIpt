@@ -77,7 +77,6 @@ class SRData(data.Dataset):
             if self.args.useBIN == True:
                 self.images_hr_bin, self.images_lr_bin = self._make_bin_img_magnify()
 
-
         if self.name in ['DIV2K','DIV2K_cut']:
             #print(f"srdata.py  69   {self.name}\n")
             self._set_filesystem_div2k(args.dir_data)
@@ -169,7 +168,7 @@ class SRData(data.Dataset):
         return
 
     def _set_filesystem_benchmark(self, dir_data):
-        #  dir_data = '/home/jack/IPT-Pretrain/Data/'
+        # dir_data = '/home/jack/IPT-Pretrain/Data/'
         self.apath = os.path.join(dir_data, 'benchmark', self.name)  # /home/jack/IPT-Pretrain/Data/benchmark/Set5
         self.dir_hr = os.path.join(self.apath, 'HR')                 # /home/jack/IPT-Pretrain/Data/benchmark/Set5/HR
         if self.input_large:
@@ -191,12 +190,11 @@ class SRData(data.Dataset):
         if self.train:
             data_range = data_range[0]   # data_range = ['1', '800']
         else:
-            if self.args.wanttest and len(data_range) == 1:
+            if  len(data_range) == 1:
                 data_range = data_range[0]
             else:  # 进入这里
                 data_range = data_range[1]
                 #print(f"data_range = {data_range}\n")  # data_range = ['801', '810']
-
         self.begin, self.end = list(map(lambda x: int(x), data_range))  # [801, 810]
         return
 
