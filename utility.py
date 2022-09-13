@@ -102,7 +102,6 @@ class timer(object):
         self.ts = time.time()
         self.timer = 0
 
-
     # 从计时开始到现在的时间.
     def hold(self):
         return time.time() - self.t0
@@ -186,7 +185,6 @@ class Timer1:
         self.stop()
 
 # 功能：
-#
 class checkpoint():
     def __init__(self, args ):
         self.args = args
@@ -250,9 +248,7 @@ class checkpoint():
 
             for k, v in self.args.__dict__.items():
                 f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
-            f.write('\n')
-            f.write("################################ args end  #################################################\n")
-
+            f.write("\n################################ args end  #################################################\n")
         return
 
     # 因为多个不同压缩率的不同层是融合在一个模型里的，所以需要检查在每个压缩率和信噪比下训练的epoch是否相等
@@ -483,9 +479,9 @@ class checkpoint():
                     fonte = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 16)
                     axs[crIdx,metIdx].legend(borderaxespad=0,edgecolor='black',prop=fonte,)
                     axs[crIdx,metIdx].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
-                    axs[crIdx,metIdx].spines['left'].set_linewidth(2);####设置左边坐标轴的粗细
-                    axs[crIdx,metIdx].spines['right'].set_linewidth(2);###设置右边坐标轴的粗细
-                    axs[crIdx,metIdx].spines['top'].set_linewidth(2);####设置上部坐标轴的粗细
+                    axs[crIdx,metIdx].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+                    axs[crIdx,metIdx].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+                    axs[crIdx,metIdx].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
 
                     fontt2 = {'family':'Times New Roman','style':'normal','size':16}
                     legend1 = axs[crIdx,metIdx].legend(loc='best',borderaxespad=0,edgecolor='black',prop=fontt2,)
@@ -508,6 +504,7 @@ class checkpoint():
             plt.show()
             plt.close(fig)
         return
+    
     def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
         filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
         print(f"filename = {filename}\n")

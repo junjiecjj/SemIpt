@@ -19,9 +19,6 @@ import numpy as np
 
 class SummWriter(SummaryWriter):
     def __init__(self, args):
-        # sdir = args.SummaryWriteDir
-        # if args.modelUse == 'DeepSC':
-
         # if args.modelUse == 'DeepSC':
         sdir = os.path.join(args.save, f"TensorBoard_{args.modelUse}")
         os.makedirs(sdir, exist_ok=True)
@@ -86,7 +83,6 @@ class SummWriter(SummaryWriter):
 
 # 测试结果可视化>>>
     
- 
 
     def WrModel(self, model, images ):
         self.add_graph(model, images)
@@ -161,52 +157,3 @@ class SummWriter(SummaryWriter):
 #  http://0.0.0.0:6006/
 #  http://localhost:6006/
 #  http://127.0.0.1:6006/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

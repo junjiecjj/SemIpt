@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on 2022/07/07
-
 @author: Junjie Chen
-
 """
-
 
 
 #sys.path.append(os.getcwd())
@@ -501,7 +498,7 @@ class Ipt(nn.Module):
             if self.n_GPUs > 1:
                 return P.data_parallel(self.model, x, range(self.n_GPUs))
             else:
-                print("\n正在使用Ipt训练的forward.............\n")
+                #print("\n正在使用Ipt训练的forward.............\n")
                 return self.model(x)
         else:
             #print("\nI'm not in self.training.............\n")

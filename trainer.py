@@ -79,8 +79,7 @@ class Trainer():
 
         self.model.train()
         torch.set_grad_enabled(True)
-        #ind1_scale = self.args.scale.index(1)
-
+        # ind1_scale = self.args.scale.index(1)
 
         tm = utility.timer()
 
@@ -168,6 +167,7 @@ class Trainer():
                     self.wr.WrTLoss(epochLos, int(self.ckp.LastSumEpoch+accumEpoch))
                     self.wr.WrTrainLoss(compressrate, snr, epochLos, epoch_idx)
 
+                    # 学习率可视化
                     self.wr.WrLr(compressrate, snr, self.optimizer.get_lr(), epoch_idx)
 
                     self.wr.WrTrMetricOne(compressrate, snr, epochMetric, epoch_idx)
@@ -209,7 +209,6 @@ class Trainer():
         self.model.train()
         torch.set_grad_enabled(True)
         #ind1_scale = self.args.scale.index(1)
-
 
         tm = utility.timer()
 
@@ -269,22 +268,19 @@ class Trainer():
         #torch.manual_seed(self.args.seed)
         self.ckp.InittestDir(now=self.ckp.now)
         tm = utility.timer()
-        #if self.args.save_results:
-        #   self.ckp.begin_queue()
+        # if self.args.save_results:
+        # self.ckp.begin_queue()
 
         torch.set_grad_enabled(False)
 
-
         self.model.eval()
         self.model.model.eval()
-
 
         print(f"共有{len(self.loader_test)}个数据集\n")
         self.ckp.write_log(f"共有{len(self.loader_test)}个数据集")
 
         # 依次遍历测试数据集
         for idx_data, ds in enumerate(self.loader_test):
-
             # 得到测试数据集名字
             DtSetName = ds.dataset.name
             print(f"数据集={DtSetName}, 长度={len(ds)}\n")
@@ -317,10 +313,9 @@ class Trainer():
                         # 保存图片
                         self.ckp.SaveTestFig(DtSetName, compressrate, snr, filename[0], sr)
 
-                        # 计算bach内(测试时一个batch只有一张图片)的psnr和MSE
-                        with torch.no_grad():
-                            metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
-                            print(f"")
+                        # 计算batch内(测试时一个batch只有一张图片)的psnr和MSE
+                        metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
+
                         # 更新具体SNR下一张图片的PSNR和MSE等
                         self.ckp.UpdateTestMetric(compressrate, DtSetName,metric)
                         #print(f"数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr},图片:{filename},指标:{}")
@@ -472,44 +467,3 @@ class Trainer():
         self.ckp.write_log('Total: {:.2f}s\n'.format(timer_test.toc()), refresh=True)
 
         torch.set_grad_enabled(True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

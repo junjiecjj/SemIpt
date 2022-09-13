@@ -23,6 +23,28 @@ import torch.nn.functional as F
 from memory_profiler import profile
 import objgraph
 
+from matplotlib.font_manager import FontProperties
+from pylab import tick_params
+import copy
+from matplotlib.pyplot import MultipleLocator
+
+# matplotlib.use('Agg')
+# matplotlib.rcParams['text.usetex'] = True
+
+
+
+fontpath = "/usr/share/fonts/truetype/windows/"
+# fname =  "/usr/share/fonts/truetype/arphic/SimSun.ttf",
+font = FontProperties(fname=fontpath+"simsun.ttf", size=22)
+
+
+fontpath1 = "/usr/share/fonts/truetype/msttcorefonts/"
+fonte = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size=22)
+
+
+fontpath2 = "/usr/share/fonts/truetype/NerdFonts/"
+font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
+
 
 class LOSS(nn.modules.loss._Loss):
     def __init__(self, args, ckp):
@@ -104,27 +126,56 @@ class LOSS(nn.modules.loss._Loss):
     # 在同一个画布中画出所有Loss的结果
     def plot_AllLoss(self, apath):
         fig, axs = plt.subplots(len(self.loss),1, figsize=(12,8))
-        
-        for i, l in enumerate(self.loss):
-            epoch = len(self.losslog[:, i])
+
+        if len(self.loss) == 1:
+            epoch = len(self.losslog)
             X = np.linspace(1, epoch, epoch)
-            label = '{} Loss'.format(l['type'])
-            if len(self.loss) == 1:
-                axs.set_title(label)
-                axs.plot(X, self.losslog[:, i].numpy(), label=label)
-                axs.set_xlabel('Epochs')
-                axs.set_ylabel(label)
-                axs.grid(True)
-                axs.legend()
-                axs.tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)  
-            else:
-                axs[i].set_title(label)
+            label = '{} Loss'.format(self.loss[0]['type'])
+            
+            axs.plot(X, self.losslog[:, 0].numpy(), label=label)
+            font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+            axs.set_xlabel('Epochs', fontproperties=font)
+            axs.set_ylabel(label, fontproperties=font)
+            axs.set_title(label, fontproperties=font)
+            axs.grid(True)
+            
+            #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+            font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
+            font1 = FontProperties(fname=fontpath2+"Caskaydia Cove SemiLight Nerd Font Complete Mono.otf", size=20)
+            font1 = FontProperties(fname=fontpath2+"Caskaydia Cove Light Nerd Font Complete.otf", size=20)
+            legend1 = axs.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+            frame1 = legend1.get_frame()
+            frame1.set_alpha(1)
+            frame1.set_facecolor('none')  # 设置图例legend背景透明
+
+            axs.tick_params(direction='in', axis='both', top=True,right=True,labelsize=16, width=3,)
+            labels = axs.get_xticklabels() + axs.get_yticklabels()
+            [label.set_fontname('Times New Roman') for label in labels]
+            [label.set_fontsize(20) for label in labels]  # 刻度值字号
+        else:
+            for i, l in enumerate(self.loss):
+                epoch = len(self.losslog[:,i])
+                X = np.linspace(1, epoch, epoch)
+                label = '{} Loss'.format(l['type'])
+                
                 axs[i].plot(X, self.losslog[:, i].numpy(), label=label)
-                axs[i].set_xlabel('Epochs')
-                axs[i].set_ylabel(label)
+                font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+                axs[i].set_xlabel('Epochs', fontproperties=font)
+                axs[i].set_ylabel(label, fontproperties=font)
+                axs[i].set_title(label, fontproperties=font)
                 axs[i].grid(True)
-                axs[i].legend()
-                axs[i].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
+                
+                font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                legend1 = axs[i].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+                frame1 = legend1.get_frame()
+                frame1.set_alpha(1)
+                frame1.set_facecolor('none')  # 设置图例legend背景透明
+                
+                axs[1].tick_params(direction='in', axis='both', top=True,right=True,labelsize=16, width=3,)
+                labels = axs[1].get_xticklabels() + axs[1].get_yticklabels()
+                [label.set_fontname('Times New Roman') for label in labels]
+                [label.set_fontsize(20) for label in labels]  # 刻度值字号
+                
         fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
         plt.tight_layout()#  使得图像的四周边缘空白最小化
         out_fig = plt.gcf()
