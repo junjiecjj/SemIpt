@@ -476,8 +476,10 @@ class checkpoint():
                     axs[crIdx,metIdx].plot(data[:,0], data[:,metIdx+1],'r-',label=label,)
                     axs[crIdx,metIdx].set_xlabel('SNR',fontdict=fonttX)
                     axs[crIdx,metIdx].set_ylabel(f"{met}",fontdict=fonttY)
+                    
                     fonte = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 16)
                     axs[crIdx,metIdx].legend(borderaxespad=0,edgecolor='black',prop=fonte,)
+                    
                     axs[crIdx,metIdx].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
                     axs[crIdx,metIdx].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
                     axs[crIdx,metIdx].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
