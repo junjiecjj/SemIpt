@@ -33,6 +33,9 @@ import warnings
 warnings.filterwarnings('ignore')
 import os
 os.system('pip install einops')
+os.system('pip install objgraph')
+os.system('pip install memory_profiler')
+os.system('pip install psutil')
 
 #内存分析工具
 from memory_profiler import profile

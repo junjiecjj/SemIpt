@@ -92,7 +92,6 @@ class ipt(nn.Module):
         #print(color.fuchsia(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after head x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
 
         # print(f"In IPT ipt snr = {self.snr}\n")
-
         res = self.body(x, self.scale_idx, self.snr, self.compr_idx)
         # print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after body x.shape = {x.shape}, res.shape ={res.shape}"))  # x.shape = torch.Size([1, 64, 48, 48]), res.shape =torch.Size([1, 64, 48, 48])
         res += x
@@ -136,8 +135,8 @@ class VisionTransformer(nn.Module):
         no_norm=False,
         mlp=False,
         pos_every=False,
-        no_pos = False,
-    ):
+        no_pos = False,):
+        
         super(VisionTransformer, self).__init__()
 
         assert embedding_dim % num_heads == 0  #  64*3*3/12
