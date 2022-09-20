@@ -5,7 +5,6 @@ Created on 2022/07/07
 @author: Junjie Chen
 """
 
-
 #sys.path.append(os.getcwd())
 from model  import common
 # 或
@@ -14,7 +13,6 @@ import sys,os
 sys.path.append("..")
 from  ColorPrint import ColoPrint
 color =  ColoPrint()
-
 
 
 import math
@@ -73,6 +71,26 @@ class ipt(nn.Module):
                                     mlp=args.no_mlp ,pos_every=args.pos_every,no_pos=args.no_pos,
                                     no_norm=args.no_norm)
 
+        if self.args.hasChannel:
+            padding = [2, 2]
+            e0 = args.patch_size
+            encoder1_size = int((e0 + 2 * padding[0] - 5) / 2 + 1)
+            encoder2_size = int((encoder1_size + 2 * padding[1] - 5) / 2 + 1)
+
+            self.compress = nn.ModuleList([
+                nn.Sequential(nn.Conv2d(args.n_colors, args.n_colors, 5, 2, padding[0]), nn.PReLU(),
+                              nn.Conv2d(args.n_colors, common.calculate_channel(comprate, encoder2_size), 5, 2, padding[1]), nn.PReLU(),
+                              nn.BatchNorm2d(common.calculate_channel(comprate, encoder2_size)))  for  comprate in args.CompressRateTrain 
+                ])
+
+            self.decompress = nn.ModuleList([
+                nn.Sequential(nn.ConvTranspose2d(common.calculate_channel(comprate, encoder2_size), args.n_colors, 5, 2, padding[1]), nn.PReLU(),
+                              nn.ConvTranspose2d(args.n_colors, args.n_colors, 5, 2, padding[0]), nn.PReLU(),
+                              nn.Conv2d(args.n_colors, args.n_colors, 4, 1, 3), nn.PReLU(),
+                              nn.BatchNorm2d(args.n_colors),)
+                for  comprate in args.CompressRateTrain
+            ])
+
         self.tail = nn.ModuleList([
             nn.Sequential(
                 common.Upsampler(conv, s, n_feats, act=False),
@@ -83,16 +101,27 @@ class ipt(nn.Module):
 
     # @profile
     def forward(self, x):
+        CompRate = self.args.CompressRateTrain[self.compr_idx]
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
         #     \n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 3, 48, 48])
+
         x = self.sub_mean(x)
         #print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
         #      \n sub mean x.shape = {x.shape}"))  # x.shape = torch.Size([1, 3, 48, 48])
+        if self.args.hasChannel:
+            x = self.compress[self.compr_idx](x)
+            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, compr_idx = {self.compr_idx}, Compress rare = {CompRate}, SNR = {self.snr}\n"))  # x.shape = torch.Size([1, 9, 11, 11])
+    
+            x = common.AWGN(x, self.snr)
+    
+            x = self.decompress[self.compr_idx](x)
+            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 64, 48, 48])
+
         x = self.head[self.scale_idx](x)
         #print(color.fuchsia(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after head x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
 
         # print(f"In IPT ipt snr = {self.snr}\n")
-        res = self.body(x, self.scale_idx, self.snr, self.compr_idx)
+        res = self.body(x, self.scale_idx)
         # print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after body x.shape = {x.shape}, res.shape ={res.shape}"))  # x.shape = torch.Size([1, 64, 48, 48]), res.shape =torch.Size([1, 64, 48, 48])
         res += x
 
@@ -136,7 +165,7 @@ class VisionTransformer(nn.Module):
         mlp=False,
         pos_every=False,
         no_pos = False,):
-        
+
         super(VisionTransformer, self).__init__()
 
         assert embedding_dim % num_heads == 0  #  64*3*3/12
@@ -176,20 +205,6 @@ class VisionTransformer(nn.Module):
         self.encoder = TransformerEncoder(encoder_layer, num_layers)
 
 
-        # H_hat = int(1+int(self.img_dim+2*args.cpPad-args.cpKerSize)//args.cpStride)
-        # n = args.n_colors*img_dim**2
-
-
-
-        # self.compress = nn.ModuleList([
-        # common.conv2d_prelu(n_feats, common.calculate_channel(comprate,F=H_hat, n=n), args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
-        # ])
-
-
-        # self.decompress = nn.ModuleList([
-        # common.convTrans2d_prelu(common.calculate_channel(comprate,F=H_hat, n=n), num_channels, args.cpKerSize, args.cpStride, args.cpPad)  for  comprate in args.CompressRateTrain
-        # ])
-
         # # embedding_dim=576, num_heads=12, hidden_dim=2304, dropout_rate=0, self.no_norm=false
         decoder_layer = TransformerDecoderLayer(embedding_dim, num_heads, hidden_dim, dropout_rate, self.no_norm)
         self.decoder = TransformerDecoder(decoder_layer, num_layers)
@@ -210,7 +225,7 @@ class VisionTransformer(nn.Module):
                 if isinstance(m, nn.Linear):
                     nn.init.normal_(m.weight, std = 1/m.weight.size(1))
     #@profile
-    def forward(self, x, query_idx, snr, compr_idx, con=False):
+    def forward(self, x, query_idx,  con=False):
         #print(f"1  con = {con}\n")
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
         x = torch.nn.functional.unfold(x,self.patch_dim,stride=self.patch_dim).transpose(1,2).transpose(0,1).contiguous()
@@ -245,23 +260,6 @@ class VisionTransformer(nn.Module):
             x = self.encoder(x+pos)
             #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
             #print(f"In IPT VisionTransformer forward snr = {snr} ")
-
-            #x = torch.nn.functional.fold(x.permute(1,2,0),int(self.img_dim),self.patch_dim,stride=self.patch_dim)
-            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 64, 48, 48])
-
-
-            #x = self.compress[compr_idx](x)
-            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, query_idx = {query_idx} snr = {snr}, compr_idx = {compr_idx}\n"))  # x.shape = torch.Size([1, 9, 11, 11])
-
-            # print(f"\n In IPT VisionTransformer forward Compress rare = {CompRate}\n")
-            #x = common.awgn(x, snr)
-
-            #x = self.decompress[compr_idx](x)
-            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 64, 48, 48])
-
-
-            #x = torch.nn.functional.unfold(x,self.patch_dim,stride=self.patch_dim).transpose(1,2).transpose(0,1).contiguous()
-            #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #   x.shape = torch.Size([256, 1, 576])
 
             x = self.decoder(x, x, query_pos=query_embed)
             #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  # x.shape = torch.Size([256, 1, 576])
@@ -348,7 +346,7 @@ class TransformerEncoderLayer(nn.Module):
 
     def with_pos_embed(self, tensor, pos):
         return tensor if pos is None else tensor + pos
-    
+
     #@profile
     def forward(self, src, pos = None):
 
@@ -401,7 +399,7 @@ class TransformerDecoderLayer(nn.Module):
 
     def with_pos_embed(self, tensor, pos):
         return tensor if pos is None else tensor + pos
-    
+
     #@profile
     def forward(self, tgt, memory, pos = None, query_pos = None):
 
@@ -455,7 +453,8 @@ class Ipt(nn.Module):
         self.n_GPUs = args.n_GPUs    # 1
         self.saveModelEveryEpoch = args.saveModelEveryEpoch   # false
 
-        self.model = ipt(args).to(self.device)
+        # self.model = ipt(args).to(self.device)
+        self.model = ipt(args)
         if args.precision == 'half':
             self.model.half()
 
@@ -750,7 +749,7 @@ class Ipt(nn.Module):
 
         for i in range(x_range):
             #print(color.higbluefg_whitebg( f"\nFile={'/'.join(sys._getframe().f_code.co_filename.split('/')[-2:])}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n i,batchsize = {i}, {batchsize} {x_h_cut_unfold[i*batchsize:(i+1)*batchsize,...].shape} \n"))
-            #  i,batchsize = 0, 64 torch.Size([18, 3, 48, 48])
+            #  i,batchsize = 0, 64  torch.Size([18, 3, 48, 48])
             # y_h_cut_unfold.append(P.data_parallel(self.model, x_h_cut_unfold[i*batchsize:(i+1)*batchsize,...], range(self.n_GPUs)).cpu())
             if not self.args.cpu:
                 if self.n_GPUs >= 1:

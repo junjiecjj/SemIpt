@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Created on 2022/07/07
@@ -8,7 +7,6 @@ Created on 2022/07/07
 如果类B的某个成员self.fa是类A的实例a, 则如果B中更改了a的某个属性, 则a的那个属性也会变.
 
 """
-
 
 import sys,os
 import utility
@@ -28,6 +26,7 @@ from ColorPrint  import ColoPrint
 color = ColoPrint()
 # print(color.fuchsia("Color Print Test Pass"))
 
+
 class Trainer():
     def __init__(self, args, loader, my_model, my_loss, ckp, writer):
         self.args = args
@@ -39,7 +38,19 @@ class Trainer():
         self.loader_test = loader.loader_test
         self.model = my_model
         self.loss = my_loss
-        self.optimizer = utility.make_optimizer(args, self.model)
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+        
+        len_dataset = len(self.loader_train)
+        batch_size = args.batch_size
+        epoch = args.epochs
+        total_steps = (len_dataset // batch_size) * epoch
+        if len_dataset % batch_size == 0:
+            total_steps = (len_dataset // batch_size) * epoch 
+        else:
+            total_steps = (len_dataset // batch_size + 1) * epoch 
+        # 每一个epoch中有多少个step可以根据len(DataLoader)计算：total_steps = len(DataLoader) * epoch
+        
+        self.optimizer = utility.make_optimizer(args, self.model, args.epochs)
 
         #self.wr.WrModel(self.model.model, torch.randn(16, 3, 48, 48))
         if self.args.load != '':
@@ -52,9 +63,10 @@ class Trainer():
     def prepare(self, *args):
         #device = torch.device('cpu' if self.args.cpu else 'cuda')
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
         def _prepare(tensor):
             if self.args.precision == 'half': tensor = tensor.half()
-            return tensor.to(device)
+            return tensor.to(self.device)
 
         return [_prepare(a) for a in args]
 
@@ -113,12 +125,15 @@ class Trainer():
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
                         #print(f"{batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
                         # lr.shape = torch.Size([32, 3, 48, 48]), hr.shape = torch.Size([32, 3, 48, 48]), filename = ('0052', '0031',
+
                         lr, hr = self.prepare(lr, hr)
                         #print(f"lr.dtype = {lr.dtype}, hr.dtype = {hr.dtype}") #lr.dtype = torch.float32, hr.dtype = torch.float32
                         #hr = hr.to(device)
                         #lr = lr.to(device)
                         #print(f"lr.requires_grad = {lr.requires_grad}, hr.requires_grad = {hr.requires_grad} \n")
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
+                        #hr = hr.div_(self.args.rgb_range)
+                        #sr = sr.div_(self.args.rgb_range)
 
                         # 计算batch内的loss
                         lss = self.loss(sr, hr)
@@ -179,7 +194,7 @@ class Trainer():
 
                 # 在训练完每个压缩率和信噪比下的所有Epoch后,保存一次模型
                 self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
-
+                #exit(0)
         # 在训练完所有压缩率和信噪比后，保存损失日志
         self.ckp.saveLoss(self)
         # 在训练完所有压缩率和信噪比后，保存优化器
@@ -195,72 +210,6 @@ class Trainer():
         print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 ==============================\n"))
         return
 
-    #@profile
-    def trainForDebug(self):
-        #import pdb; pdb.set_trace()
-        #lossFn = nn.MSELoss()
-        #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
-
-        print(f"#======================================== 训练过程 =============================================",  file=self.ckp.log_file)
-
-        self.model.train()
-        torch.set_grad_enabled(True)
-        #ind1_scale = self.args.scale.index(1)
-
-        tm = utility.timer()
-
-        #self.loader_train.dataset.set_scale(ind1_scale)
-        #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
-        accumEpoch = 0
-
-        print(f"测试集的Batch数量={len(self.loader_train)}")
-
-        # 遍历epoch
-        for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+1):
-            #初始化loss日志
-            self.loss.start_log()
-            accumEpoch += 1
-            self.ckp.UpdateEpoch()
-            #print(f"ckp.SumEpoch = {self.ckp.SumEpoch.requires_grad}\n")
-
-            loss = 0
-            # 遍历训练数据集
-            for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
-
-                lr, hr = self.prepare(lr, hr)
-
-                #sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
-                try:
-                    sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
-                except RuntimeError as exception:
-                    if "out of memory" in str(exception):
-                        print('WARNING: out of memory')
-                    if hasattr(torch.cuda, 'empty_cache'):
-                        torch.cuda.empty_cache()
-                    else:
-                        raise exception
-
-                # 计算batch内的loss
-                lss = self.loss(sr, hr)
-
-                self.optimizer.zero_grad() # 必须在反向传播前先清零。
-                lss.backward()
-                self.optimizer.step()
-
-                # 计算bach内的psnr和MSE
-                # with torch.no_grad():
-                metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
-                # print(f"metric.requires_grad = {metric.requires_grad} {metric.dtype}")
-
-
-        self.ckp.done()
-        print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 ==============================\n"))
-        return
 
     def test(self):
         print(color.fuchsia(f"\n#================================ 开始测试 =======================================\n"))
@@ -274,7 +223,7 @@ class Trainer():
         torch.set_grad_enabled(False)
 
         self.model.eval()
-        self.model.model.eval()
+        #self.model.model.eval()
 
         print(f"共有{len(self.loader_test)}个数据集\n")
         self.ckp.write_log(f"共有{len(self.loader_test)}个数据集")
@@ -307,7 +256,7 @@ class Trainer():
                     self.ckp.AddTestMetric(compressrate, snr, DtSetName)
 
                     for batch_idx, (lr, hr, filename) in  enumerate(ds):
-
+                        #hr = hr.to(self.device)
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
                         # 保存图片
@@ -327,6 +276,8 @@ class Trainer():
                     metrics = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
                     self.wr.WrTestMetric(DtSetName, compressrate, snr, metrics)
                     self.wr.WrTestOne(DtSetName, compressrate, snr, metrics)
+        self.ckp.SaveTestLog()
+        
         self.ckp.write_log(f"===================================  测试结束 =======================================================")
         print(f"====================== 关闭测试日志  {self.ckp.log_file.name} ===================================")
         self.ckp.done()
@@ -467,3 +418,72 @@ class Trainer():
         self.ckp.write_log('Total: {:.2f}s\n'.format(timer_test.toc()), refresh=True)
 
         torch.set_grad_enabled(True)
+
+
+
+    #@profile
+    def trainForDebug(self):
+        #import pdb; pdb.set_trace()
+        #lossFn = nn.MSELoss()
+        #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
+
+        print(f"#======================================== 训练过程 =============================================",  file=self.ckp.log_file)
+
+        self.model.train()
+        torch.set_grad_enabled(True)
+        #ind1_scale = self.args.scale.index(1)
+
+        tm = utility.timer()
+
+        #self.loader_train.dataset.set_scale(ind1_scale)
+        #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
+        accumEpoch = 0
+
+        print(f"测试集的Batch数量={len(self.loader_train)}")
+
+        # 遍历epoch
+        for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+1):
+            #初始化loss日志
+            self.loss.start_log()
+            accumEpoch += 1
+            self.ckp.UpdateEpoch()
+            #print(f"ckp.SumEpoch = {self.ckp.SumEpoch.requires_grad}\n")
+
+            loss = 0
+            # 遍历训练数据集
+            for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
+
+                lr, hr = self.prepare(lr, hr)
+
+                #sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
+                try:
+                    sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
+                except RuntimeError as exception:
+                    if "out of memory" in str(exception):
+                        print('WARNING: out of memory')
+                    if hasattr(torch.cuda, 'empty_cache'):
+                        torch.cuda.empty_cache()
+                    else:
+                        raise exception
+
+                # 计算batch内的loss
+                lss = self.loss(sr, hr)
+
+                self.optimizer.zero_grad() # 必须在反向传播前先清零。
+                lss.backward()
+                self.optimizer.step()
+
+                # 计算bach内的psnr和MSE
+                # with torch.no_grad():
+                metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
+                # print(f"metric.requires_grad = {metric.requires_grad} {metric.dtype}")
+
+
+        self.ckp.done()
+        print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 ==============================\n"))
+        return

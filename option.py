@@ -40,7 +40,7 @@ parser.add_argument('--dir_demo', type=str, default='../test', help='demo image 
 parser.add_argument('--SummaryWriteDir', type=str, default='/home/jack/IPT-Pretrain/results/TensorBoard', help='demo image directory')
 
 # 训练数据名称
-parser.add_argument('--data_train', type=str, default='DIV2K_cut', help='train dataset name')
+parser.add_argument('--data_train', type=str, default='DIV2K_16', help='train dataset name')
 
 # 测试集数据名称
 parser.add_argument('--data_test',type=str,  default='Set2+Set3', help='test dataset name')
@@ -59,20 +59,22 @@ parser.add_argument('--rgb_range', type=int, default=255, help='maximum value of
 parser.add_argument('--n_colors', type=int, default=3, help='number of color channels to use')
 parser.add_argument('--no_augment', action='store_true',  help='do not use data augmentation')
 
+parser.add_argument('--hasChannel', action='store_false',  help='use channel and compress, decompress')
 parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33 ',  help='Compress rate for test')
-parser.add_argument('--SNRtrain',  type=str, default='2, 10',  help='SNR for train')
+#parser.add_argument('--CompressRateTrain', type=str, default='0.17',  help='Compress rate for test')
+parser.add_argument('--SNRtrain',  type=str, default='0, 2, 4, 6, 8, 10',  help='SNR for train')
 
 #parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
-parser.add_argument('--SNRtest',  type=str, default='-6,-4,-2, 0, 2, 6, 10, 14, 18',  help='SNR for train')
-
+parser.add_argument('--SNRtest',  type=str, default='0, 2, 4, 6, 8, 10',  help='SNR for test')
+#parser.add_argument('--SNRtest',  type=str, default='2',  help='SNR for test')
 
 # Training and test  specifications
 # cjj
 parser.add_argument('--wanttest',  action='store_false', help='set this option to test the model')
 parser.add_argument('--wanttrain', action='store_false', help='set this option to train the model')
-parser.add_argument('--reset', action='store_true', help='reset the training')
+parser.add_argument('--reset', action='store_false', help='reset the training')
 parser.add_argument('--test_every', type=int, default=1000, help='do test per every N batches')
-parser.add_argument('--epochs', type=int, default=10,  help='number of epochs to train')
+parser.add_argument('--epochs', type=int, default=100,  help='number of epochs to train')
 parser.add_argument('--batch_size', type=int, default=16, help='input batch size for training')
 parser.add_argument('--test_batch_size', type=int,  default=1,help='input batch size for training')
 parser.add_argument('--crop_batch_size', type=int, default=64, help='input batch size for training')
@@ -100,9 +102,14 @@ parser.add_argument('--dcpKerSize', type=int,  default=10, help='压缩层的卷
 parser.add_argument('--dcpStride', type=int,  default=4, help='压缩层的步长')
 parser.add_argument('--dcpPad', type=int,  default=1, help='压缩层的padding')
 
+# warm up参数, polynomial动态学习率调整先是在最初的 warm_up_ratio*total_setp 个steps中以线性的方式进行增长，之后便是多项式的方式进行递减，直到衰减到lr_end后保持不变。
+parser.add_argument('--warm_up_ratio', type=float, default=0.1, help='warm up的步数占比')
+parser.add_argument('--lr_end', type=float,  default=1e-6, help='学习率终止值')
+parser.add_argument('--power', type=int,  default=2, help='warm up多项式的次数，当power=1时（默认）等价于get_linear_schedule_with_warmup函数')
+
 
 # Optimization specifications
-parser.add_argument('--lr', type=float, default=0.0003, help='learning rate')
+parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--decay', type=str, default='20-80-120',  help='learning rate decay type')
 parser.add_argument('--gamma',  type=float, default=0.6, help='learning rate decay factor for step decay')
 parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSprop'), help='optimizer to use (SGD | ADAM | RMSprop)')
@@ -169,8 +176,3 @@ for arg in vars(args):
     elif vars(args)[arg] == 'False':
         print(f"arg = {arg}")
         vars(args)[arg] = False
-
-
-
-
-

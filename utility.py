@@ -6,13 +6,15 @@ Created on 2022/07/07
 @author: Junjie Chen
 
 """
-import os,sys
+
+import os
+import sys
 import math
 import time
 import datetime
 from multiprocessing import Process
 from multiprocessing import Queue
-
+from torch.autograd import Variable
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -26,6 +28,9 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lrs
 import collections
 from torch.utils.tensorboard import SummaryWriter
+from transformers import optimization
+
+
 #内存分析工具
 from memory_profiler import profile
 import objgraph
@@ -40,23 +45,19 @@ color =  ColoPrint()
 
 from matplotlib.font_manager import FontProperties
 from matplotlib.pyplot import MultipleLocator
+
 fontpath = "/usr/share/fonts/truetype/windows/"
-font = FontProperties(fname=fontpath+"SimSun.ttc", size = 22)#fname =  "/usr/share/fonts/truetype/arphic/SimSun.ttf",
-font1 = FontProperties(fname=fontpath+"SimSun.ttc", size = 18)
-font2 = FontProperties(fname=fontpath+"SimSun.ttc", size = 24)
-font3 = FontProperties(fname=fontpath+"SimSun.ttc", size = 30)
+# fname =  "/usr/share/fonts/truetype/arphic/SimSun.ttf",
+font = FontProperties(fname=fontpath+"simsun.ttf", size=22)
+
 
 fontpath1 = "/usr/share/fonts/truetype/msttcorefonts/"
-fonte = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-fonte1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 24)
+fonte = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size=22)
 
 
-fontt  = {'family':'Times New Roman','style':'normal','size':17}
-fonttX  = {'family':'Times New Roman','style':'normal','size':22}
-fonttY  = {'family':'Times New Roman','style':'normal','size':22}
-fonttitle = {'style':'normal','size':17 }
-fontt2 = {'style':'normal','size':19,'weight':'bold'}
-fontt3  = {'style':'normal','size':16,}
+fontpath2 = "/usr/share/fonts/truetype/NerdFonts/"
+font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
+
 
 
 def printArgs(args):
@@ -198,10 +199,20 @@ class checkpoint():
         # 模型训练时PSNR、MSE和loss和优化器等等数据的保存以及画图目录
         self.dir = os.path.join(args.save, f"TrainLog_{args.modelUse}")
         print(f"self.dir = {self.dir} \n")
+
+        if args.reset:
+            print(f"删除目录:{self.dir}")
+            os.system('rm -rf ' + self.dir)
+
         os.makedirs(self.dir, exist_ok=True)
 
         # 模型参数保存的目录
         self.modeldir = os.path.join(args.save, f"model_{args.modelUse}")
+        
+        if args.reset:
+            print(f"删除目录:{self.modeldir}")
+            os.system('rm -rf ' + self.modeldir)
+            
         os.makedirs(self.modeldir, exist_ok=True)
 
         open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
@@ -226,9 +237,6 @@ class checkpoint():
         if os.path.isfile(self.get_path('SumEpoch.pt')):
             self.SumEpoch = torch.load(self.get_path('SumEpoch.pt'))
 
-        if args.reset:
-            os.system('rm -rf ' + self.dir)
-
         print(color.fuchsia(f"\n#================================ checkpoint 准备完毕 =======================================\n"))
 
     # 更新全局的Epoch
@@ -247,7 +255,7 @@ class checkpoint():
             f.write("############################################################################################\n")
 
             for k, v in self.args.__dict__.items():
-                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
+                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}\n")
             f.write("\n################################ args end  #################################################\n")
         return
 
@@ -370,22 +378,43 @@ class checkpoint():
     #@profile
     def plot_AllTrainMetric(self):
         for idx, met in  enumerate(self.args.metrics):
-            fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(20,20))
+            fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(16,16))
             for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
                 for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
                     tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+                    label = 'CompRatio={},SNR={},Metric={}'.format(comprateTmp, snrTmp,met)
+
                     epoch = len(self.metricLog[tmpS])
                     X = np.linspace(1, epoch, epoch)
 
-                    label = 'CompRatio={},SNR={},Metric={}'.format(comprateTmp, snrTmp,met)
-                    axs[snr_idx,comprate_idx].set_title(label)
-
                     axs[snr_idx,comprate_idx].plot(X, self.metricLog[tmpS][:,idx],'r-',label=label,)
-                    axs[snr_idx,comprate_idx].legend()
-                    axs[snr_idx,comprate_idx].set_xlabel('Epochs')
-                    axs[snr_idx,comprate_idx].set_ylabel(f"{met}")
+
+                    font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+                    axs[snr_idx,comprate_idx].set_xlabel('Epochs',fontproperties=font)
+                    axs[snr_idx,comprate_idx].set_ylabel(f"{met}",fontproperties=font)
+                    axs[snr_idx,comprate_idx].set_title(label, fontproperties=font)
+
+                    #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                    font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=18)
+                    legend1 = axs[snr_idx,comprate_idx].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+                    frame1 = legend1.get_frame()
+                    frame1.set_alpha(1)
+                    frame1.set_facecolor('none')  # 设置图例legend背景透明
+
+                    axs[snr_idx,comprate_idx].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+                    axs[snr_idx,comprate_idx].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+                    axs[snr_idx,comprate_idx].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+                    axs[snr_idx,comprate_idx].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
+
+
+                    axs[snr_idx,comprate_idx].tick_params(labelsize=16,width=3)
+                    labels = axs[snr_idx,comprate_idx].get_xticklabels() + axs[snr_idx,comprate_idx].get_yticklabels()
+                    [label.set_fontname('Times New Roman') for label in labels]
+                    [label.set_fontsize(20) for label in labels] #刻度值字号
+
+
                     axs[snr_idx,comprate_idx].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
-            fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
+            fig.subplots_adjust(hspace=0.3)#调节两个子图间的距离
             plt.tight_layout()#  使得图像的四周边缘空白最小化
             out_fig = plt.gcf()
             out_fig.savefig(self.get_path(f"{met}_Epoch_Plot.pdf"))
@@ -421,15 +450,28 @@ class checkpoint():
             f.write("############################################################################################\n")
 
             for k, v in self.args.__dict__.items():
-                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}")
+                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}\n")
             f.write('\n')
             f.write("################################ args end  #################################################\n")
+        return
 
+    def writeArgsLog(self, open_type='a'):
+        with open(self.get_path('argsConfig.txt'), open_type) as f:
+            f.write('#==========================================================\n')
+            f.write(self.now + '\n')
+            f.write('#==========================================================\n\n')
+
+            f.write("############################################################################################\n")
+            f.write("################################  args  ####################################################\n")
+            f.write("############################################################################################\n")
+
+            for k, v in self.args.__dict__.items():
+                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}\n")
+            f.write("\n################################ args end  #################################################\n")
         return
 
     def get_testpath(self, *subdir):
         return os.path.join(self.testRudir, *subdir)
-
 
 # <<< 测试过程不同数据集上的的PSNR等指标随压缩率、信噪比的动态记录
     def InitTestMetric(self, comprateTmp, dataset):
@@ -459,7 +501,8 @@ class checkpoint():
 # 训练过程的PSNR等指标的动态记录 >>>
 
     def SaveTestLog(self):
-        self.plot_AllTestMetric()
+        # self.plot_AllTestMetric()
+        self.PlotTestMetric()
         torch.save(self.TeMetricLog, self.get_testpath('TestMetric_log.pt'))
         return
 
@@ -469,17 +512,23 @@ class checkpoint():
             fig, axs=plt.subplots(len(self.args.CompressRateTrain),len(self.args.metrics),figsize=(20,20))
             for crIdx, compratio in enumerate(self.args.CompressRateTrain):
                 for metIdx, met in enumerate(self.args.metrics):
-                    label = f"CompressRate={compratio}"
+                    label = f"CompressRate={compratio}, {met}"
                     tmps = "TestMetricLog:Dataset={},CompRatio={}".format(dtset,compratio)
                     data = self.TeMetricLog[tmps]
-                    axs[crIdx,metIdx].set_title(label,loc = 'left',fontdict=fonttitle)
+
                     axs[crIdx,metIdx].plot(data[:,0], data[:,metIdx+1],'r-',label=label,)
-                    axs[crIdx,metIdx].set_xlabel('SNR',fontdict=fonttX)
-                    axs[crIdx,metIdx].set_ylabel(f"{met}",fontdict=fonttY)
-                    
-                    fonte = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 16)
-                    axs[crIdx,metIdx].legend(borderaxespad=0,edgecolor='black',prop=fonte,)
-                    
+                    font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+                    axs[crIdx,metIdx].set_xlabel('SNR',fontproperties=font)
+                    axs[crIdx,metIdx].set_ylabel(f"{met}",fontproperties=font)
+                    axs[crIdx,metIdx].set_title(label,loc = 'left',fontproperties=font)
+
+                    #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                    font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
+                    legend1 = axs[crIdx,metIdx].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+                    frame1 = legend1.get_frame()
+                    frame1.set_alpha(1)
+                    frame1.set_facecolor('none')  # 设置图例legend背景透明
+
                     axs[crIdx,metIdx].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
                     axs[crIdx,metIdx].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
                     axs[crIdx,metIdx].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
@@ -496,9 +545,9 @@ class checkpoint():
                     [label.set_fontname('Times New Roman') for label in labels]
                     [label.set_fontsize(20) for label in labels] #刻度值字号
 
-            fig.subplots_adjust(hspace=0.25)#调节两个子图间的距离
+            fig.subplots_adjust(hspace=0.2)#调节两个子图间的距离
             font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-            plt.suptitle(f"{self.args.metrics[0]}, {self.args.metrics[1]} metric of {dtset}",x=0.5,y=0.93,fontproperties=font4,)
+            plt.suptitle(f"Metric of {dtset}",x=0.5,y=0.93,fontproperties=font4,)
             #plt.tight_layout()#  使得图像的四周边缘空白最小化
 
             out_fig = plt.gcf()
@@ -506,51 +555,81 @@ class checkpoint():
             plt.show()
             plt.close(fig)
         return
-    
-    def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
-        filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
-        print(f"filename = {filename}\n")
-        normalized = data[0].mul(255 / self.args.rgb_range)
-        tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
-        print(f"tensor_cpu.shape = {tensor_cpu.shape}\n")
-        imageio.imwrite(filename, tensor_cpu.numpy())
+
+
+    def PlotTestMetric(self):
+        mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
+        color = ['#808000','#C000C0', 'red','cyan','blue','green','#FF8C00','#00FF00', '#FFA500', '#FF0000','#1E90FF']
+
+        if len(self.args.data_test) > 2:
+            high = 12
+            raw = 2
+            if len(self.args.data_test)%2 == 0:
+                col = int(len(self.args.data_test)//2)
+            else:
+                col = int(len(self.args.data_test)//2)+1
+        elif len(self.args.data_test) == 1:
+            high = 6
+            raw = 1
+            col = 1
+        elif len(self.args.data_test) == 2:
+            high = 6
+            raw = 1
+            col = 2
+
+            
+        for metIdx, met in enumerate(self.args.metrics):
+            fig, axs = plt.subplots(raw, col, figsize=(col*6, high))
+            if raw == 1 and col==2:
+                axs = axs.reshape(raw,col)
+            for dsIdx, dtset in enumerate(self.args.data_test):
+                for crIdx, compratio in enumerate(self.args.CompressRateTrain):
+                    tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dtset, compratio)
+                    data = self.TeMetricLog[tmpS]
+                    i = dsIdx // col
+                    j = dsIdx % col
+                    lb = f"compress rate={compratio}"
+                    axs[i,j].plot(data[:,0], data[:,metIdx+1], linestyle='-',color=color[crIdx],marker=mark[crIdx], label = lb)
+
+                font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+                axs[i,j].set_xlabel('SNR',fontproperties=font)
+                axs[i,j].set_ylabel(f"{met}",fontproperties=font)
+                axs[i,j].set_title(f"{dtset}",loc = 'left',fontproperties=font)
+                
+                #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
+                legend1 = axs[i,j].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+                frame1 = legend1.get_frame()
+                frame1.set_alpha(1)
+                frame1.set_facecolor('none')  # 设置图例legend背景透明
+
+                axs[i,j].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+                axs[i,j].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+                axs[i,j].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+                axs[i,j].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
+
+                fontt2 = {'family':'Times New Roman','style':'normal','size':16}
+                legend1 = axs[i,j].legend(loc='best',borderaxespad=0,edgecolor='black',prop=fontt2,)
+                frame1 = legend1.get_frame()
+                frame1.set_alpha(1)
+                frame1.set_facecolor('none') # 设置图例legend背景透明
+
+                axs[i,j].tick_params(direction='in', axis='both',top=True,right=True, labelsize=16, width=3,)
+                labels = axs[i,j].get_xticklabels() + axs[i,j].get_yticklabels()
+                [label.set_fontname('Times New Roman') for label in labels]
+                [label.set_fontsize(20) for label in labels] #刻度值字号
+
+            fig.subplots_adjust(hspace=0.4)#调节两个子图间的距离
+            font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+            plt.suptitle(f"{met} on "+', '.join(self.args.data_test), x=0.5, y=0.97, fontproperties=font4,)
+            #plt.tight_layout()#  使得图像的四周边缘空白最小化
+
+            out_fig = plt.gcf()
+            out_fig.savefig(self.get_testpath(f"Test_{met}_Plot.pdf"), bbox_inches = 'tight',pad_inches = 0.2)
+            plt.show()
+            plt.close(fig)
         return
 
-# <<< 测试相关函数
-
-    def begin_queue(self):
-        self.queue = Queue()
-
-        def bg_target(queue):
-            while True:
-                if not queue.empty():
-                    filename, tensor = queue.get()
-                    if filename is None: break
-                    imageio.imwrite(filename, tensor.numpy())
-
-        self.process = [ Process(target=bg_target, args=(self.queue,)) for _ in range(self.n_processes) ]
-
-        for p in self.process:
-            p.start()
-        return
-    def end_queue(self):
-        for _ in range(self.n_processes):
-            self.queue.put((None, None))
-        while not self.queue.empty():
-            time.sleep(1)
-        for p in self.process:
-            p.join()
-        return
-    def save_results_byQueue(self, dataset, filename, save_list, scale):
-        if self.args.save_results:
-            filename = self.get_path('results-{}'.format(dataset.dataset.name),'{}_x{}_'.format(filename, scale))
-
-            postfix = ('SR', 'LR', 'HR')
-            for v, p in zip(save_list, postfix):
-                normalized = v[0].mul(255 / self.args.rgb_range)
-                tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
-                self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
-        return
 
 
 # from option import args
@@ -582,20 +661,54 @@ class checkpoint():
 # ckp.save()
 
 
+    def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
+        filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
+        print(f"filename = {filename}\n")
+        normalized = data[0].mul(255 / self.args.rgb_range)
+        tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
+        print(f"tensor_cpu.shape = {tensor_cpu.shape}\n")
+        imageio.imwrite(filename, tensor_cpu.numpy())
+        return
 
-# ckp = checkpoint(args)
-# ckp.InittestDir('aaaa')
-# for idx_data, ds in enumerate(args.data_test):
-#     for comprate_idx, compressrate in enumerate(args.CompressRateTrain):
-#         ckp.InitTestMetric(compressrate, ds)
-#         for snr_idx, snr in enumerate( args.SNRtest):
-#             ckp.AddTestMetric(compressrate, snr, ds)
-#             for i in range(20):
-#                 metric = torch.tensor([comprate_idx,comprate_idx+snr_idx])
-#                 ckp.UpdateTestMetric(compressrate, ds,metric)
-#                 ckp.MeanTestMetric(compressrate, ds,2)
+# <<< 测试相关函数
 
-# ckp.SaveTestLog()
+    def begin_queue(self):
+        self.queue = Queue()
+
+        def bg_target(queue):
+            while True:
+                if not queue.empty():
+                    filename, tensor = queue.get()
+                    if filename is None: break
+                    imageio.imwrite(filename, tensor.numpy())
+
+        self.process = [ Process(target=bg_target, args=(self.queue,)) for _ in range(self.n_processes) ]
+
+        for p in self.process:
+            p.start()
+        return
+
+    def end_queue(self):
+        for _ in range(self.n_processes):
+            self.queue.put((None, None))
+        while not self.queue.empty():
+            time.sleep(1)
+        for p in self.process:
+            p.join()
+        return
+
+    def save_results_byQueue(self, dataset, filename, save_list, scale):
+        if self.args.save_results:
+            filename = self.get_path('results-{}'.format(dataset.dataset.name),'{}_x{}_'.format(filename, scale))
+
+            postfix = ('SR', 'LR', 'HR')
+            for v, p in zip(save_list, postfix):
+                normalized = v[0].mul(255 / self.args.rgb_range)
+                tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
+                self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
+        return
+
+
 
 
 
@@ -663,7 +776,7 @@ class net(nn.Module):
         return self.fc(x)
 
 
-def make_optimizer(args, net):
+def make_optimizer(args, net, total_steps):
     '''
     make optimizer and scheduler together
     '''
@@ -691,6 +804,9 @@ def make_optimizer(args, net):
     milestones = list(map(lambda x: int(x), args.decay.split('-')))  #  [20, 40, 60, 80, 100, 120]
     kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
     scheduler_class = lrs.MultiStepLR
+    
+    warmup_class = optimization.get_polynomial_decay_schedule_with_warmup
+    kwargs_warmup = {"num_warmup_steps":args.warm_up_ratio*total_steps, "num_training_steps":total_steps,"power":args.power,"lr_end":args.lr_end}
 
     class CustomOptimizer(optimizer_class):
         def __init__(self, *args, **kwargs):
@@ -728,46 +844,70 @@ def make_optimizer(args, net):
                 param_group["lr"] = args.lr
 
             milestones = list(map(lambda x: int(x), args.decay.split('-')))  #  [20, 40, 60, 80, 100, 120]
-            kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
-            self.scheduler = scheduler_class(self, **kwargs_scheduler)
+            # kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
+            # self.scheduler = scheduler_class(self, **kwargs_scheduler)
+            
+            kwargs_warmup = {"num_warmup_steps":args.warm_up_ratio*total_steps, "num_training_steps":total_steps,"power":args.power,"lr_end":args.lr_end}
+            self.scheduler = warmup_class(self, **kwargs_warmup)
 
     optimizer = CustomOptimizer(trainable, **kwargs_optimizer)
-    optimizer._register_scheduler(scheduler_class, **kwargs_scheduler)
+    #optimizer._register_scheduler(scheduler_class, **kwargs_scheduler)
+    optimizer._register_scheduler(warmup_class, **kwargs_warmup)
+
     return optimizer
 
 
 
 # model = net()
 # LR = 0.01
-# opt = make_optimizer(args,model)
+# opt = make_optimizer(args,model,100)
 # loss = torch.nn.CrossEntropyLoss()
 
 # lr_list1 = []
 # lr_list2 = []
 # for epoch in range(200):
-#      for i in range(20):
-#          y = torch.randint(0, 9, (10,10))*1.0
-#          opt.zero_grad()
-#          out = model(torch.randn(10,1))
-#          lss = loss(out, y)
-#          lss.backward()
-#          opt.step()
-#      opt.schedule()
-#      lr_list2.append(opt.get_lr())
-#      lr_list1.append(opt.state_dict()['param_groups'][0]['lr'])
-# plt.plot(range(200),lr_list1,color = 'r')
+#       for i in range(20):
+#           y = torch.randint(0, 9, (10,10))*1.0
+#           opt.zero_grad()
+#           out = model(torch.randn(10,1))
+#           lss = loss(out, y)
+#           lss = Variable(lss, requires_grad = True)
+#           lss.backward()
+#           opt.step()
+#       opt.schedule()
+#       lr_list2.append(opt.get_lr())
+#       lr_list1.append(opt.state_dict()['param_groups'][0]['lr'])
+
+# fig, axs = plt.subplots(1,1, figsize=(6,6))
+# axs.plot(range(len(lr_list1)),lr_list1,color = 'r')
 # #plt.plot(range(100),lr_list2,color = 'b')
 # out_fig = plt.gcf()
+# out_fig.savefig("/home/jack/snap/11.pdf")
 # plt.show()
+# plt.close(fig)
 
 
+# from option import args
+# ckp = checkpoint(args)
+# ckp.InittestDir('aaaa')
+# for idx_data, ds in enumerate(args.data_test):
+#     for comprate_idx, compressrate in enumerate(args.CompressRateTrain):
+#         ckp.InitTestMetric(compressrate, ds)
+#         for snr_idx, snr in enumerate( args.SNRtest):
+#             ckp.AddTestMetric(compressrate, snr, ds)
+#             for i in range(20):
+#                 metric = torch.tensor([comprate_idx,comprate_idx+snr_idx])
+#                 ckp.UpdateTestMetric(compressrate, ds,metric)
+#                 ckp.MeanTestMetric(compressrate, ds,2)
+
+# ckp.PlotTestMetric()
 
 #  使用时：
 """
 
 model = net()
 LR = 0.01
-optimizer = make_optimizer( args,  model)
+optimizer = make_optimizer( args, model, )
 
 
 lr_list1 = []

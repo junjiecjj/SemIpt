@@ -18,7 +18,7 @@ def default_conv(in_channels, out_channels, kernel_size, bias=True):
     return nn.Conv2d(in_channels, out_channels, kernel_size, padding=(kernel_size//2), bias=bias)
 
 # 根据压缩比和输出输入的图像大小计算压缩层的输出通道数。
-def calculate_channel(comp_ratio, F=5, n=3072):
+def calculate_channel(comp_ratio, F=5, n=3*48*48):
     K = (comp_ratio * n) / F**2
     return int(K)
 
@@ -56,8 +56,7 @@ def convTrans2d_prelu(in_channels, out_channels, kernel_size, stride, pad=0, out
 """
 class MeanShift(nn.Conv2d):
     def __init__(
-        self, rgb_range,
-        rgb_mean=(0.4488, 0.4371, 0.4040), rgb_std=(1.0, 1.0, 1.0), sign=-1):
+        self, rgb_range, rgb_mean=(0.4488, 0.4371, 0.4040), rgb_std=(1.0, 1.0, 1.0), sign=-1):
 
         super(MeanShift, self).__init__(3, 3, kernel_size=1)
         std = torch.Tensor(rgb_std)
@@ -138,13 +137,12 @@ class Upsampler(nn.Sequential):
 
 
 
-def AWGN(Tx_sig, n_var):
+def Awgn(Tx_sig, n_var):
     Rx_sig = Tx_sig + torch.normal(0, n_var, size=Tx_sig.shape)# .to(device)
     return Rx_sig
 
 
 def PowerNormalize(x):
-
     x_square = torch.mul(x, x)
     power = torch.mean(x_square).sqrt()
     if power > 1:
@@ -161,11 +159,11 @@ def SNR_to_noise(snr):
 
 
 # 先将信号功率归一化，再计算噪声功率，再计算加躁的信号。
-def awgn_WithSignalPowerNormalized(x, snr):
+def AWGN(x, snr):
     noise_std = SNR_to_noise(snr)
     # print("snr :", snr, ", sigma:", noise_std)
     x_norm = PowerNormalize(x)
-    x_output = AWGN(x_norm, noise_std)
+    x_output = Awgn(x_norm, noise_std)
     return x_output
 
 # 以实际信号功率计算噪声功率，再将信号加上噪声。

@@ -137,16 +137,21 @@ class LOSS(nn.modules.loss._Loss):
             axs.set_xlabel('Epochs', fontproperties=font)
             axs.set_ylabel(label, fontproperties=font)
             axs.set_title(label, fontproperties=font)
-            axs.grid(True)
+            #axs.grid(True)
             
             #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
             font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
-            font1 = FontProperties(fname=fontpath2+"Caskaydia Cove SemiLight Nerd Font Complete Mono.otf", size=20)
-            font1 = FontProperties(fname=fontpath2+"Caskaydia Cove Light Nerd Font Complete.otf", size=20)
+            #font1 = FontProperties(fname=fontpath2+"Caskaydia Cove SemiLight Nerd Font Complete Mono.otf", size=20)
+            #font1 = FontProperties(fname=fontpath2+"Caskaydia Cove Light Nerd Font Complete.otf", size=20)
             legend1 = axs.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
             frame1 = legend1.get_frame()
             frame1.set_alpha(1)
             frame1.set_facecolor('none')  # 设置图例legend背景透明
+
+            axs.spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+            axs.spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+            axs.spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+            axs.spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
 
             axs.tick_params(direction='in', axis='both', top=True,right=True,labelsize=16, width=3,)
             labels = axs.get_xticklabels() + axs.get_yticklabels()
@@ -165,11 +170,17 @@ class LOSS(nn.modules.loss._Loss):
                 axs[i].set_title(label, fontproperties=font)
                 axs[i].grid(True)
                 
-                font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
                 legend1 = axs[i].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
                 frame1.set_facecolor('none')  # 设置图例legend背景透明
+                
+                axs.spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+                axs.spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+                axs.spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+                axs.spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
                 
                 axs[1].tick_params(direction='in', axis='both', top=True,right=True,labelsize=16, width=3,)
                 labels = axs[1].get_xticklabels() + axs[1].get_yticklabels()
@@ -227,7 +238,7 @@ class LOSS(nn.modules.loss._Loss):
                 for _ in range(len(self.losslog)): l.scheduler.step()
 
 
-# # test LOSS module
+# # # test LOSS module
 # from torch.autograd import Variable
 # los = LOSS(args,ckp)
 
@@ -248,7 +259,7 @@ class LOSS(nn.modules.loss._Loss):
 
 
 
-# los.plot_loss(ckp.dir,)
+# # los.plot_loss(ckp.dir,)
 # los.plot_AllLoss(ckp.dir,)
 
 

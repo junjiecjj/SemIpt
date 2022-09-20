@@ -8,7 +8,7 @@ Created on 2022/07/07
 """
 
 #sys.path.append(os.getcwd())
-from model  import common
+from model import common
 # 或
 # from .  import common
 import sys,os
@@ -27,12 +27,68 @@ from einops import rearrange
 import copy
 import datetime
 
+def Calculate_filters(comp_ratio, F=5, n=3*48*48):
+    K = (comp_ratio * n) / F**2
+    return int(K)
 
 class  DeepSc1(nn.Module):
-    def __init__(args):
-        pass
+    def __init__(self):
+        super(DeepSc1, self).__init__()
+        padding = [2, 2]
+        comp_ratio = 0.17
+        n_colors = 3
+        patch_size = 48
+        e0 =  patch_size
+        encoder1_size = int((e0 + 2 * padding[0] - 5) / 2 + 1)
+        encoder2_size = int((encoder1_size + 2 * padding[1] - 5) / 2 + 1)
+        self.last_channel = Calculate_filters( comp_ratio, encoder2_size)
+        self.c1 = nn.Conv2d( n_colors,  n_colors, 5, 2, padding[0])
+        self.c2 = nn.Conv2d( n_colors, self.last_channel, 5, 2, padding[1])
+        self.c3 = nn.BatchNorm2d(self.last_channel)
+        
+        
+        self.d1 = nn.ConvTranspose2d(self.last_channel,  n_colors, 5, 2, padding[1])
+        self.d2 = nn.ConvTranspose2d( n_colors,  n_colors, 5, 2, padding[0])
+        self.d3 = nn.Conv2d( n_colors,  n_colors, 4, 1, 3)
+        self.d4 = nn.BatchNorm2d( n_colors)
+        
+    def forward(self, img, idx_scale=0, snr=10, compr_idx=0):
+        print(f"img.shape = {img.shape}")
+        
+        e1 = self.c1(img)
+        print(f"e1.shape = {e1.shape}")
+        
+        e2 = self.c2(e1)
+        print(f"e2.shape = {e2.shape}")
+        
+        #e3 = self.c3(e2)
+        #print(f"e3.shape = {e3.shape}")
+        
+        d1 = self.d1(e2)
+        print(f"d1.shape = {d1.shape}")
+        
+        d2 = self.d2(d1)
+        print(f"d2.shape = {d2.shape}")
+        
+        d3 = self.d3(d2)
+        print(f"d3.shape = {d3.shape}")
+
+        #d4 = self.d4(d3)
+        #print(f"d4.shape = {d4.shape}")
+        
+        return d3
+    
+# net = DeepSc1()
+
+# X = torch.randn(16,3,48,48)
+
+# Y = net(X)
+
+#print(f"X.shape = {X.shape}, Y.shape = {Y.shape}\n")
 
 
+
+    
 #网络模型结构
 class DeepSc(nn.Module):
     def __init__(self , args, ckp):
@@ -179,30 +235,3 @@ class DeepSc(nn.Module):
             print(f"Ipt中没有最近一次模型\n")
         if load_from:
             self.model.load_state_dict(load_from, strict=False)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

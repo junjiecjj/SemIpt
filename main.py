@@ -36,6 +36,7 @@ os.system('pip install einops')
 os.system('pip install objgraph')
 os.system('pip install memory_profiler')
 os.system('pip install psutil')
+os.system('pip install transformers')
 
 #内存分析工具
 from memory_profiler import profile
@@ -50,6 +51,8 @@ import objgraph
 ckp = utility.checkpoint(args)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+
 #@profile
 def main():
     #global model
@@ -58,7 +61,7 @@ def main():
         loader = data_generator.DataGenerator(args)
     
         # 初始化模型
-        _model = ModelSet[args.modelUse](args,ckp)
+        _model = ModelSet[args.modelUse](args,ckp).to(device)
     
         # #加载最初的预训练模型
         # if args.pretrain != "":# 用预训练模型
@@ -87,7 +90,7 @@ def main():
     
         # 测试
         if  args.wanttest:
-            #tr.test()
+            tr.test()
             # print(f"I want to test \n")
             pass
     

@@ -77,7 +77,7 @@ class SRData(data.Dataset):
             if self.args.useBIN == True:
                 self.images_hr_bin, self.images_lr_bin = self._make_bin_img_magnify()
 
-        if self.name in ['DIV2K','DIV2K_cut']:
+        if self.name in ['DIV2K','DIV2K_16','DIV2K_64',]:
             #print(f"srdata.py  69   {self.name}\n")
             self._set_filesystem_div2k(args.dir_data)
             self.images_hr_png, self.images_lr_png = self._scan_div2k()
@@ -296,7 +296,7 @@ class SRData(data.Dataset):
             pair = common.set_channel(*[pair], n_channels=self.args.n_colors)
             pair_t = common.np2Tensor(*pair, rgb_range=self.args.rgb_range)
             return pair_t[0],pair_t[0], filename
-        if self.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K','DIV2K_cut']:
+        if self.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K','DIV2K_16','DIV2K_64',]:
             # 默认，图像缩放任务
             lr, hr, filename = self._load_file(idx)
             pair = self.get_patch(lr, hr)

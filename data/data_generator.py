@@ -43,7 +43,7 @@ class DataGenerator(object):
             for trainname in args.data_train:
                 # datasets.append(srdata.SRData(args, name=trainname, train=False, benchmark=True))
 
-                if trainname in ['CBSD68', 'DIV2K','DIV2K_cut','Rain100L']:
+                if trainname in ['CBSD68', 'DIV2K','DIV2K_16','DIV2K_64','Rain100L']:
                     trainset = srdata.SRData(args, name=trainname, train=True, benchmark=False)
                     print(f"train set is {trainname}\n")
                 else:

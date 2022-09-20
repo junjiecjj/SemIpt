@@ -21,6 +21,10 @@ class SummWriter(SummaryWriter):
     def __init__(self, args):
         # if args.modelUse == 'DeepSC':
         sdir = os.path.join(args.save, f"TensorBoard_{args.modelUse}")
+        if  args.reset:
+            print(f"删除目录:{sdir}")
+            os.system('rm -rf ' + sdir)
+            
         os.makedirs(sdir, exist_ok=True)
         kwargs_summwrit = {'comment':"", 'purge_step': None, 'max_queue': 10, 'flush_secs':120,}
         super(SummWriter, self).__init__(sdir, **kwargs_summwrit)
@@ -152,7 +156,7 @@ class SummWriter(SummaryWriter):
 
 
 #会发现刚刚的log文件夹里面有文件了。在命令行输入如下，载入刚刚做图的文件（那个./log要写完整的路径）
-#  tensorboard --logdir=/home/jack/公共的/Python/PytorchTutor/Pytorch/model
+#  tensorboard --logdir=/home/jack/IPT-Pretrain/results/TensorBoard_IPT/
 # 在浏览器输入以下任意一个网址，即可查看结果：（训练过程中可以实时更新显示）
 #  http://0.0.0.0:6006/
 #  http://localhost:6006/
