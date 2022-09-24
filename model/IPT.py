@@ -45,7 +45,7 @@ class ipt(nn.Module):
         n_feats = args.n_feats  # number of feature maps = 64
         kernel_size = 3
         act = nn.ReLU(True)
-
+        
         self.sub_mean = common.MeanShift(args.rgb_range)  # rgb_range = 255
         self.add_mean = common.MeanShift(args.rgb_range, sign=1)
 
@@ -71,6 +71,14 @@ class ipt(nn.Module):
                                     mlp=args.no_mlp ,pos_every=args.pos_every,no_pos=args.no_pos,
                                     no_norm=args.no_norm)
 
+        self.tail = nn.ModuleList([
+            nn.Sequential(
+                common.Upsampler(conv, s, n_feats, act=False),
+                conv(n_feats, args.n_colors, kernel_size)
+            ) for s in args.scale
+        ])
+        
+        
         if self.args.hasChannel:
             padding = [2, 2]
             e0 = args.patch_size
@@ -90,32 +98,31 @@ class ipt(nn.Module):
                               nn.BatchNorm2d(args.n_colors),)
                 for  comprate in args.CompressRateTrain
             ])
-
-        self.tail = nn.ModuleList([
-            nn.Sequential(
-                common.Upsampler(conv, s, n_feats, act=False),
-                conv(n_feats, args.n_colors, kernel_size)
-            ) for s in args.scale
-        ])
+        else:
+            pass
+        
         print(color.fuchsia(f"\n#================================ ipt 准备完毕 =======================================\n"))
 
     # @profile
     def forward(self, x):
         CompRate = self.args.CompressRateTrain[self.compr_idx]
+
         #print(color.fuchsia( f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
         #     \n x.shape = {x.shape}"))  # x.shape = torch.Size([1, 3, 48, 48])
 
         x = self.sub_mean(x)
         #print(color.fuchsia(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
         #      \n sub mean x.shape = {x.shape}"))  # x.shape = torch.Size([1, 3, 48, 48])
+
         if self.args.hasChannel:
             x = self.compress[self.compr_idx](x)
             #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}, compr_idx = {self.compr_idx}, Compress rare = {CompRate}, SNR = {self.snr}\n"))  # x.shape = torch.Size([1, 9, 11, 11])
-    
+
             x = common.AWGN(x, self.snr)
-    
+
             x = self.decompress[self.compr_idx](x)
             #print(color.fuchsia( f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n x.shape = {x.shape}"))  #  x.shape = torch.Size([1, 64, 48, 48])
+
 
         x = self.head[self.scale_idx](x)
         #print(color.fuchsia(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n after head x.shape = {x.shape}"))  # x.shape = torch.Size([1, 64, 48, 48])
@@ -458,21 +465,22 @@ class Ipt(nn.Module):
         if args.precision == 'half':
             self.model.half()
 
-        #  /cache/results/ipt/model
-        #  self.load(ckp.get_path('model'), cpu=args.cpu)
+        ##   /cache/results/ipt/model
+        ##   self.load(ckp.get_path('model'), cpu=args.cpu)
 
-        # ckp.write_log("#=====================================================================================", train=True)
-        # ckp.write_log(ckp.now, train=True)
-        # ckp.write_log("#=====================================================================================\n", train=True)
-        # #print('#=====================================================================================', file=ckp.log_file)
-        # #print(ckp.now, file=ckp.log_file)
-        # #print('#=====================================================================================\n', file=ckp.log_file)
-        # #ckp.write_log(self.model,train=True)
+        ## ckp.write_log("#=====================================================================================", train=True)
+        ## ckp.write_log(ckp.now, train=True)
+        ## ckp.write_log("#=====================================================================================\n", train=True)
+        ## #print('#=====================================================================================', file=ckp.log_file)
+        ## #print(ckp.now, file=ckp.log_file)
+        ## #print('#=====================================================================================\n', file=ckp.log_file)
+        ## #ckp.write_log(self.model,train=True)
 
-        # print(self.model, file=ckp.log_file)
-        # #print('\n\n', file=ckp.log_file)
-        # ckp.write_log("#==========================================Parameters ===========================================\n", train=True)
-        self.print_parameters(ckp)
+        ## print(self.model, file=ckp.log_file)
+        ## #print('\n\n', file=ckp.log_file)
+        ## ckp.write_log("#==========================================Parameters ===========================================\n", train=True)
+        
+        # self.print_parameters(ckp)
 
         print(color.fuchsia(f"\n#================================ Ipt 准备完毕 =======================================\n"))
 

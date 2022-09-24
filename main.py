@@ -32,11 +32,11 @@ import warnings
 
 warnings.filterwarnings('ignore')
 import os
-os.system('pip install einops')
-os.system('pip install objgraph')
-os.system('pip install memory_profiler')
-os.system('pip install psutil')
-os.system('pip install transformers')
+#os.system('pip install einops')
+#os.system('pip install objgraph')
+#os.system('pip install memory_profiler')
+#os.system('pip install psutil')
+#os.system('pip install transformers')
 
 #内存分析工具
 from memory_profiler import profile
@@ -55,7 +55,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu els
 
 #@profile
 def main():
-    #global model
+    global ckp
     if ckp.ok:
         # 数据迭代器，DataLoader
         loader = data_generator.DataGenerator(args)
@@ -99,6 +99,16 @@ def main():
     
         #print(f"====================== 关闭日志 ===================================")
         ckp.done()
+        
+        # 
+        del loader
+        del _model
+        del los
+        del ckp
+        del tr
+        del wr
+        
+        return
 
 
 

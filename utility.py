@@ -87,7 +87,6 @@ class timer(object):
         self.timer = 0
         self.tic()
 
-
     def tic(self):  # time.time()函数返回自纪元以来经过的秒数。
         self.t0 = time.time()
         self.ts = self.t0
@@ -423,6 +422,7 @@ class checkpoint():
             gc.collect()
         return
 
+
 # <<< 训练结果画图
 
 
@@ -577,17 +577,16 @@ class checkpoint():
             raw = 1
             col = 2
 
-            
         for metIdx, met in enumerate(self.args.metrics):
             fig, axs = plt.subplots(raw, col, figsize=(col*6, high))
             if raw == 1 and col==2:
                 axs = axs.reshape(raw,col)
             for dsIdx, dtset in enumerate(self.args.data_test):
+                i = dsIdx // col
+                j = dsIdx % col
                 for crIdx, compratio in enumerate(self.args.CompressRateTrain):
                     tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dtset, compratio)
                     data = self.TeMetricLog[tmpS]
-                    i = dsIdx // col
-                    j = dsIdx % col
                     lb = f"compress rate={compratio}"
                     axs[i,j].plot(data[:,0], data[:,metIdx+1], linestyle='-',color=color[crIdx],marker=mark[crIdx], label = lb)
 

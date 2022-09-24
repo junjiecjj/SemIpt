@@ -52,7 +52,7 @@ def convTrans2d_prelu(in_channels, out_channels, kernel_size, stride, pad=0, out
 
 
 """
-归一化处理,先是归一化，再是去归一化 ，变量sign控制
+归一化处理,先是归一化,再是去归一化,变量sign控制
 """
 class MeanShift(nn.Conv2d):
     def __init__(
