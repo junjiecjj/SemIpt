@@ -63,7 +63,7 @@ class Trainer():
     def prepare(self, *args):
         #device = torch.device('cpu' if self.args.cpu else 'cuda')
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() and not self.args.cpu else "cpu")
         def _prepare(tensor):
             if self.args.precision == 'half': tensor = tensor.half()
             return tensor.to(self.device)
@@ -83,27 +83,31 @@ class Trainer():
         #lossFn = nn.MSELoss()
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
-
-        print(f"#======================================== 训练过程, 开始时刻{now} =============================================",  file=self.ckp.log_file)
 
         self.model.train()
         torch.set_grad_enabled(True)
         # ind1_scale = self.args.scale.index(1)
-
-        for name, param in self.model.named_parameters():
-            if "head" in name:
-                param.requires_grad = False
-            if "body" in name:
-                param.requires_grad = False
-            if "tail" in name:
-                param.requires_grad = False
+        if self.args.freezeIPT:
+            for name, param in self.model.named_parameters():
+                if "head" in name:
+                    param.requires_grad = False
+                if "body" in name:
+                    param.requires_grad = False
+                if "tail" in name:
+                    param.requires_grad = False
+                else:
+                    pass
+            else:
+                pass
         self.model.print_parameters(self.ckp)
         tm = utility.timer()
 
         #self.loader_train.dataset.set_scale(ind1_scale)
         #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
+        print(f"#======================================== 训练过程, 开始时刻{now} =============================================",  file=self.ckp.log_file)
+
         accumEpoch = 0
         # 依次遍历压缩率
         for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33, 0.4]
@@ -132,7 +136,7 @@ class Trainer():
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
                         #print(f"{batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
                         # lr.shape = torch.Size([32, 3, 48, 48]), hr.shape = torch.Size([32, 3, 48, 48]), filename = ('0052', '0031',
-                        
+
                         self.optimizer.zero_grad() # 必须在反向传播前先清零。
                         lr, hr = self.prepare(lr, hr)
                         #print(f"lr.dtype = {lr.dtype}, hr.dtype = {hr.dtype}") #lr.dtype = torch.float32, hr.dtype = torch.float32
@@ -161,17 +165,20 @@ class Trainer():
 
                         # 更新 bach内的psnr
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
-                        
+
                         tmp = tm.toc()
                         self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
                         print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
-                        if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs) and batch_idx==len(self.loader_train)-1:
+
+                        os.makedirs(os.path.join(self.args.TrainImageSave, 'origin'), exist_ok=True)
+                        os.makedirs(os.path.join(self.args.TrainImageSave, 'net'), exist_ok=True)
+                        if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs):
                             with torch.no_grad():
                                 for a, b, name in zip(hr, sr,filename):
-                                    filename1 = '/home/jack/公共的/Python/PytorchTutor/lulaoshi/LeNet/image/origin/{}_hr.png'.format(name)
+                                    filename1 = os.path.join(self.args.TrainImageSave, 'origin')+'/{}_hr.png'.format(name)
                                     data1 = a.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                                     imageio.imwrite(filename1, data1)
-                                    filename2 = '/home/jack/公共的/Python/PytorchTutor/lulaoshi/LeNet/image/net/{}_lr.png'.format(name)
+                                    filename2 = os.path.join(self.args.TrainImageSave, 'net')+'/{}_lr.png'.format(name)
                                     data2 = b.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                                     imageio.imwrite(filename2, data2)
 
@@ -215,7 +222,7 @@ class Trainer():
         # 关闭日志
         self.ckp.done()
         print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
-        
+
         print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0:.3f}分钟 ==============================\n"))
         return
 
@@ -266,7 +273,7 @@ class Trainer():
                     self.ckp.AddTestMetric(compressrate, snr, DtSetName)
 
                     for batch_idx, (lr, hr, filename) in  enumerate(ds):
-                        #hr = hr.to(self.device)
+                        hr = hr.to(self.device)
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
                         # 保存图片

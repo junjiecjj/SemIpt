@@ -16,7 +16,8 @@ from multiprocessing import Process
 from multiprocessing import Queue
 from torch.autograd import Variable
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 import random
@@ -191,12 +192,14 @@ class checkpoint():
         self.ok = True
         self.n_processes = 8
         self.mark = False
-        self.startEpoch = 0   # 日志里各个压缩率和信噪比训练的epoch
-        self.LastSumEpoch = 0 #日志里所有的压缩率和信噪比下训练的epoch之和
-        self.SumEpoch = 0     # 本次训练的累计epoch
+        self.startEpoch = 0     # 日志里各个压缩率和信噪比训练的epoch
+        self.LastSumEpoch = 0   # 日志里所有的压缩率和信噪比下训练的epoch之和
+        self.SumEpoch = 0       # 本次训练的累计epoch
+
+        self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
 
         # 模型训练时PSNR、MSE和loss和优化器等等数据的保存以及画图目录
-        self.dir = os.path.join(args.save, f"TrainLog_{args.modelUse}")
+        self.dir = os.path.join(args.save, f"{self.now}_TrainLog_{args.modelUse}")
         print(f"self.dir = {self.dir} \n")
 
         if args.reset:
@@ -206,7 +209,7 @@ class checkpoint():
         os.makedirs(self.dir, exist_ok=True)
 
         # 模型参数保存的目录
-        self.modeldir = os.path.join(args.save, f"model_{args.modelUse}")
+        self.modeldir = os.path.join(args.save, f"{self.now}_Model_{args.modelUse}")
 
         if args.reset:
             print(f"删除目录:{self.modeldir}")
@@ -216,8 +219,6 @@ class checkpoint():
 
         open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
         self.log_file = open(self.get_path('trainLog.txt'), open_type)
-
-        self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
 
         self.writeArgsLog()
 
@@ -245,17 +246,17 @@ class checkpoint():
 
     def writeArgsLog(self, open_type='a'):
         with open(self.get_path('argsConfig.txt'), open_type) as f:
-            f.write('#==========================================================\n')
+            f.write('#====================================================================================\n')
             f.write(self.now + '\n')
-            f.write('#==========================================================\n\n')
+            f.write('#====================================================================================\n\n')
 
-            f.write("############################################################################################\n")
-            f.write("################################  args  ####################################################\n")
-            f.write("############################################################################################\n")
+            f.write("###############################################################################\n")
+            f.write("################################  args  #######################################\n")
+            f.write("###############################################################################\n")
 
             for k, v in self.args.__dict__.items():
                 f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}\n")
-            f.write("\n################################ args end  #################################################\n")
+            f.write("\n################################ args end  ##################################\n")
         return
 
     # 因为多个不同压缩率的不同层是融合在一个模型里的，所以需要检查在每个压缩率和信噪比下训练的epoch是否相等
@@ -359,13 +360,13 @@ class checkpoint():
 
         axis = np.linspace(1, epoch, epoch)
 
-        label = 'CompRatio={},SNR={}'.format(comprateTmp, snrTmp)
+        label = 'CompRatio={},SNR={}(dB)'.format(comprateTmp, snrTmp)
         fig = plt.figure()
         plt.title(label)
         plt.plot(axis, self.metricLog[tmpS])
         plt.legend()
         plt.xlabel('Epochs')
-        plt.ylabel('PSNR')
+        plt.ylabel('PSNR (dB)')
         plt.grid(True)
 
         out_fig = plt.gcf()
@@ -377,11 +378,13 @@ class checkpoint():
     #@profile
     def plot_AllTrainMetric(self):
         for idx, met in  enumerate(self.args.metrics):
-            fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(16,16))
+            fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain), figsize=(16,16))
+            axs = axs.reshape(len(self.args.SNRtrain), len(self.args.CompressRateTrain))
+
             for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
                 for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
                     tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-                    label = 'CompRatio={},SNR={},Metric={}'.format(comprateTmp, snrTmp,met)
+                    label = 'R={},SNR={}(dB)'.format(comprateTmp, snrTmp)
 
                     epoch = len(self.metricLog[tmpS])
                     X = np.linspace(1, epoch, epoch)
@@ -389,9 +392,12 @@ class checkpoint():
                     axs[snr_idx,comprate_idx].plot(X, self.metricLog[tmpS][:,idx],'r-',label=label,)
 
                     font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                    axs[snr_idx,comprate_idx].set_xlabel('Epochs',fontproperties=font)
-                    axs[snr_idx,comprate_idx].set_ylabel(f"{met}",fontproperties=font)
-                    axs[snr_idx,comprate_idx].set_title(label, fontproperties=font)
+                    axs[snr_idx,comprate_idx].set_xlabel('Epoch',fontproperties=font)
+                    if met=="PSNR":
+                        axs[snr_idx,comprate_idx].set_ylabel(f"{met}(dB)",fontproperties=font)
+                    else:
+                        axs[snr_idx,comprate_idx].set_ylabel(f"{met}",fontproperties=font)
+                    #axs[snr_idx,comprate_idx].set_title(label, fontproperties=font)
 
                     #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
                     font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=18)
@@ -405,12 +411,10 @@ class checkpoint():
                     axs[snr_idx,comprate_idx].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
                     axs[snr_idx,comprate_idx].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
 
-
                     axs[snr_idx,comprate_idx].tick_params(labelsize=16,width=3)
                     labels = axs[snr_idx,comprate_idx].get_xticklabels() + axs[snr_idx,comprate_idx].get_yticklabels()
                     [label.set_fontname('Times New Roman') for label in labels]
                     [label.set_fontsize(20) for label in labels] #刻度值字号
-
 
                     axs[snr_idx,comprate_idx].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
             fig.subplots_adjust(hspace=0.3)#调节两个子图间的距离
@@ -518,7 +522,7 @@ class checkpoint():
 
                     axs[crIdx,metIdx].plot(data[:,0], data[:,metIdx+1],'r-',label=label,)
                     font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                    axs[crIdx,metIdx].set_xlabel('SNR',fontproperties=font)
+                    axs[crIdx,metIdx].set_xlabel('SNR (dB)',fontproperties=font)
                     axs[crIdx,metIdx].set_ylabel(f"{met}",fontproperties=font)
                     axs[crIdx,metIdx].set_title(label,loc = 'left',fontproperties=font)
 
@@ -561,24 +565,22 @@ class checkpoint():
         mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
         color = ['#808000','#C000C0', 'red','cyan','blue','green','#FF8C00','#00FF00', '#FFA500', '#FF0000','#1E90FF']
 
+        Len = 6
         if len(self.args.data_test) > 2:
-            high = 12
             raw = 2
             if len(self.args.data_test)%2 == 0:
                 col = int(len(self.args.data_test)//2)
             else:
                 col = int(len(self.args.data_test)//2)+1
         elif len(self.args.data_test) == 1:
-            high = 6
             raw = 1
             col = 1
         elif len(self.args.data_test) == 2:
-            high = 6
             raw = 1
             col = 2
 
         for metIdx, met in enumerate(self.args.metrics):
-            fig, axs = plt.subplots(raw, col, figsize=(col*6, high))
+            fig, axs = plt.subplots(raw, col, figsize=(col*Len, raw*Len))
             if raw == 1 and col==2:
                 axs = axs.reshape(raw,col)
             for dsIdx, dtset in enumerate(self.args.data_test):
@@ -591,8 +593,11 @@ class checkpoint():
                     axs[i,j].plot(data[:,0], data[:,metIdx+1], linestyle='-',color=color[crIdx],marker=mark[crIdx], label = lb)
 
                 font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                axs[i,j].set_xlabel('SNR',fontproperties=font)
-                axs[i,j].set_ylabel(f"{met}",fontproperties=font)
+                axs[i,j].set_xlabel('SNR (dB)',fontproperties=font)
+                if met=="PSNR":
+                    axs[i,j].set_ylabel(f"{met} (dB)",fontproperties=font)
+                else:
+                    axs[i,j].set_ylabel(f"{met}",fontproperties=font)
                 axs[i,j].set_title(f"{dtset}",loc = 'left',fontproperties=font)
 
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
@@ -618,7 +623,7 @@ class checkpoint():
                 [label.set_fontname('Times New Roman') for label in labels]
                 [label.set_fontsize(20) for label in labels] #刻度值字号
 
-            fig.subplots_adjust(hspace=0.4)#调节两个子图间的距离
+            fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
             font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
             plt.suptitle(f"{met} on "+', '.join(self.args.data_test), x=0.5, y=0.97, fontproperties=font4,)
             #plt.tight_layout()#  使得图像的四周边缘空白最小化
@@ -658,7 +663,6 @@ class checkpoint():
 
 # #ckp.plot_trainPsnr(0.4, 18)
 # ckp.save()
-
 
     def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
         filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))

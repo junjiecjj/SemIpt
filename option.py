@@ -10,7 +10,7 @@ Created on 2022/07/07
 
 import argparse
 
-home = "/home/jack"
+home = "/home/chenjunjie"
 parser = argparse.ArgumentParser(description='IPT模型的参数')
 
 parser.add_argument('--debug', action='store_true', help='Enables debug mode')
@@ -41,7 +41,7 @@ parser.add_argument('--dir_demo', type=str, default='../test', help='demo image 
 parser.add_argument('--SummaryWriteDir', type=str, default=home+'/IPT-Pretrain/results/TensorBoard', help='demo image directory')
 
 # 训练数据名称
-parser.add_argument('--data_train', type=str, default='DIV2K_16', help='train dataset name')
+parser.add_argument('--data_train', type=str, default='DIV2K', help='train dataset name')
 
 # 测试集数据名称
 parser.add_argument('--data_test',type=str,  default='Set2+Set3', help='test dataset name')
@@ -50,7 +50,7 @@ parser.add_argument('--data_test',type=str,  default='Set2+Set3', help='test dat
 parser.add_argument('--useBIN',  action='store_false', help='是否使用bin图像')
 
 #parser.add_argument('--data_range', type=str, default='1-800/801-810', help='train/test data range')
-parser.add_argument('--data_range', type=str, default='1-64', help='train/test data range')
+parser.add_argument('--data_range', type=str, default='1-800', help='train/test data range')
 parser.add_argument('--ext', type=str, default='sep', help='dataset file extension')
 # parser.add_argument('--scale', type=str, default='2+3+4+5+6+1', help='super resolution scale')
 parser.add_argument('--scale', type=str, default='1', help='super resolution scale') # cjj
@@ -61,12 +61,13 @@ parser.add_argument('--n_colors', type=int, default=3, help='number of color cha
 parser.add_argument('--no_augment', action='store_true',  help='do not use data augmentation')
 
 parser.add_argument('--hasChannel', action='store_false',  help='use channel and compress, decompress')
-parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33 ',  help='Compress rate for test')
-#parser.add_argument('--CompressRateTrain', type=str, default='0.17',  help='Compress rate for test')
-parser.add_argument('--SNRtrain',  type=str, default='0, 2, 4, 6, 8, 10',  help='SNR for train')
+parser.add_argument('--freezeIPT', action='store_true',  help='freeze IPT model when training')
+parser.add_argument('--CompressRateTrain', type=str, default='0.17',  help='Compress rate for test')
+#parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33',  help='Compress rate for test')
+parser.add_argument('--SNRtrain',  type=str, default='8, 10',  help='SNR for train')
 
 #parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
-parser.add_argument('--SNRtest',  type=str, default='0, 2, 4, 6, 8, 10',  help='SNR for test')
+parser.add_argument('--SNRtest',  type=str, default='8, 10',  help='SNR for test')
 #parser.add_argument('--SNRtest',  type=str, default='2',  help='SNR for test')
 
 # Training and test  specifications
@@ -75,8 +76,8 @@ parser.add_argument('--wanttest',  action='store_false', help='set this option t
 parser.add_argument('--wanttrain', action='store_false', help='set this option to train the model')
 parser.add_argument('--reset', action='store_false', help='reset the training')
 parser.add_argument('--test_every', type=int, default=1000, help='do test per every N batches')
-parser.add_argument('--epochs', type=int, default=100,  help='number of epochs to train')
-parser.add_argument('--batch_size', type=int, default=16, help='input batch size for training')
+parser.add_argument('--epochs', type=int, default=1,  help='number of epochs to train')
+parser.add_argument('--batch_size', type=int, default=32, help='input batch size for training')
 parser.add_argument('--test_batch_size', type=int,  default=1,help='input batch size for training')
 parser.add_argument('--crop_batch_size', type=int, default=64, help='input batch size for training')
 parser.add_argument('--split_batch', type=int,default=1, help='split the batch into smaller chunks')
@@ -134,6 +135,8 @@ parser.add_argument('--saveModelEveryEpoch', action='store_false', help='save al
 parser.add_argument('--print_every',type=int, default=100,help='how many batches to wait before logging training status')
 parser.add_argument('--save_results', action='store_false', help='save output results')
 parser.add_argument('--save_gt',action='store_false',help='save low-resolution and high-resolution images together')
+parser.add_argument('--TrainImageSave', type=str, default=home+'/IPT-Pretrain/results/trainImage',  help='file name to save image during train process')  #cjj
+
 
 
 #transformer
