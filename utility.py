@@ -207,11 +207,11 @@ class checkpoint():
 
         # 模型参数保存的目录
         self.modeldir = os.path.join(args.save, f"model_{args.modelUse}")
-        
+
         if args.reset:
             print(f"删除目录:{self.modeldir}")
             os.system('rm -rf ' + self.modeldir)
-            
+
         os.makedirs(self.modeldir, exist_ok=True)
 
         open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
@@ -594,7 +594,7 @@ class checkpoint():
                 axs[i,j].set_xlabel('SNR',fontproperties=font)
                 axs[i,j].set_ylabel(f"{met}",fontproperties=font)
                 axs[i,j].set_title(f"{dtset}",loc = 'left',fontproperties=font)
-                
+
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
                 font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
                 legend1 = axs[i,j].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
@@ -708,10 +708,6 @@ class checkpoint():
         return
 
 
-
-
-
-
 #  功能：将img每个像素点的至夹在[0,255]之间
 def quantize(img, rgb_range):
     pixel_range = 255 / rgb_range
@@ -735,8 +731,12 @@ def calc_metric(sr, hr, scale, rgb_range, metrics, cal_type='y'):
     return torch.tensor(metric)
 
 
+"""
+逐像素的计算均方误差
+"""
 def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
-    if hr.nelement() == 1: return 0
+    if hr.nelement() == 1:
+        return 0
 
     diff = (sr - hr) / rgb_range
 
@@ -754,6 +754,9 @@ def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
         mse = 1e-10
     return   -10 * math.log10(mse)
 
+"""
+逐像素的计算均方误差
+"""
 def calc_mse(sr, hr, scale):
     if hr.nelement() == 1: return 0
 
@@ -803,7 +806,7 @@ def make_optimizer(args, net, total_steps):
     milestones = list(map(lambda x: int(x), args.decay.split('-')))  #  [20, 40, 60, 80, 100, 120]
     kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
     scheduler_class = lrs.MultiStepLR
-    
+
     warmup_class = optimization.get_polynomial_decay_schedule_with_warmup
     kwargs_warmup = {"num_warmup_steps":args.warm_up_ratio*total_steps, "num_training_steps":total_steps,"power":args.power,"lr_end":args.lr_end}
 
@@ -845,7 +848,7 @@ def make_optimizer(args, net, total_steps):
             milestones = list(map(lambda x: int(x), args.decay.split('-')))  #  [20, 40, 60, 80, 100, 120]
             # kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
             # self.scheduler = scheduler_class(self, **kwargs_scheduler)
-            
+
             kwargs_warmup = {"num_warmup_steps":args.warm_up_ratio*total_steps, "num_training_steps":total_steps,"power":args.power,"lr_end":args.lr_end}
             self.scheduler = warmup_class(self, **kwargs_warmup)
 

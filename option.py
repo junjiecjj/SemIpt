@@ -10,6 +10,7 @@ Created on 2022/07/07
 
 import argparse
 
+home = "/home/jack"
 parser = argparse.ArgumentParser(description='IPT模型的参数')
 
 parser.add_argument('--debug', action='store_true', help='Enables debug mode')
@@ -23,21 +24,21 @@ parser.add_argument('--shift_mean', default=True, help='subtract pixel mean from
 parser.add_argument('--precision', type=str, default='single', choices=('single', 'half'), help='FP precision for test (single | half)')
 
 # 预训练模型地址
-parser.add_argument('--pretrain', type=str, default='/home/jack/IPT-Pretrain/IPT_pretrain.pt')  # cjj
+parser.add_argument('--pretrain', type=str, default=home+'/IPT-Pretrain/IPT_pretrain.pt')  # cjj
 
 # Hardware specifications
 parser.add_argument('--n_threads', type=int, default=6, help='number of threads for data loading')
 # parser.add_argument('--cpu', action='store_true', help='use cpu only')
 # cjj add
-parser.add_argument('--cpu', action='store_false', help='use cpu only')
+parser.add_argument('--cpu', action='store_true', help='use cpu only')
 parser.add_argument('--n_GPUs', type=int, default=1, help='number of GPUs')
 parser.add_argument('--seed', type=int, default=1, help='random seed')
 
 # Data specifications
 # 数据根目录
-parser.add_argument('--dir_data', type=str, default='/home/jack/IPT-Pretrain/Data/', help='dataset directory')  # cjj
+parser.add_argument('--dir_data', type=str, default=home+'/IPT-Pretrain/Data/', help='dataset directory')  # cjj
 parser.add_argument('--dir_demo', type=str, default='../test', help='demo image directory')
-parser.add_argument('--SummaryWriteDir', type=str, default='/home/jack/IPT-Pretrain/results/TensorBoard', help='demo image directory')
+parser.add_argument('--SummaryWriteDir', type=str, default=home+'/IPT-Pretrain/results/TensorBoard', help='demo image directory')
 
 # 训练数据名称
 parser.add_argument('--data_train', type=str, default='DIV2K_16', help='train dataset name')
@@ -126,8 +127,8 @@ parser.add_argument('--skip_threshold', type=float, default='1e8', help='skippin
 parser.add_argument('--metrics', type=str, default='PSNR, MSE', help='loss function configuration')
 
 # Log specifications
-parser.add_argument('--save', type=str, default='/home/jack/IPT-Pretrain/results/',  help='file name to save')  #cjj
-parser.add_argument('--load', type=str, default='/home/jack/IPT-Pretrain/results/', help='file name to load')
+parser.add_argument('--save', type=str, default=home+'/IPT-Pretrain/results/',  help='file name to save')  #cjj
+parser.add_argument('--load', type=str, default=home+'/IPT-Pretrain/results/', help='file name to load')
 parser.add_argument('--resume', type=int,  default=0, help='resume from specific checkpoint')
 parser.add_argument('--saveModelEveryEpoch', action='store_false', help='save all intermediate models')
 parser.add_argument('--print_every',type=int, default=100,help='how many batches to wait before logging training status')
