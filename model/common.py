@@ -12,7 +12,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-
+import sys
+sys.path.append("..")
+from  option import args
 
 def default_conv(in_channels, out_channels, kernel_size, bias=True):
     return nn.Conv2d(in_channels, out_channels, kernel_size, padding=(kernel_size//2), bias=bias)
@@ -135,10 +137,10 @@ class Upsampler(nn.Sequential):
 
         super(Upsampler, self).__init__(*m)
 
-
+device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
 def Awgn(Tx_sig, n_var):
-    Rx_sig = Tx_sig + torch.normal(0, n_var, size=Tx_sig.shape)# .to(device)
+    Rx_sig = Tx_sig + torch.normal(0, n_var, size=Tx_sig.shape).to(device)
     return Rx_sig
 
 

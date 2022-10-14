@@ -38,7 +38,7 @@ class Trainer():
         self.loader_test = loader.loader_test
         self.model = my_model
         self.loss = my_loss
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+        self.device = torch.device(args.device if torch.cuda.is_available() and not args.cpu else "cpu")
 
         len_dataset = len(self.loader_train)
         batch_size = args.batch_size
@@ -55,15 +55,15 @@ class Trainer():
         #self.wr.WrModel(self.model.model, torch.randn(16, 3, 48, 48))
         if self.args.load != '':
             if self.ckp.mark == True:
-                self.optimizer.load(self.ckp.dir)
+                self.optimizer.load(self.ckp.loaddir)
 
         self.error_last = 1e8
 
 
     def prepare(self, *args):
         #device = torch.device('cpu' if self.args.cpu else 'cuda')
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+        # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # device = torch.device(self.args.device if torch.cuda.is_available() and not self.args.cpu else "cpu")
         def _prepare(tensor):
             if self.args.precision == 'half': tensor = tensor.half()
             return tensor.to(self.device)
@@ -80,30 +80,36 @@ class Trainer():
 
     #@profile
     def train(self):
+        now1 = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now1} =======================================\n"))
+
         #lossFn = nn.MSELoss()
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
-
-        print(f"#======================================== 训练过程, 开始时刻{now} =============================================",  file=self.ckp.log_file)
+        # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         self.model.train()
         torch.set_grad_enabled(True)
         # ind1_scale = self.args.scale.index(1)
-
-        for name, param in self.model.named_parameters():
-            if "head" in name:
-                param.requires_grad = False
-            if "body" in name:
-                param.requires_grad = False
-            if "tail" in name:
-                param.requires_grad = False
+        if self.args.freezeIPT:
+            for name, param in self.model.named_parameters():
+                if "head" in name:
+                    param.requires_grad = False
+                if "body" in name:
+                    param.requires_grad = False
+                if "tail" in name:
+                    param.requires_grad = False
+                else:
+                    pass
+        else:
+            pass
         self.model.print_parameters(self.ckp)
         tm = utility.timer()
 
         #self.loader_train.dataset.set_scale(ind1_scale)
         #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
+
+        self.ckp.write_log(f"#======================================== 开始训练, 开始时刻{now1} =============================================\n", train=True)
+
         accumEpoch = 0
         # 依次遍历压缩率
         for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33, 0.4]
@@ -132,7 +138,7 @@ class Trainer():
                     for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
                         #print(f"{batch_idx}, lr.shape = {lr.shape}, hr.shape = {hr.shape}, filename = {filename}\n")
                         # lr.shape = torch.Size([32, 3, 48, 48]), hr.shape = torch.Size([32, 3, 48, 48]), filename = ('0052', '0031',
-                        
+
                         self.optimizer.zero_grad() # 必须在反向传播前先清零。
                         lr, hr = self.prepare(lr, hr)
                         #print(f"lr.dtype = {lr.dtype}, hr.dtype = {hr.dtype}") #lr.dtype = torch.float32, hr.dtype = torch.float32
@@ -161,17 +167,20 @@ class Trainer():
 
                         # 更新 bach内的psnr
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
-                        
-                        tmp = tm.toc()
-                        self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
-                        print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
-                        if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs) and batch_idx==len(self.loader_train)-1:
+
+                        # tmp = tm.toc()
+                        # self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
+                        # print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
+
+                        os.makedirs(os.path.join(self.args.TrainImageSave, f'{self.ckp.now}_trainImage','origin'), exist_ok=True)
+                        os.makedirs(os.path.join(self.args.TrainImageSave, f'{self.ckp.now}_trainImage', 'net'), exist_ok=True)
+                        if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs):
                             with torch.no_grad():
                                 for a, b, name in zip(hr, sr,filename):
-                                    filename1 = '/home/jack/公共的/Python/PytorchTutor/lulaoshi/LeNet/image/origin/{}_hr.png'.format(name)
+                                    filename1 = os.path.join(self.args.TrainImageSave, f'{self.ckp.now}_trainImage','origin')+'/{}_hr.png'.format(name)
                                     data1 = a.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                                     imageio.imwrite(filename1, data1)
-                                    filename2 = '/home/jack/公共的/Python/PytorchTutor/lulaoshi/LeNet/image/net/{}_lr.png'.format(name)
+                                    filename2 = os.path.join(self.args.TrainImageSave, f'{self.ckp.now}_trainImage', 'net')+'/{}_lr.png'.format(name)
                                     data2 = b.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                                     imageio.imwrite(filename2, data2)
 
@@ -183,8 +192,10 @@ class Trainer():
                     # 计算并更新epoch的loss
                     epochLos = self.loss.mean_log(len(self.loader_train))
 
-                    #print(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f} \n")
-                    self.ckp.write_log(f"\t训练完一个 Epoch: epochMetric = {epochMetric}, epochLos = {epochLos}, 用时:{tm.timer:.3f}/{tm.hold():.3f}", train=True)
+                    tmp = tm.toc()
+                    self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | 训练完一个 Epoch: loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
+                    print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | 训练完一个 Epoch: loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
+
 
                     # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
                     self.wr.WrTLoss(epochLos, int(self.ckp.LastSumEpoch+accumEpoch))
@@ -210,19 +221,19 @@ class Trainer():
         # 在训练完所有压缩率和信噪比后，保存PSNR等指标日志
 
         self.ckp.save()
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        self.ckp.write_log(f"#================================ 本次训练完毕,时刻:{now},用时:{tm.hold()/60.0:.3f}分钟 =======================================",train=True)
+        now2 = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        self.ckp.write_log(f"#========================= 本次训练完毕,开始时刻:{now1},结束时刻:{now2},用时:{tm.hold()/60.0:.3f}分钟 ================================",train=True)
         # 关闭日志
         self.ckp.done()
         print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
-        
-        print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0:.3f}分钟 ==============================\n"))
+
+        print(color.fuchsia(f"\n#====================== 训练完毕,开始时刻:{now1},结束时刻:{now2},用时:{tm.hold()/60.0:.3f}分钟 ==============================\n"))
         return
 
 
     def test(self):
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#================================ 开始测试 {now} =======================================\n"))
+        now1 = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#================================ 开始测试,时刻{now1} =======================================\n"))
         # 设置随机数种子
         #torch.manual_seed(self.args.seed)
         self.ckp.InittestDir(now=self.ckp.now)
@@ -248,7 +259,7 @@ class Trainer():
             # 依次遍历压缩率
             for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33]
 
-                print(f"\t开始在 数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试\n")
+                print(f"\t开始在数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试\n")
                 # 写日志
                 self.ckp.write_log(f"\t开始在 数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试")
 
@@ -258,15 +269,15 @@ class Trainer():
                 # 依次遍历信噪比
                 for snr_idx, snr in enumerate(self.args.SNRtest):   # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
 
-                    print(f"\t\t数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}\n")
+                    print(f"  数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}\n")
                     # 写日志
-                    self.ckp.write_log(f"\t\t数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}")
+                    self.ckp.write_log(f"  数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}")
 
                     # 测试指标日志申请空间
                     self.ckp.AddTestMetric(compressrate, snr, DtSetName)
 
                     for batch_idx, (lr, hr, filename) in  enumerate(ds):
-                        #hr = hr.to(self.device)
+                        hr = hr.to(self.device)
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
                         # 保存图片
@@ -279,222 +290,26 @@ class Trainer():
                         self.ckp.UpdateTestMetric(compressrate, DtSetName,metric)
                         #print(f"数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr},图片:{filename},指标:{}")
 
-                        print(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.toc():.3f}/{tm.hold():.3f}")
-                        self.ckp.write_log(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.toc():.3f}/{tm.hold():.3f}")
+                        tmp = tm.toc()
+                        print(f"   数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
+
+                        #self.ckp.write_log(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
 
                     # 计算某个数据集下的平均指标
                     metrics = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
+
+                    print(f"  数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.timer/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
+
+                    self.ckp.write_log(f"  数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 整个数据集上的平均指标:{metrics}, 此SNR下整个数据集的测试时间:{tm.reset()/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
+
                     self.wr.WrTestMetric(DtSetName, compressrate, snr, metrics)
                     self.wr.WrTestOne(DtSetName, compressrate, snr, metrics)
 
         self.ckp.SaveTestLog()
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        self.ckp.write_log(f"===================================  测试结束,时刻:{now},用时:{tm.hold()/60.0:.3f}分钟 =======================================================")
+        now2 = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        self.ckp.write_log(f"===================================  测试结束, 开始时刻:{now1}/结束时刻:{now2}, 用时:{tm.hold()/60.0:.3f}分钟 =======================================================")
         print(f"====================== 关闭测试日志  {self.ckp.log_file.name} ===================================")
         self.ckp.done()
-        print(color.fuchsia(f"\n#================================ 完成测试,时刻:{now},用时:{tm.hold()/60.0:.3f}分钟 =======================================\n"))
+        print(color.fuchsia(f"\n#================================ 完成测试, 开始时刻:{now1}/结束时刻:{now2}, 用时:{tm.hold()/60.0:.3f}分钟 =======================================\n"))
         return
 
-
-    def test1(self):  # 测试
-        #  只要设置了torch.set_grad_enabled(False)那么接下来所有的tensor运算产生的新的节点都是不可求导的，
-        #  这个相当于一个全局的环境，即使是多个循环或者是在函数内设置的调用，只要torch.set_grad_enabled(False)出现，
-        # 则不管是在下一个循环里还是在主函数中，都不再求导，除非单独设置一个孤立节点，并把他的requires_grad设置成true。
-        torch.set_grad_enabled(False)
-
-        epoch = self.optimizer.get_last_epoch()
-        self.ckp.write_log('\nEvaluation:')
-        #self.ckp.add_log(torch.zeros(1, len(self.loader_test), len(self.scale)))
-        print(f"trainer.pt  37: {len(self.loader_test)}, {len(self.scale)} \n")
-        self.model.eval()
-        timer_test = utility.timer()
-        if self.args.save_results:
-            self.ckp.begin_queue()
-
-        # ind1_scale = self.args.scale.index(1)  #  args.scale中1的索引
-
-        for idx_data, d in enumerate(self.loader_test):
-            i = 0
-            print(color.higgreenfg_whitebg(f"File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n  len(d) = {len(d)}\n"))  #   len(d) = 68
-            for idx_scale, scale in enumerate(self.scale):
-                d.dataset.set_scale(idx_scale)
-                # 对于测试数据集为Rain100L，去雨任务，忽略其他的scale，只针对sclae=1测试。
-                if self.args.derain and d.dataset.name == 'Rain100L' and scale ==1:
-                    #print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
-                    for norain, rain, filename in tqdm(d, ncols=80):
-                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, norain.shape = {norain.shape}, rain.shape = {rain.shape} \n "))
-                        norain,rain = self.prepare(norain, rain)
-                        sr = self.model(rain, idx_scale, 15, 0.3)
-                        sr = utility.quantize(sr, self.args.rgb_range)
-                        save_list = [sr]
-                        self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr(
-                            sr, norain, scale, self.args.rgb_range
-                        )
-                        if self.args.save_results:
-                            self.ckp.save_results_byQueue(d, filename[0], save_list, 1)
-                    self.ckp.log[-1, idx_data, idx_scale] /= len(d)
-                    best = self.ckp.log.max(0)
-                    self.ckp.write_log(
-                        '[{} x{}]\tPSNR: {:.3f} (Best: {:.3f} @epoch {})'.format(
-                            d.dataset.name,
-                            scale,
-                            self.ckp.log[-1, idx_data, idx_scale],
-                            best[0][idx_data, idx_scale],
-                            best[1][idx_data, idx_scale] + 1
-                        )
-                    )
-                    isderain = 0
-                # 对于测试数据集为 CBSD68，去噪任务，忽略其他的scale，只针对sclae=1测试。
-                elif self.args.denoise and d.dataset.name == 'CBSD68' and scale == 1 :
-                    print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale} \n")
-                    for hr, lr,filename in tqdm(d, ncols=80):
-                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, hr.shape = {hr.shape}, lr.shape = {lr.shape} \n "))
-                        hr = self.prepare(hr)[0]
-                        noisy_level = self.args.sigma
-                        noise = torch.randn(hr.size()).mul_(noisy_level)
-                        nois_hr = (noise+hr).clamp(0,255)
-                        sr = self.model(nois_hr, idx_scale, 15, 0.3)
-                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename},sr.shape = {sr.shape}, hr.shape = {hr.shape}, lr.shape = {lr.shape} \n "))
-                        sr = utility.quantize(sr, self.args.rgb_range)
-
-                        save_list = [sr, nois_hr, hr]
-                        self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr( sr, hr, scale, self.args.rgb_range )
-                        if self.args.save_results:
-                            self.ckp.save_results_byQueue(d, filename[0], save_list, 50)
-
-                    self.ckp.log[-1, idx_data, idx_scale] /= len(d)
-                    best = self.ckp.log.max(0)
-                    self.ckp.write_log(
-                        '[{} x{}]\tPSNR: {:.3f} (Best: {:.3f} @epoch {})'.format(
-                            d.dataset.name,
-                            scale,
-                            self.ckp.log[-1, idx_data, idx_scale],
-                            best[0][idx_data, idx_scale],
-                            best[1][idx_data, idx_scale] + 1
-                        )
-                    )
-                elif d.dataset.name in ['Set1','Set2','Set3','Set5', 'Set14', 'B100', 'Urban100','DIV2K']:
-                    print(f"正在测试数据集:{d.dataset.name}, idx_scale = {idx_scale}, scale = {scale}  \n")
-                    for lr, hr, filename in tqdm(d, ncols=80):
-                        #print(color.higgreenfg_whitebg(f"\n File={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape} \n "))
-                        # filename=('baby',),  lr.shape = torch.Size([1, 3, 256, 256]), hr.shape = torch.Size([1, 3, 512, 512])
-
-                        lr, hr = self.prepare(lr, hr)
-                        #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename}, lr.shape = {lr.shape}, hr.shape = {hr.shape}"))
-                        # lr.shape = torch.Size([1, 3, 256, 256]), hr.shape = torch.Size([1, 3, 512, 512])
-
-                        sr = self.model(lr, idx_scale, 15, 1)
-
-                        #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\n filename={filename},   sr.shape = {sr.shape}"))
-                        # sr.shape = torch.Size([1, 3, 512, 512])
-
-                        sr = utility.quantize(sr, self.args.rgb_range)
-                        #print(color.higgreenfg_whitebg(f"\nFile={sys._getframe().f_code.co_filename.split('/')[-1]}, Func={sys._getframe().f_code.co_name}, Line={sys._getframe().f_lineno}\
-                        #   filename={filename},   sr.shape = {sr.shape}")) # sr.shape = torch.Size([1, 3, 512, 512])
-
-                        save_list = [sr]
-                        self.ckp.log[-1, idx_data, idx_scale] += utility.calc_psnr(sr, hr, scale, self.args.rgb_range)
-                        #import pdb
-                        #pdb.set_trace()
-                        if self.args.save_gt:
-                            save_list.extend([lr, hr])
-
-                        if self.args.save_results:
-                            self.ckp.save_results_byQueue(d, filename[0], save_list, scale)
-                        i = i+1
-                    #print(f"line  = 137, idx_data = {idx_data}, idx_scale = {idx_scale}\n\
-#self.ckp.log=\n{self.ckp.log}  \n")
-                    self.ckp.log[-1, idx_data, idx_scale] /= len(d)
-
-                    best = self.ckp.log.max(0)
-                    #print(f"filename = {filename}, idx_data = {idx_data}, idx_scale = {idx_scale}\n\
-#self.ckp.log=\n{self.ckp.log} \nbest = \n{best}  \n")
-                    self.ckp.write_log(
-                        '[{} x{}]\tPSNR: {:.3f} (Best: {:.3f} @epoch {})'.format(
-                            d.dataset.name,
-                            scale,
-                            self.ckp.log[-1, idx_data, idx_scale],
-                            best[0][idx_data, idx_scale],
-                            best[1][idx_data, idx_scale] + 1
-                        ))
-                else:
-                    print(f"d.dataset.name =  {d.dataset.name }, scale = {scale} \n")
-
-        self.ckp.write_log('Forward: {:.2f}s\n'.format(timer_test.toc()))
-        self.ckp.write_log('Saving...')
-
-        if self.args.save_results:
-            self.ckp.end_queue()
-
-        self.ckp.write_log('Total: {:.2f}s\n'.format(timer_test.toc()), refresh=True)
-
-        torch.set_grad_enabled(True)
-
-
-
-    #@profile
-    def trainForDebug(self):
-        #import pdb; pdb.set_trace()
-        #lossFn = nn.MSELoss()
-        #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
-
-        print(f"#======================================== 训练过程 =============================================",  file=self.ckp.log_file)
-
-        self.model.train()
-        torch.set_grad_enabled(True)
-        #ind1_scale = self.args.scale.index(1)
-
-        tm = utility.timer()
-
-        #self.loader_train.dataset.set_scale(ind1_scale)
-        #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
-        accumEpoch = 0
-
-        print(f"测试集的Batch数量={len(self.loader_train)}")
-
-        # 遍历epoch
-        for epoch_idx in  range(self.ckp.startEpoch, self.ckp.startEpoch+1):
-            #初始化loss日志
-            self.loss.start_log()
-            accumEpoch += 1
-            self.ckp.UpdateEpoch()
-            #print(f"ckp.SumEpoch = {self.ckp.SumEpoch.requires_grad}\n")
-
-            loss = 0
-            # 遍历训练数据集
-            for batch_idx, (lr, hr, filename)  in enumerate(self.loader_train):
-
-                lr, hr = self.prepare(lr, hr)
-
-                #sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
-                try:
-                    sr = self.model(hr, idx_scale=0, snr=1, compr_idx=0)
-                except RuntimeError as exception:
-                    if "out of memory" in str(exception):
-                        print('WARNING: out of memory')
-                    if hasattr(torch.cuda, 'empty_cache'):
-                        torch.cuda.empty_cache()
-                    else:
-                        raise exception
-
-                # 计算batch内的loss
-                lss = self.loss(sr, hr)
-
-                self.optimizer.zero_grad() # 必须在反向传播前先清零。
-                lss.backward()
-                self.optimizer.step()
-
-                # 计算bach内的psnr和MSE
-                # with torch.no_grad():
-                metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
-                # print(f"metric.requires_grad = {metric.requires_grad} {metric.dtype}")
-
-
-        self.ckp.done()
-        print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0}分钟 ==============================\n"))
-        return

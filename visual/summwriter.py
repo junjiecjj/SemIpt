@@ -18,13 +18,13 @@ import numpy as np
 
 
 class SummWriter(SummaryWriter):
-    def __init__(self, args):
+    def __init__(self, args, ckp):
         # if args.modelUse == 'DeepSC':
-        sdir = os.path.join(args.save, f"TensorBoard_{args.modelUse}")
+        sdir = os.path.join(args.save, f"{ckp.now}_TensorBoard_{args.modelUse}")
         if  args.reset:
             print(f"删除目录:{sdir}")
             os.system('rm -rf ' + sdir)
-            
+
         os.makedirs(sdir, exist_ok=True)
         kwargs_summwrit = {'comment':"", 'purge_step': None, 'max_queue': 10, 'flush_secs':120,}
         super(SummWriter, self).__init__(sdir, **kwargs_summwrit)
@@ -82,11 +82,11 @@ class SummWriter(SummaryWriter):
         for idx, met in enumerate(args.metrics):
             #print(f"{dasename} {met} {compratio} {metrics} {metrics[idx]}")
             self.add_scalars(f"Test/{dasename}/Y{met}X(snr)", {f"CompreRatio={compratio}" : metrics[idx]}, snr)
-        
+
         return
 
 # 测试结果可视化>>>
-    
+
 
     def WrModel(self, model, images ):
         self.add_graph(model, images)

@@ -13,7 +13,7 @@ color =  ColoPrint()
 from importlib import import_module
 
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -75,14 +75,16 @@ class LOSS(nn.modules.loss._Loss):
 
         self.losslog = torch.Tensor()
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() and not args.cpu else "cpu")
+        device = torch.device(args.device if torch.cuda.is_available() and not args.cpu else "cpu")
         self.loss_module.to(device)
         if args.precision == 'half': self.loss_module.half()
         if not args.cpu and args.n_GPUs > 1:
             self.loss_module = nn.DataParallel( self.loss_module, range(args.n_GPUs) )
 
         # TODO
-        if args.load != '': self.load(ckp.dir, cpu=args.cpu)
+        if args.load != '':
+            print("加载LOSS..................\n")
+            self.load(ckp.loaddir, cpu=args.cpu)
 
         print(color.fuchsia(f"\n#============================ LOSS 准备完毕 ==============================\n"))
 
@@ -125,24 +127,62 @@ class LOSS(nn.modules.loss._Loss):
 
         return ''.join(log)
 
+
+    # 在不同的画布中画各个损失函数的结果.
+    def plot_loss(self, apath):
+        epoch = len(self.losslog[:, 0])
+        X = np.linspace(1, epoch, epoch)
+        for i, l in enumerate(self.loss):
+            label = '{} Loss'.format(l['type'])
+            fig = plt.figure(constrained_layout=True)
+            font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+            plt.plot(X, self.losslog[:, i].numpy(), label=label)
+            plt.xlabel('Epoch',fontproperties=font)
+            plt.ylabel('Training loss',fontproperties=font)
+            #plt.title(label,fontproperties=font)
+            #plt.grid(True)
+            font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
+            font1 = {'family':'Times New Roman','style':'normal','size':16}
+            legend1 = plt.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+            frame1 = legend1.get_frame()
+            frame1.set_alpha(1)
+            frame1.set_facecolor('none')  # 设置图例legend背景透明
+
+            ax=plt.gca()
+            ax.spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+            ax.spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+            ax.spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+            ax.spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
+
+            plt.tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
+            labels = ax.get_xticklabels() + ax.get_yticklabels()
+            [label.set_fontname('Times New Roman') for label in labels]
+            [label.set_fontsize(16) for label in labels] #刻度值字号
+
+            plt.savefig(os.path.join(apath, 'Train_{}_Loss_Plot.pdf'.format(l['type'])))
+            plt.close(fig)
+        return
+
     # 在同一个画布中画出所有Loss的结果
     def plot_AllLoss(self, apath):
-        fig, axs = plt.subplots(len(self.loss),1, figsize=(12,8))
-
+        fig, axs = plt.subplots(len(self.loss),1, constrained_layout=True)
+        mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
+        color = ['#FF0000','#1E90FF', 'red','cyan','blue','green','#808000','#C000C0', '#FF8C00','#00FF00', '#FFA500']
         if len(self.loss) == 1:
             epoch = len(self.losslog)
             X = np.linspace(1, epoch, epoch)
             label = '{} Loss'.format(self.loss[0]['type'])
 
-            axs.plot(X, self.losslog[:, 0].numpy(), label=label)
+            axs.plot(X, self.losslog[:, 0].numpy(), linewidth=2, label=label)
             font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-            axs.set_xlabel('Epochs', fontproperties=font)
-            axs.set_ylabel(label, fontproperties=font)
-            axs.set_title(label, fontproperties=font)
+            axs.set_xlabel('Epoch', fontproperties=font)
+            axs.set_ylabel("Training loss", fontproperties=font)
+            #axs.set_title(label, fontproperties=font)
             #axs.grid(True)
 
-            #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-            font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
+            font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 16)
+            font1 = {'family':'Times New Roman','style':'normal','size':16}
+            #font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
             #font1 = FontProperties(fname=fontpath2+"Caskaydia Cove SemiLight Nerd Font Complete Mono.otf", size=20)
             #font1 = FontProperties(fname=fontpath2+"Caskaydia Cove Light Nerd Font Complete.otf", size=20)
             legend1 = axs.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
@@ -160,20 +200,22 @@ class LOSS(nn.modules.loss._Loss):
             [label.set_fontname('Times New Roman') for label in labels]
             [label.set_fontsize(20) for label in labels]  # 刻度值字号
         else:
+            alabo = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)', '(g)', '(h)']
             for i, l in enumerate(self.loss):
                 epoch = len(self.losslog[:,i])
                 X = np.linspace(1, epoch, epoch)
                 label = '{} Loss'.format(l['type'])
 
-                axs[i].plot(X, self.losslog[:, i].numpy(), label=label)
+                axs[i].plot(X, self.losslog[:, i].numpy(), linewidth=2, color=color[i], label=label)
                 font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                axs[i].set_xlabel('Epochs', fontproperties=font)
+                axs[i].set_xlabel('Epoch', fontproperties=font)
                 axs[i].set_ylabel(label, fontproperties=font)
-                axs[i].set_title(label, fontproperties=font)
+                axs[i].set_title(alabo[i]+f" {l['type']} loss", loc='left', fontproperties=font)
                 axs[i].grid(True)
 
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
+                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
+                font1 = {'family':'Times New Roman','style':'normal','size':16}
                 legend1 = axs[i].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
@@ -184,15 +226,15 @@ class LOSS(nn.modules.loss._Loss):
                 axs.spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
                 axs.spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
 
-                axs[1].tick_params(direction='in', axis='both', top=True,right=True,labelsize=16, width=3,)
-                labels = axs[1].get_xticklabels() + axs[1].get_yticklabels()
+                axs[i].tick_params(direction='in', axis='both', top=True,right=True,labelsize=16, width=3,)
+                labels = axs[i].get_xticklabels() + axs[i].get_yticklabels()
                 [label.set_fontname('Times New Roman') for label in labels]
                 [label.set_fontsize(20) for label in labels]  # 刻度值字号
 
-        fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
+        #plt.subplots_adjust(top=0.90,bottom=0.1, left=0.1, right=0.97, wspace=0.5, hspace=0.2)#调节两个子图间的距离
         plt.tight_layout()#  使得图像的四周边缘空白最小化
         out_fig = plt.gcf()
-        out_fig.savefig(os.path.join(apath, 'AllTrainLossPlot.pdf'))
+        out_fig.savefig(os.path.join(apath, 'Train_AllLoss_PlotInOneFig.pdf'))
         plt.show()
         plt.close(fig)
         return
@@ -227,12 +269,12 @@ class LOSS(nn.modules.loss._Loss):
                     frame1 = legend1.get_frame()
                     frame1.set_alpha(1)
                     frame1.set_facecolor('none')  # 设置图例legend背景透明
-    
+
                     axs[j,i].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
                     axs[j,i].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
                     axs[j,i].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
                     axs[j,i].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
-    
+
                     axs[j,i].tick_params(direction='in', axis='both', top=True,right=True,labelsize=16, width=3,)
                     labels = axs[j,i].get_xticklabels() + axs[j,i].get_yticklabels()
                     [label.set_fontname('Times New Roman') for label in labels]
@@ -276,12 +318,12 @@ class LOSS(nn.modules.loss._Loss):
                     frame1 = legend1.get_frame()
                     frame1.set_alpha(1)
                     frame1.set_facecolor('none')  # 设置图例legend背景透明
-    
+
                     axs[i,j].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
                     axs[i,j].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
                     axs[i,j].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
                     axs[i,j].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
-    
+
                     axs[i,j].tick_params(direction='in', axis='both', top=True,right=True,labelsize=16, width=3,)
                     labels = axs[i,j].get_xticklabels() + axs[i,j].get_yticklabels()
                     [label.set_fontname('Times New Roman') for label in labels]
@@ -297,22 +339,6 @@ class LOSS(nn.modules.loss._Loss):
         return
 
 
-    # 在不同的画布中画各个损失函数的结果.
-    def plot_loss(self, apath):
-        epoch = len(self.losslog[:, 0])
-        X = np.linspace(1, epoch, epoch)
-        for i, l in enumerate(self.loss):
-            label = '{} Loss'.format(l['type'])
-            fig = plt.figure()
-            plt.title(label)
-            plt.plot(X, self.losslog[:, i].numpy(), label=label)
-            plt.legend()
-            plt.xlabel('Epochs')
-            plt.ylabel('Loss')
-            plt.grid(True)
-            plt.savefig(os.path.join(apath, 'TrainLossPlot_{}.pdf'.format(l['type'])))
-            plt.close(fig)
-        return
 
     def get_loss_module(self):
         if self.n_GPUs == 1:

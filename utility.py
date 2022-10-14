@@ -16,7 +16,8 @@ from multiprocessing import Process
 from multiprocessing import Queue
 from torch.autograd import Variable
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 import random
@@ -100,89 +101,15 @@ class timer(object):
 
     def reset(self):
         self.ts = time.time()
+        tmp = self.timer
         self.timer = 0
+        return tmp
 
     # 从计时开始到现在的时间.
     def hold(self):
         return time.time() - self.t0
 
-# https://developer.51cto.com/article/712616.html
-from dataclasses import dataclass, field
-import time
-from typing import Callable, ClassVar, Dict, Optional
-class TimerError(Exception):
-    """A custom exception used to report errors in use of Timer class"""
 
-@dataclass
-class Timer(object):
-    timers: ClassVar[Dict[str, float]] = {}
-    name: Optional[str] = None
-    text: str = "Elapsed time: {:0.4f} seconds"
-    logger: Optional[Callable[[str], None]] = print
-    _start_time: Optional[float] = field(default=None, init=False, repr=False)
-
-    def __post_init__(self) -> None:
-        """Add timer to dict of timers after initialization"""
-        if self.name is not None:
-            self.timers.setdefault(self.name, 0)
-
-    def start(self) -> None:
-        """Start a new timer"""
-        if self._start_time is not None:
-            raise TimerError(f"Timer is running. Use .stop() to stop it")
-
-        self._start_time = time.perf_counter()
-
-    def stop(self) -> float:
-        """Stop the timer, and report the elapsed time"""
-        if self._start_time is None:
-            raise TimerError(f"Timer is not running. Use .start() to start it")
-
-        # Calculate elapsed time
-        elapsed_time = time.perf_counter() - self._start_time
-        self._start_time = None
-
-        # Report elapsed time
-        if self.logger:
-            self.logger(self.text.format(elapsed_time))
-        if self.name:
-            self.timers[self.name] += elapsed_time
-
-        return elapsed_time
-
-
-# https://python3-cookbook.readthedocs.io/zh_CN/latest/c13/p13_making_stopwatch_timer.html
-class Timer1:
-    def __init__(self, func=time.perf_counter):
-        self.elapsed = 0.0
-        self._func = func
-        self._start = None
-
-    def start(self):
-        if self._start is not None:
-            raise RuntimeError('Already started')
-        self._start = self._func()
-
-    def stop(self):
-        if self._start is None:
-            raise RuntimeError('Not started')
-        end = self._func()
-        self.elapsed += end - self._start
-        self._start = None
-
-    def reset(self):
-        self.elapsed = 0.0
-
-    @property
-    def running(self):
-        return self._start is not None
-
-    def __enter__(self):
-        self.start()
-        return self
-
-    def __exit__(self, *args):
-        self.stop()
 
 # 功能：
 class checkpoint():
@@ -191,40 +118,40 @@ class checkpoint():
         self.ok = True
         self.n_processes = 8
         self.mark = False
-        self.startEpoch = 0   # 日志里各个压缩率和信噪比训练的epoch
-        self.LastSumEpoch = 0 #日志里所有的压缩率和信噪比下训练的epoch之和
-        self.SumEpoch = 0     # 本次训练的累计epoch
-
-        # 模型训练时PSNR、MSE和loss和优化器等等数据的保存以及画图目录
-        self.dir = os.path.join(args.save, f"TrainLog_{args.modelUse}")
-        print(f"self.dir = {self.dir} \n")
-
-        if args.reset:
-            print(f"删除目录:{self.dir}")
-            os.system('rm -rf ' + self.dir)
-
-        os.makedirs(self.dir, exist_ok=True)
-
-        # 模型参数保存的目录
-        self.modeldir = os.path.join(args.save, f"model_{args.modelUse}")
-        
-        if args.reset:
-            print(f"删除目录:{self.modeldir}")
-            os.system('rm -rf ' + self.modeldir)
-            
-        os.makedirs(self.modeldir, exist_ok=True)
-
-        open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
-        self.log_file = open(self.get_path('trainLog.txt'), open_type)
+        self.startEpoch = 0     # 日志里各个压缩率和信噪比训练的epoch
+        self.LastSumEpoch = 0   # 日志里所有的压缩率和信噪比下训练的epoch之和
+        self.SumEpoch = 0       # 本次训练的累计epoch
 
         self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+
+        # 模型训练时PSNR、MSE和loss和优化器等等数据的保存以及画图目录
+        self.savedir = os.path.join(args.save, f"{self.now}_TrainLog_{args.modelUse}")
+        self.loaddir = os.path.join(args.load+f"_TrainLog_{args.modelUse}")
+        print(f"训练过程MSR、PSNR、Loss等保存目录 = {self.savedir} \n")
+        #if args.reset:
+            #print(f"删除目录:{self.dir}")
+            #os.system('rm -rf ' + self.dir)
+        os.makedirs(self.savedir, exist_ok=True)
+
+        # 模型参数保存的目录
+        self.modelSaveDir = os.path.join(args.saveModel, f"{self.now}_Model_{args.modelUse}")
+        self.modelLoadDir = os.path.join(args.loadModel+f"_Model_{args.modelUse}")
+
+        if args.reset:
+            print(f"删除目录:{self.modelSaveDir}")
+            os.system('rm -rf ' + self.modelSaveDir)
+
+        os.makedirs(self.modelSaveDir, exist_ok=True)
+
+        open_type = 'a' if os.path.exists(self.getSavePath('trainLog.txt')) else 'w'
+        self.log_file = open(self.getSavePath('trainLog.txt'), open_type)
 
         self.writeArgsLog()
 
         self.metricLog = {}
 
-        if os.path.isfile(self.get_path('TrainMetric_log.pt')):
-            self.metricLog = torch.load(self.get_path('TrainMetric_log.pt'))
+        if os.path.isfile(self.getLoadPath('TrainMetric_log.pt')):
+            self.metricLog = torch.load(self.getLoadPath('TrainMetric_log.pt'))
             epoch, sepoch = self.checkSameLen()
             self.LastSumEpoch = sepoch
             if self.mark == True:
@@ -233,8 +160,8 @@ class checkpoint():
             else:
                 print(f'\nepoch验证不通过, 重新开始训练...\n')
 
-        if os.path.isfile(self.get_path('SumEpoch.pt')):
-            self.SumEpoch = torch.load(self.get_path('SumEpoch.pt'))
+        if os.path.isfile(self.getLoadPath('SumEpoch.pt')):
+            self.SumEpoch = torch.load(self.getLoadPath('SumEpoch.pt'))
 
         print(color.fuchsia(f"\n#================================ checkpoint 准备完毕 =======================================\n"))
 
@@ -244,19 +171,21 @@ class checkpoint():
         return
 
     def writeArgsLog(self, open_type='a'):
-        with open(self.get_path('argsConfig.txt'), open_type) as f:
-            f.write('#==========================================================\n')
+        with open(self.getSavePath('argsConfig.txt'), open_type) as f:
+            f.write('#====================================================================================\n')
             f.write(self.now + '\n')
-            f.write('#==========================================================\n\n')
+            f.write('#====================================================================================\n\n')
 
-            f.write("############################################################################################\n")
-            f.write("################################  args  ####################################################\n")
-            f.write("############################################################################################\n")
+            f.write("###############################################################################\n")
+            f.write("################################  args  #######################################\n")
+            f.write("###############################################################################\n")
 
             for k, v in self.args.__dict__.items():
                 f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}\n")
-            f.write("\n################################ args end  #################################################\n")
+            f.write("\n################################ args end  ##################################\n")
         return
+
+
 
     # 因为多个不同压缩率的不同层是融合在一个模型里的，所以需要检查在每个压缩率和信噪比下训练的epoch是否相等
     def checkSameLen(self):
@@ -306,32 +235,35 @@ class checkpoint():
 # 训练过程的PSNR等指标的动态记录 >>>
 
 
-    def get_path(self, *subdir):
-        return os.path.join(self.dir, *subdir)
+    def getSavePath(self, *subdir):
+        return os.path.join(self.savedir, *subdir)
+
+    def getLoadPath(self, *subdir):
+        return os.path.join(self.loaddir, *subdir)
 
     # 保存模型参数
     def saveModel(self, trainer,  compratio, snr, epoch, is_best=False):
-        trainer.model.save(self.modeldir, compratio, snr, epoch, is_best=is_best)
+        trainer.model.save(self.modelSaveDir, compratio, snr, epoch, is_best=is_best)
         return
 
     # 保存优化器参数
     def saveOptim(self, trainer):
-        trainer.optimizer.save(self.dir)
+        trainer.optimizer.save(self.savedir)
         return
 
     # 画图和保存Loss日志
     def saveLoss(self, trainer):
-        trainer.loss.save(self.dir)
-        trainer.loss.plot_loss(self.dir)
-        trainer.loss.plot_AllLoss(self.dir)
+        trainer.loss.save(self.savedir)
+        trainer.loss.plot_loss(self.savedir)
+        trainer.loss.plot_AllLoss(self.savedir)
         return
 
     # 画图和保存PSNR等日志
     #@profile
     def save(self):
         self.plot_AllTrainMetric()
-        torch.save(self.metricLog, self.get_path('TrainMetric_log.pt'))
-        torch.save(self.SumEpoch, self.get_path('SumEpoch.pt'))
+        torch.save(self.metricLog, self.getSavePath('TrainMetric_log.pt'))
+        torch.save(self.SumEpoch, self.getSavePath('SumEpoch.pt'))
         return
 
     # 写日志
@@ -341,7 +273,7 @@ class checkpoint():
         if refresh:
             self.log_file.close()
             if train== True:
-                self.log_file = open(self.get_path('trainLog.txt'), 'a')
+                self.log_file = open(self.getSavePath('trainLog.txt'), 'a')
             else:
                 self.log_file = open(self.get_testpath('testLog.txt'), 'a')
         return
@@ -359,67 +291,120 @@ class checkpoint():
 
         axis = np.linspace(1, epoch, epoch)
 
-        label = 'CompRatio={},SNR={}'.format(comprateTmp, snrTmp)
-        fig = plt.figure()
+        label = 'CompRatio={},SNR={}(dB)'.format(comprateTmp, snrTmp)
+        fig = plt.figure(constrained_layout=True)
         plt.title(label)
         plt.plot(axis, self.metricLog[tmpS])
         plt.legend()
         plt.xlabel('Epochs')
-        plt.ylabel('PSNR')
+        plt.ylabel('PSNR (dB)')
         plt.grid(True)
 
         out_fig = plt.gcf()
-        out_fig.savefig(self.get_path('train,epoch-psnr,CompRatio={},SNR={}.pdf'.format(comprateTmp, snrTmp)))
+        out_fig.savefig(self.getSavePath('train,epoch-psnr,CompRatio={},SNR={}.pdf'.format(comprateTmp, snrTmp)))
         plt.show()
         plt.close(fig)
         return
 
+
+    """
+    两张大图；每张图对应一个指标，PSNR或者MSE，下面以PSNR为例；
+    每张图有len(self.args.SNRtrain)xlen(self.args.CompressRateTrain)个子图；
+    每个子图对应在指定压缩率和信噪比下训练时PSNR随着epoch变化曲线；
+    """
     #@profile
     def plot_AllTrainMetric(self):
+
+        width = 6
+        high = 4
+        figWidth =width*len(self.args.CompressRateTrain)
+        figHigh = high*len(self.args.SNRtrain)
+
         for idx, met in  enumerate(self.args.metrics):
-            fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain),figsize=(16,16))
-            for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
-                for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
-                    tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-                    label = 'CompRatio={},SNR={},Metric={}'.format(comprateTmp, snrTmp,met)
 
-                    epoch = len(self.metricLog[tmpS])
-                    X = np.linspace(1, epoch, epoch)
+            # 如果信噪比和压缩率只有一个
+            if len(self.args.SNRtrain) == 1 and len(self.args.CompressRateTrain) == 1:
+                fig = plt.figure(constrained_layout=True)
+                tmpS = "MetricLog:CompRatio={},SNR={}".format(self.args.CompressRateTrain[0], self.args.SNRtrain[0])
+                label = 'R={},SNR={}(dB)'.format(self.args.CompressRateTrain[0], self.args.SNRtrain[0])
+                epoch = len(self.metricLog[tmpS])
+                X = np.linspace(1, epoch, epoch)
+                plt.plot(X, self.metricLog[tmpS][:,idx],'r-',label=label,)
 
-                    axs[snr_idx,comprate_idx].plot(X, self.metricLog[tmpS][:,idx],'r-',label=label,)
+                font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+                plt.xlabel('Epoch',fontproperties=font)
+                if met=="PSNR":
+                    plt.ylabel(f"{met}(dB)",fontproperties=font)
+                else:
+                    plt.ylabel(f"{met}",fontproperties=font)
+                plt.title(label, fontproperties=font)
 
-                    font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                    axs[snr_idx,comprate_idx].set_xlabel('Epochs',fontproperties=font)
-                    axs[snr_idx,comprate_idx].set_ylabel(f"{met}",fontproperties=font)
-                    axs[snr_idx,comprate_idx].set_title(label, fontproperties=font)
+                #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
+                font1 = {'family':'Times New Roman','style':'normal','size':16}
+                legend1 = plt.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+                frame1 = legend1.get_frame()
+                frame1.set_alpha(1)
+                frame1.set_facecolor('none')  # 设置图例legend背景透明
 
-                    #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-                    font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=18)
-                    legend1 = axs[snr_idx,comprate_idx].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
-                    frame1 = legend1.get_frame()
-                    frame1.set_alpha(1)
-                    frame1.set_facecolor('none')  # 设置图例legend背景透明
+                ax=plt.gca()#获得坐标轴的句柄
+                ax.spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+                ax.spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+                ax.spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+                ax.spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
 
-                    axs[snr_idx,comprate_idx].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
-                    axs[snr_idx,comprate_idx].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
-                    axs[snr_idx,comprate_idx].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
-                    axs[snr_idx,comprate_idx].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
+                plt.tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
+                labels = ax.get_xticklabels() + ax.get_yticklabels()
+                [label.set_fontname('Times New Roman') for label in labels]
+                [label.set_fontsize(20) for label in labels] #刻度值字号
+            else:
+                fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain), figsize=(figWidth,figHigh), constrained_layout=True)
 
+                if len(self.args.SNRtrain) == 1 or len(self.args.CompressRateTrain) == 1:
+                    axs = axs.reshape(len(self.args.SNRtrain), len(self.args.CompressRateTrain))
 
-                    axs[snr_idx,comprate_idx].tick_params(labelsize=16,width=3)
-                    labels = axs[snr_idx,comprate_idx].get_xticklabels() + axs[snr_idx,comprate_idx].get_yticklabels()
-                    [label.set_fontname('Times New Roman') for label in labels]
-                    [label.set_fontsize(20) for label in labels] #刻度值字号
+                for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
+                    for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
+                        tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
+                        label = 'R={},SNR={}(dB)'.format(comprateTmp, snrTmp)
 
+                        epoch = len(self.metricLog[tmpS])
+                        X = np.linspace(1, epoch, epoch)
 
-                    axs[snr_idx,comprate_idx].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
-            fig.subplots_adjust(hspace=0.3)#调节两个子图间的距离
+                        axs[snr_idx,comprate_idx].plot(X, self.metricLog[tmpS][:,idx],'r-',label=label,)
+
+                        font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+                        axs[snr_idx,comprate_idx].set_xlabel('Epoch',fontproperties=font)
+                        if met=="PSNR":
+                            axs[snr_idx,comprate_idx].set_ylabel(f"{met}(dB)",fontproperties=font)
+                        else:
+                            axs[snr_idx,comprate_idx].set_ylabel(f"{met}",fontproperties=font)
+                        #axs[snr_idx,comprate_idx].set_title(label, fontproperties=font)
+
+                        #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                        font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
+                        font1 = {'family':'Times New Roman','style':'normal','size':16}
+                        legend1 = axs[snr_idx,comprate_idx].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+                        frame1 = legend1.get_frame()
+                        frame1.set_alpha(1)
+                        frame1.set_facecolor('none')  # 设置图例legend背景透明
+
+                        axs[snr_idx,comprate_idx].spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+                        axs[snr_idx,comprate_idx].spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+                        axs[snr_idx,comprate_idx].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+                        axs[snr_idx,comprate_idx].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
+
+                        axs[snr_idx,comprate_idx].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
+                        labels = axs[snr_idx,comprate_idx].get_xticklabels() + axs[snr_idx,comprate_idx].get_yticklabels()
+                        [label.set_fontname('Times New Roman') for label in labels]
+                        [label.set_fontsize(20) for label in labels] #刻度值字号
+
+            #plt.subplots_adjust(top=0.90, hspace=0.2)#调节两个子图间的距离
             plt.tight_layout()#  使得图像的四周边缘空白最小化
             out_fig = plt.gcf()
-            out_fig.savefig(self.get_path(f"{met}_Epoch_Plot.pdf"))
+            out_fig.savefig(self.getSavePath(f"Train_{met}_EachRandSNREpoch_Plot.pdf"))
             plt.show()
             plt.close(fig)
-            gc.collect()
         return
 
 
@@ -431,7 +416,7 @@ class checkpoint():
     def InittestDir(self, now = 'TestResult'):
         self.TeMetricLog = {}
         # now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        self.testRudir = os.path.join(self.dir, now)
+        self.testRudir = os.path.join(self.savedir, now)
         os.makedirs(self.testRudir,exist_ok=True)
         for d in self.args.data_test:
             os.makedirs(os.path.join(self.testRudir,'results-{}'.format(d)), exist_ok=True)
@@ -455,20 +440,7 @@ class checkpoint():
             f.write("################################ args end  #################################################\n")
         return
 
-    def writeArgsLog(self, open_type='a'):
-        with open(self.get_path('argsConfig.txt'), open_type) as f:
-            f.write('#==========================================================\n')
-            f.write(self.now + '\n')
-            f.write('#==========================================================\n\n')
 
-            f.write("############################################################################################\n")
-            f.write("################################  args  ####################################################\n")
-            f.write("############################################################################################\n")
-
-            for k, v in self.args.__dict__.items():
-                f.write(f"{k: <25}: {str(v): <40}  {str(type(v)): <20}\n")
-            f.write("\n################################ args end  #################################################\n")
-        return
 
     def get_testpath(self, *subdir):
         return os.path.join(self.testRudir, *subdir)
@@ -502,7 +474,8 @@ class checkpoint():
 
     def SaveTestLog(self):
         # self.plot_AllTestMetric()
-        self.PlotTestMetric()
+        self.PlotTestMetricSeperate()
+        self.PlotTestMetricInOneFig()
         torch.save(self.TeMetricLog, self.get_testpath('TestMetric_log.pt'))
         return
 
@@ -518,7 +491,7 @@ class checkpoint():
 
                     axs[crIdx,metIdx].plot(data[:,0], data[:,metIdx+1],'r-',label=label,)
                     font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                    axs[crIdx,metIdx].set_xlabel('SNR',fontproperties=font)
+                    axs[crIdx,metIdx].set_xlabel('SNR (dB)',fontproperties=font)
                     axs[crIdx,metIdx].set_ylabel(f"{met}",fontproperties=font)
                     axs[crIdx,metIdx].set_title(label,loc = 'left',fontproperties=font)
 
@@ -556,29 +529,97 @@ class checkpoint():
             plt.close(fig)
         return
 
+    """
+    功能是：
+    每张图对应一个数据集在不同压缩率下的PSNR/MSE-epoch曲线；
+    每个数据集有两张图，每个图对应一个指标；
+    对每张图有多条曲线，每一条曲线对应一个压缩率下的PSNR或MSE随SNR的变化曲线；
+    """
+    def PlotTestMetricSeperate(self):
+        mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
+        color = ['#808000','#C000C0', '#000000','#00FFFF','#0000FF', '##FF1493', '#ADFF2F','#FF8C00','#00FF00', '##800080', '#FF0000','#1E90FF']
 
-    def PlotTestMetric(self):
+        Len = 6
+        raw = 1
+        col = 2
+
+        for dsIdx, dtset in enumerate(self.args.data_test):
+            for metIdx, met in enumerate(self.args.metrics):
+                # fig, axs = plt.subplots(raw, col, figsize=(col*Len, raw*Len),constrained_layout=True)
+                fig = plt.figure(constrained_layout=True)
+                for crIdx, compratio in enumerate(self.args.CompressRateTrain):
+                    tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dtset, compratio)
+                    data = self.TeMetricLog[tmpS]
+                    lb = f"R={compratio}"
+                    plt.plot(data[:,0], data[:,metIdx+1], linestyle='-',color=color[crIdx],marker=mark[crIdx], label = lb)
+
+                font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+                plt.xlabel('SNR (dB)',fontproperties=font)
+                if met=="PSNR":
+                    plt.ylabel(f"{met} (dB)",fontproperties=font)
+                else:
+                    plt.ylabel(f"{met}",fontproperties=font)
+                plt.title(f"{dtset} dataset",loc = 'center',fontproperties=font)
+
+                #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
+                font1 = {'family':'Times New Roman','style':'normal','size':16}
+                legend1 = plt.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
+                frame1 = legend1.get_frame()
+                frame1.set_alpha(1)
+                frame1.set_facecolor('none')  # 设置图例legend背景透明
+
+                ax=plt.gca()#获得坐标轴的句柄
+                ax.spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
+                ax.spines['left'].set_linewidth(2);  ###设置左边坐标轴的粗细
+                ax.spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
+                ax.spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
+
+
+                plt.tick_params(direction='in', axis='both',top=True,right=True, labelsize=16, width=3,)
+                labels = ax.get_xticklabels() + ax.get_yticklabels()
+                [label.set_fontname('Times New Roman') for label in labels]
+                [label.set_fontsize(20) for label in labels] #刻度值字号
+
+
+                #font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
+                #plt.suptitle(f"{met} on " + ', '.join(self.args.data_test), x=0.5, y=0.98, fontproperties=font4,)
+
+                # plt.subplots_adjust(top=0.86, wspace=0.2, hspace=0.2)#调节两个子图间的距离
+                plt.tight_layout(pad=1, h_pad=1, w_pad=1)#  使得图像的四周边缘空白最小化
+
+                out_fig = plt.gcf()
+                out_fig.savefig(self.get_testpath(f"Test_{dtset}_{met}_Plot.pdf"), bbox_inches = 'tight',pad_inches = 0.2)
+                plt.show()
+                plt.close(fig)
+        return
+
+    """
+    功能是：每张大图对应一个指标，即PSNR或MSE;
+    每张大图画出所有的数据集的在不同压缩率下的PSNR/MSE随SNR的变化曲线；
+    每张大图的各个子图对应各个数据集；
+    每个子图对应一个数据集，每个子图有很多曲线，每一条曲线对应一个压缩率下的PSNR随SNR的变化曲线；
+    """
+    def PlotTestMetricInOneFig(self):
         mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
         color = ['#808000','#C000C0', 'red','cyan','blue','green','#FF8C00','#00FF00', '#FFA500', '#FF0000','#1E90FF']
 
+        Len = 6
         if len(self.args.data_test) > 2:
-            high = 12
             raw = 2
             if len(self.args.data_test)%2 == 0:
                 col = int(len(self.args.data_test)//2)
             else:
                 col = int(len(self.args.data_test)//2)+1
         elif len(self.args.data_test) == 1:
-            high = 6
             raw = 1
             col = 1
         elif len(self.args.data_test) == 2:
-            high = 6
             raw = 1
             col = 2
 
         for metIdx, met in enumerate(self.args.metrics):
-            fig, axs = plt.subplots(raw, col, figsize=(col*6, high))
+            fig, axs = plt.subplots(raw, col, figsize=(col*Len, raw*Len),constrained_layout=True)
             if raw == 1 and col==2:
                 axs = axs.reshape(raw,col)
             for dsIdx, dtset in enumerate(self.args.data_test):
@@ -587,16 +628,20 @@ class checkpoint():
                 for crIdx, compratio in enumerate(self.args.CompressRateTrain):
                     tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dtset, compratio)
                     data = self.TeMetricLog[tmpS]
-                    lb = f"compress rate={compratio}"
-                    axs[i,j].plot(data[:,0], data[:,metIdx+1], linestyle='-',color=color[crIdx],marker=mark[crIdx], label = lb)
+                    lb = f"R={compratio}"
+                    axs[i,j].plot(data[:,0], data[:,metIdx+1], linestyle='-', color=color[crIdx], marker=mark[crIdx], label = lb)
 
                 font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                axs[i,j].set_xlabel('SNR',fontproperties=font)
-                axs[i,j].set_ylabel(f"{met}",fontproperties=font)
-                axs[i,j].set_title(f"{dtset}",loc = 'left',fontproperties=font)
-                
+                axs[i,j].set_xlabel('SNR (dB)',fontproperties=font)
+                if met=="PSNR":
+                    axs[i,j].set_ylabel(f"{met} (dB)",fontproperties=font)
+                else:
+                    axs[i,j].set_ylabel(f"{met}",fontproperties=font)
+                axs[i,j].set_title(f"{dtset}",loc = 'right',fontproperties=font)
+
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=20)
+                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
+                font1 = {'family':'Times New Roman','style':'normal','size':16}
                 legend1 = axs[i,j].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
@@ -607,21 +652,17 @@ class checkpoint():
                 axs[i,j].spines['right'].set_linewidth(2); ###设置右边坐标轴的粗细
                 axs[i,j].spines['top'].set_linewidth(2);   ###设置上部坐标轴的粗细
 
-                fontt2 = {'family':'Times New Roman','style':'normal','size':16}
-                legend1 = axs[i,j].legend(loc='best',borderaxespad=0,edgecolor='black',prop=fontt2,)
-                frame1 = legend1.get_frame()
-                frame1.set_alpha(1)
-                frame1.set_facecolor('none') # 设置图例legend背景透明
 
                 axs[i,j].tick_params(direction='in', axis='both',top=True,right=True, labelsize=16, width=3,)
                 labels = axs[i,j].get_xticklabels() + axs[i,j].get_yticklabels()
                 [label.set_fontname('Times New Roman') for label in labels]
                 [label.set_fontsize(20) for label in labels] #刻度值字号
 
-            fig.subplots_adjust(hspace=0.4)#调节两个子图间的距离
             font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-            plt.suptitle(f"{met} on "+', '.join(self.args.data_test), x=0.5, y=0.97, fontproperties=font4,)
-            #plt.tight_layout()#  使得图像的四周边缘空白最小化
+            plt.suptitle(f"{met} on " + ', '.join(self.args.data_test), x=0.5, y=0.98, fontproperties=font4,)
+
+            # plt.subplots_adjust(top=0.86, wspace=0.2, hspace=0.2)#调节两个子图间的距离
+            plt.tight_layout(pad=1, h_pad=1, w_pad=1)#  使得图像的四周边缘空白最小化
 
             out_fig = plt.gcf()
             out_fig.savefig(self.get_testpath(f"Test_{met}_Plot.pdf"), bbox_inches = 'tight',pad_inches = 0.2)
@@ -659,13 +700,12 @@ class checkpoint():
 # #ckp.plot_trainPsnr(0.4, 18)
 # ckp.save()
 
-
     def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
         filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
-        print(f"filename = {filename}\n")
+        #print(f"filename = {filename}\n")
         normalized = data[0].mul(255 / self.args.rgb_range)
         tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
-        print(f"tensor_cpu.shape = {tensor_cpu.shape}\n")
+        #print(f"tensor_cpu.shape = {tensor_cpu.shape}\n")
         imageio.imwrite(filename, tensor_cpu.numpy())
         return
 
@@ -698,7 +738,7 @@ class checkpoint():
 
     def save_results_byQueue(self, dataset, filename, save_list, scale):
         if self.args.save_results:
-            filename = self.get_path('results-{}'.format(dataset.dataset.name),'{}_x{}_'.format(filename, scale))
+            filename = self.getSavePath('results-{}'.format(dataset.dataset.name),'{}_x{}_'.format(filename, scale))
 
             postfix = ('SR', 'LR', 'HR')
             for v, p in zip(save_list, postfix):
@@ -706,10 +746,6 @@ class checkpoint():
                 tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
                 self.queue.put(('{}{}.png'.format(filename, p), tensor_cpu))
         return
-
-
-
-
 
 
 #  功能：将img每个像素点的至夹在[0,255]之间
@@ -735,8 +771,12 @@ def calc_metric(sr, hr, scale, rgb_range, metrics, cal_type='y'):
     return torch.tensor(metric)
 
 
+"""
+逐像素的计算均方误差
+"""
 def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
-    if hr.nelement() == 1: return 0
+    if hr.nelement() == 1:
+        return 0
 
     diff = (sr - hr) / rgb_range
 
@@ -754,6 +794,9 @@ def calc_psnr(sr, hr, scale, rgb_range, cal_type='y'):
         mse = 1e-10
     return   -10 * math.log10(mse)
 
+"""
+逐像素的计算均方误差
+"""
 def calc_mse(sr, hr, scale):
     if hr.nelement() == 1: return 0
 
@@ -803,7 +846,7 @@ def make_optimizer(args, net, total_steps):
     milestones = list(map(lambda x: int(x), args.decay.split('-')))  #  [20, 40, 60, 80, 100, 120]
     kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
     scheduler_class = lrs.MultiStepLR
-    
+
     warmup_class = optimization.get_polynomial_decay_schedule_with_warmup
     kwargs_warmup = {"num_warmup_steps":args.warm_up_ratio*total_steps, "num_training_steps":total_steps,"power":args.power,"lr_end":args.lr_end}
 
@@ -821,6 +864,7 @@ def make_optimizer(args, net, total_steps):
             if os.path.isfile(self.get_dir(load_dir)):
                 self.load_state_dict(torch.load(self.get_dir(load_dir)))
                 if epoch > 1:
+                    print(f"加载优化器参数.....")
                     for _ in range(epoch): self.scheduler.step()
 
         def get_dir(self, dir_path):
@@ -845,7 +889,7 @@ def make_optimizer(args, net, total_steps):
             milestones = list(map(lambda x: int(x), args.decay.split('-')))  #  [20, 40, 60, 80, 100, 120]
             # kwargs_scheduler = {'milestones': milestones, 'gamma': args.gamma}  # args.gamma =0.5
             # self.scheduler = scheduler_class(self, **kwargs_scheduler)
-            
+
             kwargs_warmup = {"num_warmup_steps":args.warm_up_ratio*total_steps, "num_training_steps":total_steps,"power":args.power,"lr_end":args.lr_end}
             self.scheduler = warmup_class(self, **kwargs_warmup)
 
