@@ -23,7 +23,12 @@ parser.add_argument('--modelUse', default='IPT', help='You can set various templ
 parser.add_argument('--shift_mean', default=True, help='subtract pixel mean from the input')
 parser.add_argument('--precision', type=str, default='single', choices=('single', 'half'), help='FP precision for test (single | half)')
 
+<<<<<<< HEAD
 
+=======
+# 预训练模型地址
+parser.add_argument('--pretrain', type=str, default=home+'/IPT-Pretrain/IPT_pretrain.pt')  # cjj
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 
 # Hardware specifications
 parser.add_argument('--n_threads', type=int, default=6, help='number of threads for data loading')
@@ -62,6 +67,7 @@ parser.add_argument('--no_augment', action='store_true',  help='do not use data 
 
 parser.add_argument('--hasChannel', action='store_false',  help='use channel and compress, decompress')
 parser.add_argument('--freezeIPT', action='store_true',  help='freeze IPT model when training')
+<<<<<<< HEAD
 parser.add_argument('--CompressRateTrain', type=str, default='0.17,0.33',  help='Compress rate for test')
 #parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33',  help='Compress rate for test')
 parser.add_argument('--SNRtrain',  type=str, default='8, 10',  help='SNR for train')
@@ -70,6 +76,14 @@ parser.add_argument('--SNRtrain',  type=str, default='8, 10',  help='SNR for tra
 
 #parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
 parser.add_argument('--SNRtest',  type=str, default='8,10,12,14,16,18',  help='SNR for test')
+=======
+parser.add_argument('--CompressRateTrain', type=str, default='0.17',  help='Compress rate for test')
+#parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33',  help='Compress rate for test')
+parser.add_argument('--SNRtrain',  type=str, default='8, 10',  help='SNR for train')
+
+#parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
+parser.add_argument('--SNRtest',  type=str, default='8, 10',  help='SNR for test')
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 #parser.add_argument('--SNRtest',  type=str, default='2',  help='SNR for test')
 
 # Training and test  specifications
@@ -78,7 +92,11 @@ parser.add_argument('--wanttest',  action='store_false', help='set this option t
 parser.add_argument('--wanttrain', action='store_false', help='set this option to train the model')
 parser.add_argument('--reset', action='store_false', help='reset the training')
 parser.add_argument('--test_every', type=int, default=1000, help='do test per every N batches')
+<<<<<<< HEAD
 parser.add_argument('--epochs', type=int, default=4,  help='number of epochs to train')
+=======
+parser.add_argument('--epochs', type=int, default=1,  help='number of epochs to train')
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 parser.add_argument('--batch_size', type=int, default=32, help='input batch size for training')
 parser.add_argument('--test_batch_size', type=int,  default=1,help='input batch size for training')
 parser.add_argument('--crop_batch_size', type=int, default=64, help='input batch size for training')
@@ -130,6 +148,7 @@ parser.add_argument('--skip_threshold', type=float, default='1e8', help='skippin
 parser.add_argument('--metrics', type=str, default='PSNR, MSE', help='loss function configuration')
 
 # Log specifications
+<<<<<<< HEAD
 # 预训练模型地址
 parser.add_argument('--pretrain', type=str, default=home+'/IPT-Pretrain/IPT_pretrain.pt')  # cjj
 parser.add_argument('--save', type=str, default=home+'/IPT-Pretrain/results/',  help='file name to save')  #cjj
@@ -140,11 +159,17 @@ parser.add_argument('--loadModel', type=str, default=home+'/IPT-Pretrain/ModelPt
 
 parser.add_argument('--TrainImageSave', type=str, default=home+'/IPT-Pretrain/results/',  help='file name to save image during train process')  #cjj
 
+=======
+parser.add_argument('--save', type=str, default=home+'/IPT-Pretrain/results/',  help='file name to save')  #cjj
+parser.add_argument('--load', type=str, default=home+'/IPT-Pretrain/results/', help='file name to load')
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 parser.add_argument('--resume', type=int,  default=0, help='resume from specific checkpoint')
 parser.add_argument('--saveModelEveryEpoch', action='store_false', help='save all intermediate models')
 parser.add_argument('--print_every',type=int, default=100,help='how many batches to wait before logging training status')
 parser.add_argument('--save_results', action='store_false', help='save output results')
 parser.add_argument('--save_gt',action='store_false',help='save low-resolution and high-resolution images together')
+parser.add_argument('--TrainImageSave', type=str, default=home+'/IPT-Pretrain/results/trainImage',  help='file name to save image during train process')  #cjj
+
 
 
 

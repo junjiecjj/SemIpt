@@ -62,8 +62,13 @@ class Trainer():
 
     def prepare(self, *args):
         #device = torch.device('cpu' if self.args.cpu else 'cuda')
+<<<<<<< HEAD
         # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # device = torch.device(self.args.device if torch.cuda.is_available() and not self.args.cpu else "cpu")
+=======
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() and not self.args.cpu else "cpu")
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
         def _prepare(tensor):
             if self.args.precision == 'half': tensor = tensor.half()
             return tensor.to(self.device)
@@ -85,7 +90,11 @@ class Trainer():
 
         #lossFn = nn.MSELoss()
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
+<<<<<<< HEAD
         # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+=======
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 
         self.model.train()
         torch.set_grad_enabled(True)
@@ -100,15 +109,26 @@ class Trainer():
                     param.requires_grad = False
                 else:
                     pass
+<<<<<<< HEAD
         else:
             pass
+=======
+            else:
+                pass
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
         self.model.print_parameters(self.ckp)
         tm = utility.timer()
 
         #self.loader_train.dataset.set_scale(ind1_scale)
         #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
+<<<<<<< HEAD
 
         self.ckp.write_log(f"#======================================== 开始训练, 开始时刻{now1} =============================================\n", train=True)
+=======
+        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
+        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
+        print(f"#======================================== 训练过程, 开始时刻{now} =============================================",  file=self.ckp.log_file)
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 
         accumEpoch = 0
         # 依次遍历压缩率
@@ -168,6 +188,7 @@ class Trainer():
                         # 更新 bach内的psnr
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
 
+<<<<<<< HEAD
                         # tmp = tm.toc()
                         # self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
                         # print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
@@ -181,6 +202,21 @@ class Trainer():
                                     data1 = a.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                                     imageio.imwrite(filename1, data1)
                                     filename2 = os.path.join(self.args.TrainImageSave, f'{self.ckp.now}_trainImage', 'net')+'/{}_lr.png'.format(name)
+=======
+                        tmp = tm.toc()
+                        self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
+                        print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
+
+                        os.makedirs(os.path.join(self.args.TrainImageSave, 'origin'), exist_ok=True)
+                        os.makedirs(os.path.join(self.args.TrainImageSave, 'net'), exist_ok=True)
+                        if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs):
+                            with torch.no_grad():
+                                for a, b, name in zip(hr, sr,filename):
+                                    filename1 = os.path.join(self.args.TrainImageSave, 'origin')+'/{}_hr.png'.format(name)
+                                    data1 = a.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
+                                    imageio.imwrite(filename1, data1)
+                                    filename2 = os.path.join(self.args.TrainImageSave, 'net')+'/{}_lr.png'.format(name)
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
                                     data2 = b.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                                     imageio.imwrite(filename2, data2)
 
@@ -227,7 +263,11 @@ class Trainer():
         self.ckp.done()
         print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
 
+<<<<<<< HEAD
         print(color.fuchsia(f"\n#====================== 训练完毕,开始时刻:{now1},结束时刻:{now2},用时:{tm.hold()/60.0:.3f}分钟 ==============================\n"))
+=======
+        print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0:.3f}分钟 ==============================\n"))
+>>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
         return
 
 
