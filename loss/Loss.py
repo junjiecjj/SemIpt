@@ -160,6 +160,7 @@ class LOSS(nn.modules.loss._Loss):
             [label.set_fontsize(16) for label in labels] #刻度值字号
 
             plt.savefig(os.path.join(apath, 'Train_{}_Loss_Plot.pdf'.format(l['type'])))
+            plt.savefig(os.path.join(apath, 'Train_{}_Loss_Plot.eps'.format(l['type'])))
             plt.close(fig)
         return
 
@@ -235,6 +236,7 @@ class LOSS(nn.modules.loss._Loss):
         plt.tight_layout()#  使得图像的四周边缘空白最小化
         out_fig = plt.gcf()
         out_fig.savefig(os.path.join(apath, 'Train_AllLoss_PlotInOneFig.pdf'))
+        out_fig.savefig(os.path.join(apath, 'Train_AllLoss_PlotInOneFig.eps'))
         plt.show()
         plt.close(fig)
         return

@@ -62,13 +62,8 @@ class Trainer():
 
     def prepare(self, *args):
         #device = torch.device('cpu' if self.args.cpu else 'cuda')
-<<<<<<< HEAD
         # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # device = torch.device(self.args.device if torch.cuda.is_available() and not self.args.cpu else "cpu")
-=======
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        device = torch.device("cuda:0" if torch.cuda.is_available() and not self.args.cpu else "cpu")
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
         def _prepare(tensor):
             if self.args.precision == 'half': tensor = tensor.half()
             return tensor.to(self.device)
@@ -90,11 +85,7 @@ class Trainer():
 
         #lossFn = nn.MSELoss()
         #optimizer = torch.optim.Adam(self.model.parameters(), lr=self.args.lr)
-<<<<<<< HEAD
         # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-=======
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 
         self.model.train()
         torch.set_grad_enabled(True)
@@ -109,26 +100,15 @@ class Trainer():
                     param.requires_grad = False
                 else:
                     pass
-<<<<<<< HEAD
         else:
             pass
-=======
-            else:
-                pass
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
         self.model.print_parameters(self.ckp)
         tm = utility.timer()
 
         #self.loader_train.dataset.set_scale(ind1_scale)
         #print(f"scale in train = {self.loader_train.dataset.scale[self.loader_train.dataset.idx_scale]}\n")
-<<<<<<< HEAD
 
         self.ckp.write_log(f"#======================================== 开始训练, 开始时刻{now1} =============================================\n", train=True)
-=======
-        now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-        print(color.fuchsia(f"\n#================================ 开始训练, 时刻:{now} =======================================\n"))
-        print(f"#======================================== 训练过程, 开始时刻{now} =============================================",  file=self.ckp.log_file)
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 
         accumEpoch = 0
         # 依次遍历压缩率
@@ -188,7 +168,6 @@ class Trainer():
                         # 更新 bach内的psnr
                         self.ckp.UpdateMetricLog(compressrate, snr, metric)
 
-<<<<<<< HEAD
                         # tmp = tm.toc()
                         # self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
                         # print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
@@ -202,21 +181,6 @@ class Trainer():
                                     data1 = a.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                                     imageio.imwrite(filename1, data1)
                                     filename2 = os.path.join(self.args.TrainImageSave, f'{self.ckp.now}_trainImage', 'net')+'/{}_lr.png'.format(name)
-=======
-                        tmp = tm.toc()
-                        self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
-                        print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | Batch {batch_idx+1}/{len(self.loader_train)}, 训练完一个 batch: loss = {lss:.3f}, metric = {metric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
-
-                        os.makedirs(os.path.join(self.args.TrainImageSave, 'origin'), exist_ok=True)
-                        os.makedirs(os.path.join(self.args.TrainImageSave, 'net'), exist_ok=True)
-                        if accumEpoch == int(len(self.args.CompressRateTrain)*len(self.args.SNRtrain)*self.args.epochs):
-                            with torch.no_grad():
-                                for a, b, name in zip(hr, sr,filename):
-                                    filename1 = os.path.join(self.args.TrainImageSave, 'origin')+'/{}_hr.png'.format(name)
-                                    data1 = a.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
-                                    imageio.imwrite(filename1, data1)
-                                    filename2 = os.path.join(self.args.TrainImageSave, 'net')+'/{}_lr.png'.format(name)
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
                                     data2 = b.permute(1, 2, 0).type(torch.uint8).cpu().numpy()
                                     imageio.imwrite(filename2, data2)
 
@@ -229,8 +193,8 @@ class Trainer():
                     epochLos = self.loss.mean_log(len(self.loader_train))
 
                     tmp = tm.toc()
-                    self.ckp.write_log(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | 训练完一个 Epoch: loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
-                    print(f"\t\tEpoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | 训练完一个 Epoch: loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
+                    self.ckp.write_log(f"\t\t压缩率:{compressrate} ({comprate_idx+1}/{len(self.args.CompressRateTrain)}) |信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtrain)}) | Epoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | 训练完一个 Epoch: loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
+                    print(f"\t\t 压缩率:{compressrate} ({comprate_idx+1}/{len(self.args.CompressRateTrain)}) | 信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtrain)}) | Epoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | 训练完一个 Epoch: loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
 
 
                     # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
@@ -263,11 +227,7 @@ class Trainer():
         self.ckp.done()
         print(f"====================== 关闭训练日志 {self.ckp.log_file.name} ===================================")
 
-<<<<<<< HEAD
         print(color.fuchsia(f"\n#====================== 训练完毕,开始时刻:{now1},结束时刻:{now2},用时:{tm.hold()/60.0:.3f}分钟 ==============================\n"))
-=======
-        print(color.fuchsia(f"\n#====================== 训练完毕,时刻:{now},用时:{tm.hold()/60.0:.3f}分钟 ==============================\n"))
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
         return
 
 
@@ -294,14 +254,14 @@ class Trainer():
             # 得到测试数据集名字
             DtSetName = ds.dataset.name
             print(f"数据集={DtSetName}, 长度={len(ds)}\n")
-            self.ckp.write_log(f"开始在数据集{DtSetName}上测试,长度={len(ds)}\n")
+            self.ckp.write_log(f"开始在数据集{DtSetName}上测试, 长度={len(ds)}\n")
 
             # 依次遍历压缩率
             for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33]
 
-                print(f"\t开始在数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试\n")
+                print(f" 开始在数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试\n")
                 # 写日志
-                self.ckp.write_log(f"\t开始在 数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试")
+                self.ckp.write_log(f" 开始在数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试")
 
                 # 初始化测试指标日志
                 self.ckp.InitTestMetric(compressrate, DtSetName)
@@ -309,9 +269,9 @@ class Trainer():
                 # 依次遍历信噪比
                 for snr_idx, snr in enumerate(self.args.SNRtest):   # [-6, -4, -2, 0, 2, 6, 10, 14, 18]
 
-                    print(f"  数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}\n")
+                    print(f"   数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}\n")
                     # 写日志
-                    self.ckp.write_log(f"  数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}")
+                    self.ckp.write_log(f"   数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr}")
 
                     # 测试指标日志申请空间
                     self.ckp.AddTestMetric(compressrate, snr, DtSetName)
@@ -321,7 +281,7 @@ class Trainer():
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
                         # 保存图片
-                        self.ckp.SaveTestFig(DtSetName, compressrate, snr, filename[0], sr)
+                        self.ckp.SaveTestFig(DtSetName, compressrate, snr, self.args.SNRtrain, filename[0], sr)
 
                         # 计算batch内(测试时一个batch只有一张图片)的psnr和MSE
                         metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
@@ -331,16 +291,16 @@ class Trainer():
                         #print(f"数据集为:{DtSetName}, 压缩率为:{compressrate} 信噪比为:{snr},图片:{filename},指标:{}")
 
                         tmp = tm.toc()
-                        print(f"   数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
+                        print(f"     数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
 
                         #self.ckp.write_log(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
 
                     # 计算某个数据集下的平均指标
                     metrics = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
 
-                    print(f"  数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.timer/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
+                    print(f"   数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.timer/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
 
-                    self.ckp.write_log(f"  数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 整个数据集上的平均指标:{metrics}, 此SNR下整个数据集的测试时间:{tm.reset()/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
+                    self.ckp.write_log(f"   数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtest)}), 整个数据集上的平均指标:{metrics}, 此SNR下整个数据集的测试时间:{tm.reset()/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
 
                     self.wr.WrTestMetric(DtSetName, compressrate, snr, metrics)
                     self.wr.WrTestOne(DtSetName, compressrate, snr, metrics)

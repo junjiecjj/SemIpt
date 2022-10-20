@@ -70,11 +70,7 @@ def main():
         #     _model.model.load_state_dict(state_dict, strict=False)
 
         #加载最近保存一次的的训练模型
-<<<<<<< HEAD
         _model.load(ckp.modelLoadDir)
-=======
-        _model.load(ckp.modeldir, cpu=args.cpu)
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 
         # _model.save('/home/jack/IPT-Pretrain/results/model/', 10,10,1)
         # torch.save(_model.model.state_dict(), '/home/jack/IPT-Pretrain/results/model/hhh.pt')

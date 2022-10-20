@@ -121,7 +121,6 @@ class checkpoint():
         self.startEpoch = 0     # 日志里各个压缩率和信噪比训练的epoch
         self.LastSumEpoch = 0   # 日志里所有的压缩率和信噪比下训练的epoch之和
         self.SumEpoch = 0       # 本次训练的累计epoch
-<<<<<<< HEAD
 
         self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
 
@@ -147,33 +146,6 @@ class checkpoint():
         open_type = 'a' if os.path.exists(self.getSavePath('trainLog.txt')) else 'w'
         self.log_file = open(self.getSavePath('trainLog.txt'), open_type)
 
-=======
-
-        self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
-
-        # 模型训练时PSNR、MSE和loss和优化器等等数据的保存以及画图目录
-        self.dir = os.path.join(args.save, f"{self.now}_TrainLog_{args.modelUse}")
-        print(f"self.dir = {self.dir} \n")
-
-        if args.reset:
-            print(f"删除目录:{self.dir}")
-            os.system('rm -rf ' + self.dir)
-
-        os.makedirs(self.dir, exist_ok=True)
-
-        # 模型参数保存的目录
-        self.modeldir = os.path.join(args.save, f"{self.now}_Model_{args.modelUse}")
-
-        if args.reset:
-            print(f"删除目录:{self.modeldir}")
-            os.system('rm -rf ' + self.modeldir)
-
-        os.makedirs(self.modeldir, exist_ok=True)
-
-        open_type = 'a' if os.path.exists(self.get_path('trainLog.txt')) else 'w'
-        self.log_file = open(self.get_path('trainLog.txt'), open_type)
-
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
         self.writeArgsLog()
 
         self.metricLog = {}
@@ -199,11 +171,7 @@ class checkpoint():
         return
 
     def writeArgsLog(self, open_type='a'):
-<<<<<<< HEAD
         with open(self.getSavePath('argsConfig.txt'), open_type) as f:
-=======
-        with open(self.get_path('argsConfig.txt'), open_type) as f:
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
             f.write('#====================================================================================\n')
             f.write(self.now + '\n')
             f.write('#====================================================================================\n\n')
@@ -324,11 +292,7 @@ class checkpoint():
         axis = np.linspace(1, epoch, epoch)
 
         label = 'CompRatio={},SNR={}(dB)'.format(comprateTmp, snrTmp)
-<<<<<<< HEAD
         fig = plt.figure(constrained_layout=True)
-=======
-        fig = plt.figure()
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
         plt.title(label)
         plt.plot(axis, self.metricLog[tmpS])
         plt.legend()
@@ -352,27 +316,18 @@ class checkpoint():
     def plot_AllTrainMetric(self):
 
         width = 6
-        high = 4
+        high = 5
         figWidth =width*len(self.args.CompressRateTrain)
         figHigh = high*len(self.args.SNRtrain)
 
         for idx, met in  enumerate(self.args.metrics):
-<<<<<<< HEAD
-=======
-            fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain), figsize=(16,16))
-            axs = axs.reshape(len(self.args.SNRtrain), len(self.args.CompressRateTrain))
-
-            for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
-                for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
-                    tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-                    label = 'R={},SNR={}(dB)'.format(comprateTmp, snrTmp)
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 
             # 如果信噪比和压缩率只有一个
             if len(self.args.SNRtrain) == 1 and len(self.args.CompressRateTrain) == 1:
-                fig = plt.figure(constrained_layout=True)
+                fig = plt.figure()# constrained_layout=True
                 tmpS = "MetricLog:CompRatio={},SNR={}".format(self.args.CompressRateTrain[0], self.args.SNRtrain[0])
-                label = 'R={},SNR={}(dB)'.format(self.args.CompressRateTrain[0], self.args.SNRtrain[0])
+                #label = 'R={},SNR={}(dB)'.format(self.args.CompressRateTrain[0], self.args.SNRtrain[0])
+                label = r'$\mathrm{R}_\mathrm{train}=%.2f,\mathrm{SNR}_\mathrm{train}=%d\mathrm{(dB)}$'%(self.args.CompressRateTrain[0], self.args.SNRtrain[0])
                 epoch = len(self.metricLog[tmpS])
                 X = np.linspace(1, epoch, epoch)
                 plt.plot(X, self.metricLog[tmpS][:,idx],'r-',label=label,)
@@ -383,9 +338,8 @@ class checkpoint():
                     plt.ylabel(f"{met}(dB)",fontproperties=font)
                 else:
                     plt.ylabel(f"{met}",fontproperties=font)
-                plt.title(label, fontproperties=font)
+                #plt.title(label, fontproperties=font)
 
-<<<<<<< HEAD
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
                 font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
                 font1 = {'family':'Times New Roman','style':'normal','size':16}
@@ -393,15 +347,6 @@ class checkpoint():
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
                 frame1.set_facecolor('none')  # 设置图例legend背景透明
-=======
-                    font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                    axs[snr_idx,comprate_idx].set_xlabel('Epoch',fontproperties=font)
-                    if met=="PSNR":
-                        axs[snr_idx,comprate_idx].set_ylabel(f"{met}(dB)",fontproperties=font)
-                    else:
-                        axs[snr_idx,comprate_idx].set_ylabel(f"{met}",fontproperties=font)
-                    #axs[snr_idx,comprate_idx].set_title(label, fontproperties=font)
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
 
                 ax=plt.gca()#获得坐标轴的句柄
                 ax.spines['bottom'].set_linewidth(2);###设置底部坐标轴的粗细
@@ -416,14 +361,14 @@ class checkpoint():
             else:
                 fig, axs=plt.subplots(len(self.args.SNRtrain),len(self.args.CompressRateTrain), figsize=(figWidth,figHigh), constrained_layout=True)
 
-<<<<<<< HEAD
                 if len(self.args.SNRtrain) == 1 or len(self.args.CompressRateTrain) == 1:
                     axs = axs.reshape(len(self.args.SNRtrain), len(self.args.CompressRateTrain))
 
                 for comprate_idx, comprateTmp in enumerate(self.args.CompressRateTrain):
                     for snr_idx, snrTmp in enumerate(self.args.SNRtrain):
                         tmpS = "MetricLog:CompRatio={},SNR={}".format(comprateTmp, snrTmp)
-                        label = 'R={},SNR={}(dB)'.format(comprateTmp, snrTmp)
+                        #label = 'R={},SNR={}(dB)'.format(comprateTmp, snrTmp)
+                        label = r'$\mathrm{R}_\mathrm{train}=%.2f,\mathrm{SNR}_\mathrm{train}=%d\mathrm{(dB)}$'%(comprateTmp, snrTmp)
 
                         epoch = len(self.metricLog[tmpS])
                         X = np.linspace(1, epoch, epoch)
@@ -456,19 +401,12 @@ class checkpoint():
                         [label.set_fontname('Times New Roman') for label in labels]
                         [label.set_fontsize(20) for label in labels] #刻度值字号
 
-            #plt.subplots_adjust(top=0.90, hspace=0.2)#调节两个子图间的距离
-=======
-                    axs[snr_idx,comprate_idx].tick_params(labelsize=16,width=3)
-                    labels = axs[snr_idx,comprate_idx].get_xticklabels() + axs[snr_idx,comprate_idx].get_yticklabels()
-                    [label.set_fontname('Times New Roman') for label in labels]
-                    [label.set_fontsize(20) for label in labels] #刻度值字号
-
-                    axs[snr_idx,comprate_idx].tick_params(direction='in',axis='both',top=True,right=True,labelsize=16,width=3)
-            fig.subplots_adjust(hspace=0.3)#调节两个子图间的距离
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
+            #调节两个子图间的距离
+            # plt.subplots_adjust(top=0.92,bottom=0.1, left=0.1, right=0.97, wspace=0.4, hspace=0.2)
             plt.tight_layout()#  使得图像的四周边缘空白最小化
             out_fig = plt.gcf()
             out_fig.savefig(self.getSavePath(f"Train_{met}_EachRandSNREpoch_Plot.pdf"))
+            out_fig.savefig(self.getSavePath(f"Train_{met}_EachRandSNREpoch_Plot.eps"))
             plt.show()
             plt.close(fig)
         return
@@ -513,7 +451,8 @@ class checkpoint():
 
 # <<< 测试过程不同数据集上的的PSNR等指标随压缩率、信噪比的动态记录
     def InitTestMetric(self, comprateTmp, dataset):
-        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
+        #tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
+        tmpS = "TestMetricLog:Dataset={},CompRatio={},SNRtrain={}".format(dataset,comprateTmp,self.args.SNRtrain[0])
         if tmpS not in self.TeMetricLog.keys():
             self.TeMetricLog[tmpS] = torch.Tensor()
         else:
@@ -521,19 +460,21 @@ class checkpoint():
         return
 
     def AddTestMetric(self, comprateTmp, snrTmp, dataset):
-        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
-
+        #tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
+        tmpS = "TestMetricLog:Dataset={},CompRatio={},SNRtrain={}".format(dataset,comprateTmp,self.args.SNRtrain[0])
         # 第一列为snr, 后面各列为各个指标
         self.TeMetricLog[tmpS] = torch.cat([self.TeMetricLog[tmpS], torch.zeros(1, len(self.args.metrics)+1 )],dim=0)
         self.TeMetricLog[tmpS][-1,0]=snrTmp
         return
 
     def UpdateTestMetric(self, comprateTmp, dataset, metric):
-        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
+        tmpS = "TestMetricLog:Dataset={},CompRatio={},SNRtrain={}".format(dataset,comprateTmp,self.args.SNRtrain[0])
+
         self.TeMetricLog[tmpS][-1,1:] += metric
 
     def MeanTestMetric(self, comprateTmp, dataset, n_images):
-        tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
+        # tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dataset,comprateTmp)
+        tmpS = "TestMetricLog:Dataset={},CompRatio={},SNRtrain={}".format(dataset,comprateTmp,self.args.SNRtrain[0])
         self.TeMetricLog[tmpS][-1,1:] /= n_images
         return self.TeMetricLog[tmpS][-1,1:]
 # 训练过程的PSNR等指标的动态记录 >>>
@@ -605,27 +546,28 @@ class checkpoint():
         mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
         color = ['#808000','#C000C0', '#000000','#00FFFF','#0000FF', '##FF1493', '#ADFF2F','#FF8C00','#00FF00', '##800080', '#FF0000','#1E90FF']
 
-        Len = 6
-        raw = 1
-        col = 2
+        high = 5
+        width = 6
 
         for dsIdx, dtset in enumerate(self.args.data_test):
             for metIdx, met in enumerate(self.args.metrics):
                 # fig, axs = plt.subplots(raw, col, figsize=(col*Len, raw*Len),constrained_layout=True)
-                fig = plt.figure(constrained_layout=True)
+                fig = plt.figure(figsize=(width, high),)# constrained_layout=True
                 for crIdx, compratio in enumerate(self.args.CompressRateTrain):
-                    tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dtset, compratio)
+                    #tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dtset, compratio)
+                    tmpS = "TestMetricLog:Dataset={},CompRatio={},SNRtrain={}".format(dtset, compratio, self.args.SNRtrain[0])
                     data = self.TeMetricLog[tmpS]
-                    lb = f"R={compratio}"
+                    # lb = f"R={compratio}"
+                    lb = r"$\mathrm{R}_\mathrm{train}=%.2f,\mathrm{SNR}_\mathrm{train}=%d\mathrm{(dB)}$"%(compratio, self.args.SNRtrain[0])
                     plt.plot(data[:,0], data[:,metIdx+1], linestyle='-',color=color[crIdx],marker=mark[crIdx], label = lb)
 
                 font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                plt.xlabel('SNR (dB)',fontproperties=font)
+                plt.xlabel(r'$\mathrm{SNR}_\mathrm{test}\mathrm{(dB)}$',fontproperties=font)
                 if met=="PSNR":
                     plt.ylabel(f"{met} (dB)",fontproperties=font)
                 else:
                     plt.ylabel(f"{met}",fontproperties=font)
-                plt.title(f"{dtset} dataset",loc = 'center',fontproperties=font)
+                # plt.title(f"{dtset} dataset",loc = 'center',fontproperties=font)
 
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
                 font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
@@ -648,14 +590,16 @@ class checkpoint():
                 [label.set_fontsize(20) for label in labels] #刻度值字号
 
 
-                #font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-                #plt.suptitle(f"{met} on " + ', '.join(self.args.data_test), x=0.5, y=0.98, fontproperties=font4,)
+                font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+                plt.suptitle(f"{dtset} dataset",  fontproperties=font4,)
 
                 # plt.subplots_adjust(top=0.86, wspace=0.2, hspace=0.2)#调节两个子图间的距离
-                plt.tight_layout(pad=1, h_pad=1, w_pad=1)#  使得图像的四周边缘空白最小化
+                plt.tight_layout(pad=0.5, h_pad=1, w_pad=1)#  使得图像的四周边缘空白最小化
+                #plt.subplots_adjust(top=0.89,bottom=0.01, left=0.01, right=0.99, wspace=0.4, hspace=0.2)
 
                 out_fig = plt.gcf()
                 out_fig.savefig(self.get_testpath(f"Test_{dtset}_{met}_Plot.pdf"), bbox_inches = 'tight',pad_inches = 0.2)
+                out_fig.savefig(self.get_testpath(f"Test_{dtset}_{met}_Plot.eps"), bbox_inches = 'tight',pad_inches = 0.2)
                 plt.show()
                 plt.close(fig)
         return
@@ -669,8 +613,9 @@ class checkpoint():
     def PlotTestMetricInOneFig(self):
         mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
         color = ['#808000','#C000C0', 'red','cyan','blue','green','#FF8C00','#00FF00', '#FFA500', '#FF0000','#1E90FF']
-
-        Len = 6
+        alabo = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)', '(g)', '(h)']
+        high = 5
+        width = 6
         if len(self.args.data_test) > 2:
             raw = 2
             if len(self.args.data_test)%2 == 0:
@@ -685,37 +630,29 @@ class checkpoint():
             col = 2
 
         for metIdx, met in enumerate(self.args.metrics):
-<<<<<<< HEAD
-            fig, axs = plt.subplots(raw, col, figsize=(col*Len, raw*Len),constrained_layout=True)
-=======
-            fig, axs = plt.subplots(raw, col, figsize=(col*Len, raw*Len))
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
+            fig, axs = plt.subplots(raw, col, figsize=(col*width, raw*high),)# constrained_layout=True
             if raw == 1 and col==2:
                 axs = axs.reshape(raw,col)
             for dsIdx, dtset in enumerate(self.args.data_test):
                 i = dsIdx // col
                 j = dsIdx % col
                 for crIdx, compratio in enumerate(self.args.CompressRateTrain):
-                    tmpS = "TestMetricLog:Dataset={},CompRatio={}".format(dtset, compratio)
+                    tmpS = "TestMetricLog:Dataset={},CompRatio={},SNRtrain={}".format(dtset, compratio,self.args.SNRtrain[0])
                     data = self.TeMetricLog[tmpS]
-                    lb = f"R={compratio}"
+                    lb = r"$\mathrm{R}_\mathrm{train}=%.2f,\mathrm{SNR}_\mathrm{train}=%d\mathrm{(dB)}$"%(compratio, self.args.SNRtrain[0])
                     axs[i,j].plot(data[:,0], data[:,metIdx+1], linestyle='-', color=color[crIdx], marker=mark[crIdx], label = lb)
 
                 font = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
-                axs[i,j].set_xlabel('SNR (dB)',fontproperties=font)
+                axs[i,j].set_xlabel(r'$\mathrm{SNR}_\mathrm{test}\mathrm{(dB)}$',fontproperties=font)
                 if met=="PSNR":
                     axs[i,j].set_ylabel(f"{met} (dB)",fontproperties=font)
                 else:
                     axs[i,j].set_ylabel(f"{met}",fontproperties=font)
-<<<<<<< HEAD
-                axs[i,j].set_title(f"{dtset}",loc = 'right',fontproperties=font)
-=======
-                axs[i,j].set_title(f"{dtset}",loc = 'left',fontproperties=font)
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
+                axs[i,j].set_title(f"{alabo[dsIdx]} {dtset}",loc = 'left',fontproperties=font)
 
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
-                font1 = {'family':'Times New Roman','style':'normal','size':16}
+                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=12)
+                font1 = {'family':'Times New Roman','style':'normal','size':14}
                 legend1 = axs[i,j].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
@@ -732,18 +669,15 @@ class checkpoint():
                 [label.set_fontname('Times New Roman') for label in labels]
                 [label.set_fontsize(20) for label in labels] #刻度值字号
 
-<<<<<<< HEAD
-=======
-            fig.subplots_adjust(hspace=0.6)#调节两个子图间的距离
->>>>>>> be5a0fa96646cde0c37a8287eb393e39ecbe8739
-            font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-            plt.suptitle(f"{met} on " + ', '.join(self.args.data_test), x=0.5, y=0.98, fontproperties=font4,)
+            font4 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 20)
+            plt.suptitle(f"{met} on " + ', '.join(self.args.data_test),  fontproperties=font4,)
 
-            # plt.subplots_adjust(top=0.86, wspace=0.2, hspace=0.2)#调节两个子图间的距离
-            plt.tight_layout(pad=1, h_pad=1, w_pad=1)#  使得图像的四周边缘空白最小化
 
+            plt.tight_layout(pad=1.5 , h_pad=1, w_pad=1)#  使得图像的四周边缘空白最小化
+            #plt.subplots_adjust(top=0.92, bottom=0.01, left=0.01, right=0.99, wspace=0.2, hspace=0.2)#调节两个子图间的距离
             out_fig = plt.gcf()
             out_fig.savefig(self.get_testpath(f"Test_{met}_Plot.pdf"), bbox_inches = 'tight',pad_inches = 0.2)
+            out_fig.savefig(self.get_testpath(f"Test_{met}_Plot.eps"), bbox_inches = 'tight',pad_inches = 0.2)
             plt.show()
             plt.close(fig)
         return
@@ -778,8 +712,8 @@ class checkpoint():
 # #ckp.plot_trainPsnr(0.4, 18)
 # ckp.save()
 
-    def SaveTestFig(self, DaSetName, CompRatio, Snr, figname, data):
-        filename = self.get_testpath('results-{}'.format(DaSetName),'{}_CompRa={}_Snr={}.png'.format(figname, CompRatio,Snr))
+    def SaveTestFig(self, DaSetName, CompRatio, SnrTest, snrTrain, figname, data):
+        filename = self.get_testpath('results-{}'.format(DaSetName),'{}_R={}_SnrTrain={}_SnrTest={}.png'.format(figname, CompRatio,snrTrain,SnrTest))
         #print(f"filename = {filename}\n")
         normalized = data[0].mul(255 / self.args.rgb_range)
         tensor_cpu = normalized.byte().permute(1, 2, 0).cpu()
