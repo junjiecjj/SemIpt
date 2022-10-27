@@ -62,14 +62,14 @@ parser.add_argument('--no_augment', action='store_true',  help='do not use data 
 
 parser.add_argument('--hasChannel', action='store_false',  help='use channel and compress, decompress')
 parser.add_argument('--freezeIPT', action='store_true',  help='freeze IPT model when training')
-parser.add_argument('--CompressRateTrain', type=str, default='0.17',  help='Compress rate for test')
+parser.add_argument('--CompressRateTrain', type=str, default='0.25',  help='Compress rate for test')
 #parser.add_argument('--CompressRateTrain', type=str, default='0.17, 0.33',  help='Compress rate for test')
-parser.add_argument('--SNRtrain',  type=str, default='12',  help='SNR for train')
+parser.add_argument('--SNRtrain',  type=str, default='8',  help='SNR for train')
 
 # 18,16,14,12,10,8,6,4,2,0,-2    -2,0,2,4,6,8,10,12,14,16,18
 
 #parser.add_argument('--CompressRateTest', type=str, default='0.17, 0.33, 0.4',  help='Compress rate for test')
-parser.add_argument('--SNRtest',  type=str, default='-2,0,2,4,6,8,10,12,14,16,18',  help='SNR for test')
+parser.add_argument('--SNRtest',  type=str, default='8',  help='SNR for test')
 #parser.add_argument('--SNRtest',  type=str, default='2',  help='SNR for test')
 
 # Training and test  specifications
@@ -113,7 +113,7 @@ parser.add_argument('--power', type=int,  default=2, help='warm up多项式的�
 
 
 # Optimization specifications
-parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
+parser.add_argument('--lr', type=float, default=0.0005, help='learning rate')
 parser.add_argument('--decay', type=str, default='20-80-120',  help='learning rate decay type')
 parser.add_argument('--gamma',  type=float, default=0.6, help='learning rate decay factor for step decay')
 parser.add_argument('--optimizer', default='ADAM', choices=('SGD', 'ADAM', 'RMSprop'), help='optimizer to use (SGD | ADAM | RMSprop)')

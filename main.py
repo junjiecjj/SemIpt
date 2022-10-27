@@ -43,8 +43,8 @@ from memory_profiler import profile
 import objgraph
 
 #==============================================================================================================
-# 设置随机数种子
-#torch.manual_seed( args.seed)
+## 设置随机数种子
+# torch.manual_seed(args.seed)
 
 
 # 加载所有参数的类

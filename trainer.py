@@ -194,7 +194,7 @@ class Trainer():
 
                     tmp = tm.toc()
                     self.ckp.write_log(f"\t\t压缩率:{compressrate} ({comprate_idx+1}/{len(self.args.CompressRateTrain)}) |信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtrain)}) | Epoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | 训练完一个 Epoch: loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟) \n", train=True)
-                    print(f"\t\t 压缩率:{compressrate} ({comprate_idx+1}/{len(self.args.CompressRateTrain)}) | 信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtrain)}) | Epoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs} | 训练完一个 Epoch: loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
+                    print(f"\t\t 压缩率:{compressrate} ({comprate_idx+1}/{len(self.args.CompressRateTrain)}) | 信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtrain)}) | Epoch {epoch_idx+1}/{self.ckp.startEpoch+self.args.epochs}, loss = {epochLos.item():.3f}, metric = {epochMetric} | Time {tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)\n")
 
 
                     # 断点可视化，在各个压缩率和信噪比下的Loss和PSNR，以及合并的loss
@@ -212,7 +212,7 @@ class Trainer():
                 self.optimizer.reset_state()
 
                 # 在训练完每个压缩率和信噪比下的所有Epoch后,保存一次模型
-                self.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
+                # nself.ckp.saveModel(self, compressrate, snr, epoch=int(self.ckp.startEpoch+self.args.epochs))
                 #exit(0)
         # 在训练完所有压缩率和信噪比后，保存损失日志
         self.ckp.saveLoss(self)
@@ -259,7 +259,7 @@ class Trainer():
             # 依次遍历压缩率
             for comprate_idx, compressrate in enumerate(self.args.CompressRateTrain):  #[0.17, 0.33]
 
-                print(f" 开始在数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试\n")
+                print(color.fuchsia(f" 开始在数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试\n"))
                 # 写日志
                 self.ckp.write_log(f" 开始在数据集为:{DtSetName}, 压缩率为:{compressrate} 下测试")
 
@@ -281,7 +281,7 @@ class Trainer():
                         sr = self.model(hr, idx_scale=0, snr=snr, compr_idx=comprate_idx)
                         sr = utility.quantize(sr, self.args.rgb_range)
                         # 保存图片
-                        self.ckp.SaveTestFig(DtSetName, compressrate, snr, self.args.SNRtrain, filename[0], sr)
+                        self.ckp.SaveTestFig(DtSetName, compressrate, snr, self.args.SNRtrain[0], filename[0], sr)
 
                         # 计算batch内(测试时一个batch只有一张图片)的psnr和MSE
                         metric = utility.calc_metric(sr=sr, hr=hr, scale=1, rgb_range=self.args.rgb_range, metrics=self.args.metrics)
@@ -293,12 +293,12 @@ class Trainer():
                         tmp = tm.toc()
                         print(f"     数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
 
-                        #self.ckp.write_log(f"\t\t\t数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
+                        self.ckp.write_log(f"     数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),图片:{filename}({batch_idx+1}/{len(ds)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tmp/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
 
                     # 计算某个数据集下的平均指标
                     metrics = self.ckp.MeanTestMetric(compressrate, DtSetName,  len(ds))
 
-                    print(f"   数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.timer/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
+                    print(color.fuchsia(f"   数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtest)}), 指标:{metric},时间:{tm.timer/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)"))
 
                     self.ckp.write_log(f"   数据集:{DtSetName}({idx_data+1}/{len(self.loader_test)}),压缩率:{compressrate}({comprate_idx+1}/{len(self.args.CompressRateTrain)}),信噪比:{snr}dB ({snr_idx+1}/{len(self.args.SNRtest)}), 整个数据集上的平均指标:{metrics}, 此SNR下整个数据集的测试时间:{tm.reset()/60.0:.3f}/{tm.hold()/60.0:.3f}(分钟)")
 
@@ -308,7 +308,7 @@ class Trainer():
         self.ckp.SaveTestLog()
         now2 = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         self.ckp.write_log(f"===================================  测试结束, 开始时刻:{now1}/结束时刻:{now2}, 用时:{tm.hold()/60.0:.3f}分钟 =======================================================")
-        print(f"====================== 关闭测试日志  {self.ckp.log_file.name} ===================================")
+        print(color.fuchsia(f"====================== 关闭测试日志  {self.ckp.log_file.name} ==================================="))
         self.ckp.done()
         print(color.fuchsia(f"\n#================================ 完成测试, 开始时刻:{now1}/结束时刻:{now2}, 用时:{tm.hold()/60.0:.3f}分钟 =======================================\n"))
         return

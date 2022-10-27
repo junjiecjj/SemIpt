@@ -5,6 +5,155 @@ Created on 2022/07/07
 
 @author: Junjie Chen
 
+
+mark  = ['s','v','*', 'o', 'd', '>', '1', 'p', '2', 'h', 'P', '3', '|', 'X', '4', '8', 'H', '+', 'x', 'D',  '_']
+color = ['#1E90FF','#FF6347', '#800080', '#008000', '#FFA500', '#C71585', '#7FFF00', '#EE82EE' ,'#00CED1','#CD5C5C','#7B68EE', '#0000FF', '#FF0000','#808000' ]
+
+可用颜色：
+cnames = {
+'aliceblue':            '#F0F8FF',
+'antiquewhite':         '#FAEBD7',
+'aqua':                 '#00FFFF',
+'aquamarine':           '#7FFFD4',
+'azure':                '#F0FFFF',
+'beige':                '#F5F5DC',
+'bisque':               '#FFE4C4',
+'black':                '#000000',
+'blanchedalmond':       '#FFEBCD',
+'blue':                 '#0000FF',
+'blueviolet':           '#8A2BE2',
+'brown':                '#A52A2A',
+'burlywood':            '#DEB887',
+'cadetblue':            '#5F9EA0',
+'chartreuse':           '#7FFF00',
+'chocolate':            '#D2691E',
+'coral':                '#FF7F50',
+'cornflowerblue':       '#6495ED',
+'cornsilk':             '#FFF8DC',
+'crimson':              '#DC143C',
+'cyan':                 '#00FFFF',
+'darkblue':             '#00008B',
+'darkcyan':             '#008B8B',
+'darkgoldenrod':        '#B8860B',
+'darkgray':             '#A9A9A9',
+'darkgreen':            '#006400',
+'darkkhaki':            '#BDB76B',
+'darkmagenta':          '#8B008B',
+'darkolivegreen':       '#556B2F',
+'darkorange':           '#FF8C00',
+'darkorchid':           '#9932CC',
+'darkred':              '#8B0000',
+'darksalmon':           '#E9967A',
+'darkseagreen':         '#8FBC8F',
+'darkslateblue':        '#483D8B',
+'darkslategray':        '#2F4F4F',
+'darkturquoise':        '#00CED1',
+'darkviolet':           '#9400D3',
+'deeppink':             '#FF1493',
+'deepskyblue':          '#00BFFF',
+'dimgray':              '#696969',
+'dodgerblue':           '#1E90FF',
+'firebrick':            '#B22222',
+'floralwhite':          '#FFFAF0',
+'forestgreen':          '#228B22',
+'fuchsia':              '#FF00FF',
+'gainsboro':            '#DCDCDC',
+'ghostwhite':           '#F8F8FF',
+'gold':                 '#FFD700',
+'goldenrod':            '#DAA520',
+'gray':                 '#808080',
+'green':                '#008000',
+'greenyellow':          '#ADFF2F',
+'honeydew':             '#F0FFF0',
+'hotpink':              '#FF69B4',
+'indianred':            '#CD5C5C',
+'indigo':               '#4B0082',
+'ivory':                '#FFFFF0',
+'khaki':                '#F0E68C',
+'lavender':             '#E6E6FA',
+'lavenderblush':        '#FFF0F5',
+'lawngreen':            '#7CFC00',
+'lemonchiffon':         '#FFFACD',
+'lightblue':            '#ADD8E6',
+'lightcoral':           '#F08080',
+'lightcyan':            '#E0FFFF',
+'lightgoldenrodyellow': '#FAFAD2',
+'lightgreen':           '#90EE90',
+'lightgray':            '#D3D3D3',
+'lightpink':            '#FFB6C1',
+'lightsalmon':          '#FFA07A',
+'lightseagreen':        '#20B2AA',
+'lightskyblue':         '#87CEFA',
+'lightslategray':       '#778899',
+'lightsteelblue':       '#B0C4DE',
+'lightyellow':          '#FFFFE0',
+'lime':                 '#00FF00',
+'limegreen':            '#32CD32',
+'linen':                '#FAF0E6',
+'magenta':              '#FF00FF',
+'maroon':               '#800000',
+'mediumaquamarine':     '#66CDAA',
+'mediumblue':           '#0000CD',
+'mediumorchid':         '#BA55D3',
+'mediumpurple':         '#9370DB',
+'mediumseagreen':       '#3CB371',
+'mediumslateblue':      '#7B68EE',
+'mediumspringgreen':    '#00FA9A',
+'mediumturquoise':      '#48D1CC',
+'mediumvioletred':      '#C71585',
+'midnightblue':         '#191970',
+'mintcream':            '#F5FFFA',
+'mistyrose':            '#FFE4E1',
+'moccasin':             '#FFE4B5',
+'navajowhite':          '#FFDEAD',
+'navy':                 '#000080',
+'oldlace':              '#FDF5E6',
+'olive':                '#808000',
+'olivedrab':            '#6B8E23',
+'orange':               '#FFA500',
+'orangered':            '#FF4500',
+'orchid':               '#DA70D6',
+'palegoldenrod':        '#EEE8AA',
+'palegreen':            '#98FB98',
+'paleturquoise':        '#AFEEEE',
+'palevioletred':        '#DB7093',
+'papayawhip':           '#FFEFD5',
+'peachpuff':            '#FFDAB9',
+'peru':                 '#CD853F',
+'pink':                 '#FFC0CB',
+'plum':                 '#DDA0DD',
+'powderblue':           '#B0E0E6',
+'purple':               '#800080',
+'red':                  '#FF0000',
+'rosybrown':            '#BC8F8F',
+'royalblue':            '#4169E1',
+'saddlebrown':          '#8B4513',
+'salmon':               '#FA8072',
+'sandybrown':           '#FAA460',
+'seagreen':             '#2E8B57',
+'seashell':             '#FFF5EE',
+'sienna':               '#A0522D',
+'silver':               '#C0C0C0',
+'skyblue':              '#87CEEB',
+'slateblue':            '#6A5ACD',
+'slategray':            '#708090',
+'snow':                 '#FFFAFA',
+'springgreen':          '#00FF7F',
+'steelblue':            '#4682B4',
+'tan':                  '#D2B48C',
+'teal':                 '#008080',
+'thistle':              '#D8BFD8',
+'tomato':               '#FF6347',
+'turquoise':            '#40E0D0',
+'violet':               '#EE82EE',
+'wheat':                '#F5DEB3',
+'white':                '#FFFFFF',
+'whitesmoke':           '#F5F5F5',
+'yellow':               '#FFFF00',
+'yellowgreen':          '#9ACD32'
+
+
+
 """
 
 import os
@@ -79,6 +228,7 @@ class ResultPlot():
             self.args.SNRtest = [-2,0,2,4,6,8,10,12,14,16,18]
 
         self.marksize = 8
+        self.legendsize = 16
         self.home = '/home/jack'
         #self.now = datetime.datetime.now().strftime('%Y-%m-%d-%H:%M:%S')
         #self.now = '2022-10-14-09:56:05'
@@ -102,36 +252,68 @@ class ResultPlot():
         # if os.path.isfile(self.getTestResPath('TestMetric_log.pt')):
         #     print(f"存在测试结果文件：{self.getTrainResPath('TrainMetric_log.pt')}")
         #     self.TeMetricLog = torch.load(self.getTestResPath('TestMetric_log.pt'))
-        self.args.CompressRateTrain = [0.17,0.33,0.5]
+        ## 1
+        # self.args.CompressRateTrain = [0.17, 0.33, 0.5]
+        # self.args.SNRtrain = [8]
+
+
+        ## 2
+        # self.args.CompressRateTrain = [0.17,]
+        # self.args.SNRtrain = [4, 8, 12, 18]
+
+
+        ## 3
+        self.args.CompressRateTrain = [ 0.5]
         self.args.SNRtrain = [4, 8, 12, 18]
+
+
+        # ## 4
+        # self.args.CompressRateTrain = [0.17, 0.33, 0.5]
+        # self.args.SNRtrain = [18]
+
         self.args.SNRtest = [-2,0,2,4,6,8,10,12,14,16,18]
 
 
         dir1 = "/home/jack/IPT-Pretrain-del/results/"
         now1 = "2022-10-17-19:31:30"  # SNRTrain = 4dB,   R = 0.17
         now2 = "2022-10-12-17:38:12"  # SNRTrain = 8dB,   R = 0.17
-        #now3 =  ""                    # SNRTrain = 12dB, R = 0.17
+        now3 =  "2022-10-20-09:59:33" # SNRTrain = 12dB,  R = 0.17
         now4 = "2022-10-14-15:44:52"  # SNRTrain = 18dB,  R = 0.17
 
-        now5 = "2022-10-16-10:34:02"  # SNRTrain = 8dB,  R = 0.33
-        now6 = "2022-10-16-23:59:01"  # SNRTrain = 8dB,  R = 0.5
+        now5 = "2022-10-16-10:34:02"  # SNRTrain = 8dB,   R = 0.33
+        now6 = "2022-10-16-23:59:01"  # SNRTrain = 8dB,   R = 0.5
 
+        now7 = "2022-10-21-10:38:50"  # SNRTrain = 18dB,  R = 0.5
+        now8 = "2022-10-22-14:03:59"  # SNRTrain = 4 dB,  R = 0.5
+        #now9 = " "  # SNRTrain = 12 dB,  R = 0.5
+        now0 = "2022-10-21-23:38:16"  # SNRTrain = 18 dB,  R = 0.33
 
         self.TeMetricLog1 = torch.load(dir1+f"{now1}_TrainLog_IPT/{now1}/TestMetric_log.pt")
         self.TeMetricLog2 = torch.load(dir1+f"{now2}_TrainLog_IPT/{now2}/TestMetric_log.pt")
-        #self.TeMetricLog3 = torch.load(dir1+f"{now3}_TrainLog_IPT/{now3}/TestMetric_log.pt")
+        self.TeMetricLog3 = torch.load(dir1+f"{now3}_TrainLog_IPT/{now3}/TestMetric_log.pt")
         self.TeMetricLog4 = torch.load(dir1+f"{now4}_TrainLog_IPT/{now4}/TestMetric_log.pt")
         self.TeMetricLog5 = torch.load(dir1+f"{now5}_TrainLog_IPT/{now5}/TestMetric_log.pt")
         self.TeMetricLog6 = torch.load(dir1+f"{now6}_TrainLog_IPT/{now6}/TestMetric_log.pt")
-        self.TeMetricLog = {**self.TeMetricLog1, **self.TeMetricLog2, **self.TeMetricLog4,**self.TeMetricLog5,**self.TeMetricLog6}
+        self.TeMetricLog7 = torch.load(dir1+f"{now7}_TrainLog_IPT/{now7}/TestMetric_log.pt")
+        self.TeMetricLog8 = torch.load(dir1+f"{now8}_TrainLog_IPT/{now8}/TestMetric_log.pt")
+        #self.TeMetricLog9 = torch.load(dir1+f"{now9}_TrainLog_IPT/{now9}/TestMetric_log.pt")
+        self.TeMetricLog0 = torch.load(dir1+f"{now0}_TrainLog_IPT/{now0}/TestMetric_log.pt")
+
+
+        self.TeMetricLog = {**self.TeMetricLog1, **self.TeMetricLog2,**self.TeMetricLog3, **self.TeMetricLog4,**self.TeMetricLog5,**self.TeMetricLog6, **self.TeMetricLog7, **self.TeMetricLog8,**self.TeMetricLog0}
 
         self.metricLog1 = torch.load(dir1+f"{now1}_TrainLog_IPT/TrainMetric_log.pt")
         self.metricLog2 = torch.load(dir1+f"{now2}_TrainLog_IPT/TrainMetric_log.pt")
-        #self.metricLog3 = torch.load(dir1+f"{now3}_TrainLog_IPT/TrainMetric_log.pt")
+        self.metricLog3 = torch.load(dir1+f"{now3}_TrainLog_IPT/TrainMetric_log.pt")
         self.metricLog4 = torch.load(dir1+f"{now4}_TrainLog_IPT/TrainMetric_log.pt")
         self.metricLog5 = torch.load(dir1+f"{now5}_TrainLog_IPT/TrainMetric_log.pt")
         self.metricLog6 = torch.load(dir1+f"{now6}_TrainLog_IPT/TrainMetric_log.pt")
-        self.metricLog = {**self.metricLog1, **self.metricLog2, **self.metricLog4, **self.metricLog5, **self.metricLog6}
+        self.metricLog7 = torch.load(dir1+f"{now7}_TrainLog_IPT/TrainMetric_log.pt")
+        self.metricLog8 = torch.load(dir1+f"{now8}_TrainLog_IPT/TrainMetric_log.pt")
+        #self.metricLog9 = torch.load(dir1+f"{now9}_TrainLog_IPT/TrainMetric_log.pt")
+        self.metricLog0 = torch.load(dir1+f"{now0}_TrainLog_IPT/TrainMetric_log.pt")
+
+        self.metricLog = {**self.metricLog1, **self.metricLog2,**self.metricLog3, **self.metricLog4, **self.metricLog5, **self.metricLog6,**self.metricLog7, **self.metricLog8, **self.metricLog0}
 
 
     def getTestResPath(self, *subdir):
@@ -143,6 +325,8 @@ class ResultPlot():
     def getSavePath(self, *subdir):
         return os.path.join(self.savedir, *subdir)
 # >>> 训练结果画图
+
+
 
 
     """
@@ -222,7 +406,7 @@ class ResultPlot():
 
                         #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
                         font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=18)
-                        font1 = {'family':'Times New Roman','style':'normal','size':14}
+                        font1 = {'family':'Times New Roman','style':'normal','size':self.legendsize}
                         legend1 = axs[snr_idx,comprate_idx].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                         frame1 = legend1.get_frame()
                         frame1.set_alpha(1)
@@ -257,8 +441,8 @@ class ResultPlot():
     """
     #@profile
     def plot_AllTrainMetric1(self):
-        mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
-        color = ['#000000','#0000FF', '#FF1493', '#ADFF2F', '#00FFFF','#FF8C00','#00FF00',  '#FF0000','#1E90FF','#808000', '#C000C0', '#800080']
+        mark  = ['s','v','*', 'o', 'd', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D',  '|', '_']
+        color = ['#1E90FF','#FF6347', '#800080', '#008000', '#FFA500', '#228B22', '#000000','#00FFFF','#FF8C00','#00FF00', '#0000FF', '#FF0000','#808000' ]
         linestyles = ['-','--','-.',':']
         width = 6
         high = 4
@@ -286,7 +470,7 @@ class ResultPlot():
 
             #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
             font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=18)
-            font1 = {'family':'Times New Roman','style':'normal','size':18}
+            font1 = {'family':'Times New Roman','style':'normal','size':self.legendsize}
             legend1 = plt.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
             frame1 = legend1.get_frame()
             frame1.set_alpha(1)
@@ -325,9 +509,8 @@ class ResultPlot():
     对每张图有多条曲线，每一条曲线对应一个压缩率下的PSNR或MSE随SNR的变化曲线；
     """
     def PlotTestMetricSeperate(self):
-        mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
-        color = ['#808000','#C000C0', '#000000','#00FFFF','#0000FF', '#FF1493', '#ADFF2F','#FF8C00','#00FF00', '#800080', '#FF0000','#1E90FF']
-
+        mark  = ['s','v','*', 'o', 'd', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D',  '|', '_']
+        color = ['#1E90FF','#FF6347', '#800080', '#008000', '#FFA500', '#228B22', '#000000','#00FFFF','#FF8C00','#00FF00', '#0000FF', '#FF0000','#808000' ]
         high = 5
         width = 6
 
@@ -355,7 +538,7 @@ class ResultPlot():
 
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
                 font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
-                font1 = {'family':'Times New Roman','style':'normal','size':16}
+                font1 = {'family':'Times New Roman','style':'normal','size':self.legendsize}
                 legend1 = plt.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
@@ -395,8 +578,8 @@ class ResultPlot():
     每个子图对应一个数据集，每个子图有很多曲线，每一条曲线对应一个压缩率下的PSNR随SNR的变化曲线；
     """
     def PlotTestMetricInOneFig(self):
-        mark  = ['v', '^', '<', '>', '1', '2', '3', '4', '8', 's', 'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
-        color = ['#808000','#C000C0', 'red','cyan','blue','green','#FF8C00','#00FF00', '#FFA500', '#FF0000','#1E90FF']
+        mark  = ['s','v','*', 'o', 'd', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D',  '|', '_']
+        color = ['#1E90FF','#FF6347', '#800080', '#008000', '#FFA500', '#228B22', '#000000','#00FFFF','#FF8C00','#00FF00', '#0000FF', '#FF0000','#808000' ]
         alabo = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)', '(g)', '(h)']
         high = 5
         width = 6
@@ -439,7 +622,7 @@ class ResultPlot():
 
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
                 font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=12)
-                font1 = {'family':'Times New Roman','style':'normal','size':14}
+                font1 = {'family':'Times New Roman','style':'normal','size':self.legendsize}
                 legend1 = axs[i,j].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
@@ -479,8 +662,8 @@ class ResultPlot():
     """
     #@profile
     def plot_AllTrainMetricArodic(self):
-        mark  = ['s','v', '^', '<', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
-        color = ['#000000','#0000FF', '#FF1493', '#ADFF2F', '#00FFFF','#FF8C00','#00FF00',  '#FF0000','#1E90FF','#808000', '#C000C0', '#800080']
+        mark  = ['s','v','*', 'o', 'd', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D',  '|', '_']
+        color = ['#1E90FF','#FF6347', '#800080', '#008000', '#FFA500', '#228B22', '#000000','#00FFFF','#FF8C00','#00FF00', '#0000FF', '#FF0000','#808000' ]
         linestyles = ['-','--','-.',':', '-','--','-.',':','-','--','-.',':']
         width = 6
         high = 4
@@ -510,7 +693,7 @@ class ResultPlot():
 
             #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
             font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=18)
-            font1 = {'family':'Times New Roman','style':'normal','size':14}
+            font1 = {'family':'Times New Roman','style':'normal','size':self.legendsize}
             legend1 = plt.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
             frame1 = legend1.get_frame()
             frame1.set_alpha(1)
@@ -550,9 +733,8 @@ class ResultPlot():
     对每张图有多条曲线，每一条曲线对应一个压缩率下的PSNR或MSE随SNR的变化曲线；
     """
     def PlotTestMetricSeperateArodic(self):
-        mark  = ['s','v', '^', '<', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
-        color = ['#808000','#C000C0', '#000000','#00FFFF','#0000FF', '#FF1493', '#ADFF2F','#FF8C00','#00FF00', '#800080', '#FF0000','#1E90FF']
-
+        mark  = ['s','v','*', 'o', 'd', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D',  '|', '_']
+        color = ['#1E90FF','#FF6347', '#800080', '#008000', '#FFA500', '#228B22', '#000000','#00FFFF','#FF8C00','#00FF00', '#0000FF', '#FF0000','#808000' ]
         high = 5
         width = 6
 
@@ -581,7 +763,7 @@ class ResultPlot():
 
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
                 font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=16)
-                font1 = {'family':'Times New Roman','style':'normal','size':14}
+                font1 = {'family':'Times New Roman','style':'normal','size':self.legendsize}
                 legend1 = plt.legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
@@ -622,8 +804,8 @@ class ResultPlot():
     每个子图对应一个数据集，每个子图有很多曲线，每一条曲线对应一个压缩率下的PSNR随SNR的变化曲线；
     """
     def PlotTestMetricInOneFigArodic(self):
-        mark  = ['s','v', '^', '<', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D', 'd', '|', '_']
-        color = ['#808000','#C000C0', 'red','cyan','blue','green','#FF8C00','#00FF00', '#FFA500', '#FF0000','#1E90FF']
+        mark  = ['s','v','*', 'o', 'd', '>', '1', '2', '3', '4', '8',  'p', 'P', 'h', 'H', '+', 'x', 'X', 'D',  '|', '_']
+        color = ['#1E90FF','#FF6347', '#800080', '#008000', '#FFA500', '#C71585', '#000000','#00FFFF','#FF8C00','#00FF00', '#0000FF', '#FF0000','#808000' ]
         alabo = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)', '(g)', '(h)']
         high = 5
         width = 6
@@ -666,8 +848,8 @@ class ResultPlot():
                 axs[i,j].set_title(f"{alabo[dsIdx]} {dtset}",loc = 'left',fontproperties=font)
 
                 #font1 = FontProperties(fname=fontpath1+"Times_New_Roman.ttf", size = 22)
-                font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=12)
-                font1 = {'family':'Times New Roman','style':'normal','size':14}
+                #font1 = FontProperties(fname=fontpath2+"Caskaydia Cove ExtraLight Nerd Font Complete.otf", size=12)
+                font1 = {'family':'Times New Roman','style':'normal','size':self.legendsize}
                 legend1 = axs[i,j].legend(loc='best', borderaxespad=0, edgecolor='black', prop=font1,)
                 frame1 = legend1.get_frame()
                 frame1.set_alpha(1)
